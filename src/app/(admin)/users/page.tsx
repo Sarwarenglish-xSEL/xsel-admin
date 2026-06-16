@@ -1,0 +1,49 @@
+import { getProfiles, getCurrentProfile } from "@/lib/db/profiles";
+import { UsersTable } from "@/components/users/users-table";
+import { PageEmpty } from "@/components/page-states";
+
+export default async function UsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
+  let users;
+  let error: string | null = null;
+  let currentProfile;
+
+  try {
+    [currentProfile, users] = await Promise.all([getCurrentProfile(), getProfiles(q)]);
+  } catch (e) {
+    error = e instanceof Error ? e.message : "Failed to load users";
+  }
+
+  if (error) {
+    return (
+      <div>
+        <h1 className="mb-6 text-2xl font-bold">Users</h1>
+        <p className="text-destructive">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Users</h1>
+        <p className="text-muted-foreground">
+          Manage platform users and roles
+          {currentProfile?.role !== "admin" && " (role changes require admin)"}
+        </p>
+      </div>
+      {users!.length === 0 ? (
+        <PageEmpty title="No users found" description="Try a different search term." />
+      ) : (
+        <UsersTable
+          users={users!}
+          isAdmin={currentProfile?.role === "admin"}
+        />
+      )}
+    </div>
+  );
+}
