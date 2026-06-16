@@ -94,6 +94,12 @@ export async function archiveCourse(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function deleteCourse(id: string): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("courses").delete().eq("id", id);
+  if (error) throw error;
+}
+
 export async function getDashboardStats(): Promise<DashboardStats> {
   const supabase = await createClient();
 

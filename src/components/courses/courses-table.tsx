@@ -4,14 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { Archive, MoreHorizontal, Pencil } from "lucide-react";
+import { Archive, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Course } from "@/types/database";
 import { DataTable } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { archiveCourseAction } from "@/app/actions";
+import { archiveCourseAction, deleteCourseAction } from "@/app/actions";
 
 function CourseActions({ course }: { course: Course }) {
   const router = useRouter();
@@ -43,6 +43,27 @@ function CourseActions({ course }: { course: Course }) {
           <Archive className="h-4 w-4" /> Archive
         </DropdownMenuItem>
       )}
+      <DropdownMenuItem
+        className="text-red-600 hover:bg-red-50"
+        onClick={async () => {
+          if (
+            !confirm(
+              `Delete "${course.title}" permanently? This removes all chapters, lessons, enrollments, and related data.`
+            )
+          ) {
+            return;
+          }
+          try {
+            await deleteCourseAction(course.id);
+            toast.success("Course deleted");
+            router.refresh();
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Failed to delete course");
+          }
+        }}
+      >
+        <Trash2 className="h-4 w-4" /> Delete
+      </DropdownMenuItem>
     </DropdownMenu>
   );
 }

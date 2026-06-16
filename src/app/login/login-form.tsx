@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -25,6 +26,7 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const unauthorized = searchParams.get("error") === "unauthorized";
+  const registered = searchParams.get("registered") === "1";
 
   const {
     register,
@@ -38,12 +40,16 @@ export default function LoginForm() {
   async function onSubmit(values: LoginForm) {
     setLoading(true);
     try {
-      await signInAction(values.email, values.password);
+      const result = await signInAction(values.email, values.password);
+      if (!result.ok) {
+        toast.error(result.message);
+        return;
+      }
       toast.success("Signed in successfully");
       router.push("/dashboard");
       router.refresh();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Sign in failed");
+    } catch {
+      toast.error("Sign in failed");
     } finally {
       setLoading(false);
     }
@@ -60,6 +66,14 @@ export default function LoginForm() {
           <p className="text-sm text-gray-500">Sign in with your staff account</p>
         </CardHeader>
         <CardContent>
+          {registered && (
+            <Alert className="mb-4">
+              <AlertDescription>
+                Account created. Sign in to continue. Note: only admin and manager roles can access
+                this portal.
+              </AlertDescription>
+            </Alert>
+          )}
           {unauthorized && (
             <Alert variant="destructive" className="mb-4">
               <AlertDescription>
@@ -82,6 +96,12 @@ export default function LoginForm() {
               {loading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
+          <p className="mt-4 text-center text-sm text-gray-500">
+            Don&apos;t have an account?{" "}
+            <Link href="/signup" className="font-medium text-brand hover:underline">
+              Sign up
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </div>

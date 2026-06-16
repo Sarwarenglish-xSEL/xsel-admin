@@ -7,6 +7,7 @@ import {
   createCourse,
   updateCourse,
   archiveCourse,
+  deleteCourse,
   type CourseInput,
 } from "@/lib/db/courses";
 import {
@@ -35,12 +36,53 @@ import {
 import { upsertAssignment } from "@/lib/db/assignments";
 import { gradeSubmission } from "@/lib/db/submissions";
 import { issueCertificate } from "@/lib/db/certificates";
-import type { EnrollmentStatus, Profile, QuizOption } from "@/types/database";
+import type { EnrollmentStatus, Profile, QuizOption, UserRole } from "@/types/database";
 
-export async function signInAction(email: string, password: string) {
+type AuthActionResult =
+  | { ok: true; needsEmailConfirmation?: boolean }
+  | { ok: false; message: string };
+
+function formatAuthError(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes("email not confirmed")) {
+    return "Please confirm your email before signing in. Check your inbox for the confirmation link.";
+  }
+  return message;
+}
+
+export async function signInAction(
+  email: string,
+  password: string
+): Promise<AuthActionResult> {
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw new Error(error.message);
+  if (error) {
+    return { ok: false, message: formatAuthError(error.message) };
+  }
+  return { ok: true };
+}
+
+export async function signUpAction(
+  email: string,
+  password: string,
+  fullName: string,
+  role: UserRole
+): Promise<AuthActionResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name: fullName,
+        role,
+      },
+    },
+  });
+  if (error) {
+    return { ok: false, message: formatAuthError(error.message) };
+  }
+  return { ok: true, needsEmailConfirmation: !data.session };
 }
 
 export async function signOutAction() {
@@ -63,6 +105,11 @@ export async function updateCourseAction(id: string, input: Partial<CourseInput>
 
 export async function archiveCourseAction(id: string) {
   await archiveCourse(id);
+  revalidatePath("/courses");
+}
+
+export async function deleteCourseAction(id: string) {
+  await deleteCourse(id);
   revalidatePath("/courses");
 }
 
