@@ -5,14 +5,14 @@ import type { Profile } from "@/types/database";
 export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.user) return null;
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
 
   const { data } = await supabase
     .from("profiles")
     .select("*")
-    .eq("id", session.user.id)
+    .eq("id", user.id)
     .single();
 
   return data;

@@ -26,10 +26,9 @@ export async function updateSession(request: NextRequest) {
   );
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const user = session?.user;
 
   const isAuthPage =
     request.nextUrl.pathname === "/login" ||
