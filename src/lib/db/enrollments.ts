@@ -1,6 +1,23 @@
 import { createClient } from "@/lib/supabase/server";
 import type { CourseEnrollment, EnrollmentStatus } from "@/types/database";
 
+function normalizeEnrollmentStatus(status: string): EnrollmentStatus {
+  if (status === "revoked" || status === "blocked") return "blocked";
+  return status as EnrollmentStatus;
+}
+
+function enrollmentStatusDbValues(status: EnrollmentStatus): string[] {
+  if (status === "blocked") return ["blocked", "revoked"];
+  return [status];
+}
+
+function mapEnrollmentRow(row: CourseEnrollment): CourseEnrollment {
+  return {
+    ...row,
+    status: normalizeEnrollmentStatus(row.status),
+  };
+}
+
 export async function getEnrollments(): Promise<CourseEnrollment[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -8,7 +25,7 @@ export async function getEnrollments(): Promise<CourseEnrollment[]> {
     .select("*, user:profiles(*), course:courses(*)")
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as CourseEnrollment[];
+  return ((data ?? []) as CourseEnrollment[]).map(mapEnrollmentRow);
 }
 
 export async function createEnrollment(
@@ -22,7 +39,7 @@ export async function createEnrollment(
     .select()
     .single();
   if (error) throw error;
-  return data;
+  return mapEnrollmentRow(data as CourseEnrollment);
 }
 
 export async function updateEnrollmentStatus(
@@ -30,9 +47,25 @@ export async function updateEnrollmentStatus(
   status: EnrollmentStatus
 ): Promise<void> {
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("course_enrollments")
-    .update({ status })
-    .eq("id", id);
-  if (error) throw error;
+  const candidates = enrollmentStatusDbValues(status);
+  let lastError: { code?: string; message: string } | null = null;
+
+  for (const dbStatus of candidates) {
+    const { error } = await supabase
+      .from("course_enrollments")
+      .update({ status: dbStatus })
+      .eq("id", id);
+
+    if (!error) return;
+
+    // Enum mismatch: try the legacy value (revoked) when blocked is not in DB yet.
+    if (error.code === "22P02") {
+      lastError = error;
+      continue;
+    }
+
+    throw error;
+  }
+
+  if (lastError) throw lastError;
 }

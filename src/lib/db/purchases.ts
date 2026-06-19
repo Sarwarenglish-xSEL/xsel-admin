@@ -1,6 +1,47 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Purchase, PurchaseStatus } from "@/types/database";
 
+async function attachEnrollmentStatus(
+  purchases: Purchase[]
+): Promise<Purchase[]> {
+  if (purchases.length === 0) return purchases;
+
+  const supabase = await createClient();
+  const userIds = [...new Set(purchases.map((p) => p.user_id))];
+  const { data: enrollments, error } = await supabase
+    .from("course_enrollments")
+    .select("user_id, course_id")
+    .in("user_id", userIds)
+    .eq("status", "active");
+
+  if (error) throw error;
+
+  const enrolledKeys = new Set(
+    (enrollments ?? []).map((e) => `${e.user_id}:${e.course_id}`)
+  );
+
+  return purchases.map((purchase) => ({
+    ...purchase,
+    is_enrolled: enrolledKeys.has(`${purchase.user_id}:${purchase.course_id}`),
+  }));
+}
+
+async function getActiveEnrollment(
+  userId: string,
+  courseId: string
+) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("course_enrollments")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("course_id", courseId)
+    .eq("status", "active")
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 export async function getPurchases(status?: PurchaseStatus): Promise<Purchase[]> {
   const supabase = await createClient();
   let query = supabase
@@ -12,7 +53,7 @@ export async function getPurchases(status?: PurchaseStatus): Promise<Purchase[]>
 
   const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []) as Purchase[];
+  return attachEnrollmentStatus((data ?? []) as Purchase[]);
 }
 
 export async function getRecentPendingPurchases(limit = 5): Promise<Purchase[]> {
@@ -24,7 +65,7 @@ export async function getRecentPendingPurchases(limit = 5): Promise<Purchase[]> 
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
-  return (data ?? []) as Purchase[];
+  return attachEnrollmentStatus((data ?? []) as Purchase[]);
 }
 
 export async function approvePurchase(purchaseId: string): Promise<void> {
@@ -35,24 +76,31 @@ export async function approvePurchase(purchaseId: string): Promise<void> {
     .eq("id", purchaseId)
     .single();
   if (fetchError) throw fetchError;
+  if (purchase.status !== "pending") {
+    throw new Error("Only pending purchases can be approved");
+  }
+
+  const existingEnrollment = await getActiveEnrollment(
+    purchase.user_id,
+    purchase.course_id
+  );
+  if (existingEnrollment) {
+    throw new Error("User is already enrolled in this course");
+  }
 
   const { error: updateError } = await supabase
     .from("purchases")
     .update({ status: "approved", approved_at: new Date().toISOString() })
-    .eq("id", purchaseId);
+    .eq("id", purchaseId)
+    .eq("status", "pending");
   if (updateError) throw updateError;
 
-  const { error: enrollError } = await supabase
-    .from("course_enrollments")
-    .upsert(
-      {
-        user_id: purchase.user_id,
-        course_id: purchase.course_id,
-        purchase_id: purchaseId,
-        status: "active",
-      },
-      { onConflict: "user_id,course_id" }
-    );
+  const { error: enrollError } = await supabase.from("course_enrollments").insert({
+    user_id: purchase.user_id,
+    course_id: purchase.course_id,
+    purchase_id: purchaseId,
+    status: "active",
+  });
   if (enrollError) throw enrollError;
 }
 
@@ -61,9 +109,28 @@ export async function rejectPurchase(
   adminNote: string
 ): Promise<void> {
   const supabase = await createClient();
+  const { data: purchase, error: fetchError } = await supabase
+    .from("purchases")
+    .select("status, user_id, course_id")
+    .eq("id", purchaseId)
+    .single();
+  if (fetchError) throw fetchError;
+  if (purchase.status !== "pending") {
+    throw new Error("Only pending purchases can be rejected");
+  }
+
+  const existingEnrollment = await getActiveEnrollment(
+    purchase.user_id,
+    purchase.course_id
+  );
+  if (existingEnrollment) {
+    throw new Error("User is already enrolled in this course");
+  }
+
   const { error } = await supabase
     .from("purchases")
     .update({ status: "rejected", admin_note: adminNote })
-    .eq("id", purchaseId);
+    .eq("id", purchaseId)
+    .eq("status", "pending");
   if (error) throw error;
 }

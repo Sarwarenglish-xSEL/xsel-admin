@@ -191,6 +191,7 @@ export async function rejectPurchaseAction(id: string, adminNote: string) {
   await rejectPurchase(id, adminNote);
   revalidatePath("/purchases");
   revalidatePath("/dashboard");
+  revalidatePath("/enrollments");
 }
 
 export async function createEnrollmentAction(userId: string, courseId: string) {
@@ -204,6 +205,56 @@ export async function updateEnrollmentStatusAction(
 ) {
   await updateEnrollmentStatus(id, status);
   revalidatePath("/enrollments");
+}
+
+export async function createQuizAction(
+  courseId: string,
+  lessonId: string,
+  input: {
+    title: string;
+    questions: {
+      question: string;
+      option_a: string;
+      option_b: string;
+      option_c: string;
+      option_d: string;
+      correct_option: QuizOption;
+    }[];
+    passing_marks?: number;
+    total_marks?: number;
+  }
+) {
+  const quiz = await upsertQuiz(lessonId, {
+    title: input.title,
+    passing_marks: input.passing_marks ?? 0,
+    total_marks: input.total_marks ?? input.questions.length * 10,
+  });
+  for (let i = 0; i < input.questions.length; i++) {
+    await createQuizQuestion(quiz.id, {
+      ...input.questions[i],
+      sort_order: i,
+    });
+  }
+  revalidatePath(`/courses/${courseId}/edit`);
+  revalidatePath(`/courses/${courseId}/lessons/${lessonId}/quiz`);
+}
+
+export async function createAssignmentAction(
+  courseId: string,
+  lessonId: string,
+  input: {
+    title: string;
+    question: string;
+    max_marks?: number;
+  }
+) {
+  await upsertAssignment(lessonId, {
+    title: input.title,
+    description: input.question,
+    max_marks: input.max_marks ?? 100,
+  });
+  revalidatePath(`/courses/${courseId}/edit`);
+  revalidatePath(`/courses/${courseId}/lessons/${lessonId}/assignment`);
 }
 
 export async function saveQuizAction(

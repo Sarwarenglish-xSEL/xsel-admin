@@ -7,17 +7,31 @@ export async function getChaptersWithLessons(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("course_chapters")
-    .select("*, lessons:course_lessons(*)")
+    .select(
+      "*, lessons:course_lessons(*, quiz:quizzes(id, title), assignment:assignments(id, title))"
+    )
     .eq("course_id", courseId)
     .order("sort_order");
   if (error) throw error;
 
   return (data ?? []).map((ch) => ({
     ...ch,
-    lessons: (ch.lessons ?? []).sort(
-      (a: CourseLesson, b: CourseLesson) => a.sort_order - b.sort_order
-    ),
+    lessons: (ch.lessons ?? [])
+      .map((lesson: CourseLesson & { quiz?: unknown; assignment?: unknown }) => ({
+        ...lesson,
+        quiz: normalizeRelation(lesson.quiz),
+        assignment: normalizeRelation(lesson.assignment),
+      }))
+      .sort(
+        (a: CourseLesson, b: CourseLesson) => a.sort_order - b.sort_order
+      ),
   }));
+}
+
+function normalizeRelation<T>(value: T | T[] | null | undefined): T | null {
+  if (!value) return null;
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value;
 }
 
 export async function createChapter(

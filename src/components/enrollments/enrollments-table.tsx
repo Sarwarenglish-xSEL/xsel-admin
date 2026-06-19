@@ -6,40 +6,74 @@ import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
-import type { Course, CourseEnrollment, EnrollmentStatus, Profile } from "@/types/database";
+import type { Course, CourseEnrollment, CourseType, EnrollmentStatus, Profile } from "@/types/database";
 import { DataTable } from "@/components/data-table";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { createEnrollmentAction, updateEnrollmentStatusAction } from "@/app/actions";
 
+function formatCourseType(type?: CourseType) {
+  if (type === "live") return "Live";
+  if (type === "prerecorded") return "Pre-recorded";
+  return "—";
+}
+
 function StatusSelect({ enrollment }: { enrollment: CourseEnrollment }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   return (
-    <Select className="w-32" defaultValue={enrollment.status} disabled={loading}
+    <Select
+      className="w-32"
+      defaultValue={enrollment.status === "blocked" ? "blocked" : "active"}
+      disabled={loading}
       onChange={async (e) => {
         setLoading(true);
         try {
-          await updateEnrollmentStatusAction(enrollment.id, e.target.value as EnrollmentStatus);
+          await updateEnrollmentStatusAction(
+            enrollment.id,
+            e.target.value as EnrollmentStatus
+          );
           toast.success("Status updated");
           router.refresh();
         } catch (err) {
           toast.error(err instanceof Error ? err.message : "Failed");
-        } finally { setLoading(false); }
-      }}>
+        } finally {
+          setLoading(false);
+        }
+      }}
+    >
       <option value="active">Active</option>
-      <option value="completed">Completed</option>
-      <option value="revoked">Revoked</option>
+      <option value="blocked">Blocked</option>
     </Select>
   );
 }
 
 const columns: ColumnDef<CourseEnrollment>[] = [
-  { accessorKey: "user", header: "User", cell: ({ row }) => row.original.user?.email ?? row.original.user_id },
-  { accessorKey: "course", header: "Course", cell: ({ row }) => row.original.course?.title ?? row.original.course_id },
-  { accessorKey: "status", header: "Status", cell: ({ row }) => <StatusSelect enrollment={row.original} /> },
+  {
+    accessorKey: "user",
+    header: "User",
+    cell: ({ row }) => row.original.user?.email ?? row.original.user_id,
+  },
+  {
+    accessorKey: "course",
+    header: "Course",
+    cell: ({ row }) => row.original.course?.title ?? row.original.course_id,
+  },
+  {
+    id: "course_type",
+    header: "Course Type",
+    cell: ({ row }) => (
+      <Badge variant="outline">{formatCourseType(row.original.course?.course_type)}</Badge>
+    ),
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => <StatusSelect enrollment={row.original} />,
+  },
   { accessorKey: "created_at", header: "Enrolled", cell: ({ row }) => format(new Date(row.original.created_at), "MMM d, yyyy") },
 ];
 

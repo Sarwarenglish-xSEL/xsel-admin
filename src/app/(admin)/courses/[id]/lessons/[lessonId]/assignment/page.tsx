@@ -15,7 +15,7 @@ export default async function AssignmentPage({
     getLessonById(lessonId),
     getAssignmentByLessonId(lessonId).catch(() => null),
   ]);
-  if (!lesson || lesson.lesson_type !== "assignment") notFound();
+  if (!lesson) notFound();
 
   return (
     <div className="space-y-6">

@@ -24,6 +24,7 @@ const schema = z.object({
   instructor_id: z.string().nullable(),
   status: z.enum(["draft", "published", "archived"]),
   registration_deadline: z.string().nullable(),
+  course_start_date: z.string().nullable(),
   thumbnail_url: z.string().nullable(),
 });
 
@@ -45,6 +46,7 @@ export function CourseDetailsForm({ course, instructors }: { course: Course; ins
       instructor_id: course.instructor_id,
       status: course.status,
       registration_deadline: course.registration_deadline?.slice(0, 16) ?? null,
+      course_start_date: course.course_start_date?.slice(0, 16) ?? null,
       thumbnail_url: course.thumbnail_url,
     },
   });
@@ -58,7 +60,11 @@ export function CourseDetailsForm({ course, instructors }: { course: Course; ins
       await updateCourseAction(course.id, {
         ...values,
         registration_deadline: values.registration_deadline
-          ? new Date(values.registration_deadline).toISOString() : null,
+          ? new Date(values.registration_deadline).toISOString()
+          : null,
+        course_start_date: values.course_start_date
+          ? new Date(values.course_start_date).toISOString()
+          : null,
       });
       toast.success("Course updated");
       router.refresh();
@@ -121,11 +127,24 @@ export function CourseDetailsForm({ course, instructors }: { course: Course; ins
         </Select>
       </div>
       {courseType === "live" && (
-        <div>
-          <Label>Registration Deadline</Label>
-          <Input type="datetime-local" {...register("registration_deadline")} />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label>Registration Deadline</Label>
+            <Input type="datetime-local" {...register("registration_deadline")} />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Last date students can register
+            </p>
+          </div>
+          <div>
+            <Label>Course Start Date</Label>
+            <Input type="datetime-local" {...register("course_start_date")} />
+            <p className="mt-1 text-xs text-muted-foreground">
+              When the live course begins
+            </p>
+          </div>
         </div>
       )}
+ 
       <div>
         <Label>Thumbnail</Label>
         {thumbnailUrl && (

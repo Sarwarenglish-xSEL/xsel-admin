@@ -12,7 +12,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { CourseChapter, CourseLesson } from "@/types/database";
+import type { CourseChapter, CourseLesson, QuizOption } from "@/types/database";
 import {
   createChapterAction,
   updateChapterAction,
@@ -22,6 +22,8 @@ import {
   deleteLessonAction,
   reorderChaptersAction,
   reorderLessonsAction,
+  createQuizAction,
+  createAssignmentAction,
 } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +32,7 @@ import { Select } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 
 export function ChaptersLessonsEditor({
   courseId,
@@ -44,7 +47,19 @@ export function ChaptersLessonsEditor({
     chapterId: string;
     lesson?: CourseLesson;
   } | null>(null);
+  const [quizDialog, setQuizDialog] = useState<{
+    lessonId: string;
+    lessonTitle: string;
+  } | null>(null);
+  const [assignmentDialog, setAssignmentDialog] = useState<{
+    lessonId: string;
+    lessonTitle: string;
+  } | null>(null);
   const router = useRouter();
+
+  function chapterSortOrder(chapterId: string) {
+    return chapters.find((c) => c.id === chapterId)?.lessons?.length ?? 0;
+  }
 
   async function addChapter() {
     if (!newChapterTitle.trim()) return;
@@ -160,24 +175,18 @@ export function ChaptersLessonsEditor({
                     >
                       {lesson.status}
                     </Badge>
+                    {lesson.quiz && (
+                      <Badge variant="outline" className="text-xs">
+                        Quiz
+                      </Badge>
+                    )}
+                    {lesson.assignment && (
+                      <Badge variant="outline" className="text-xs">
+                        Assignment
+                      </Badge>
+                    )}
                   </div>
-                  <div className="flex items-center gap-1">
-                    {lesson.lesson_type === "quiz" && (
-                      <Link
-                        href={`/courses/${courseId}/lessons/${lesson.id}/quiz`}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
-                      >
-                        <FileQuestion className="h-4 w-4" />
-                      </Link>
-                    )}
-                    {lesson.lesson_type === "assignment" && (
-                      <Link
-                        href={`/courses/${courseId}/lessons/${lesson.id}/assignment`}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
-                      >
-                        <ClipboardList className="h-4 w-4" />
-                      </Link>
-                    )}
+                  <div className="flex flex-wrap items-center justify-end gap-1">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -187,6 +196,54 @@ export function ChaptersLessonsEditor({
                     >
                       Edit
                     </Button>
+                    {lesson.quiz ? (
+                      <Link
+                        href={`/courses/${courseId}/lessons/${lesson.id}/quiz`}
+                      >
+                        <Button variant="ghost" size="sm">
+                          <FileQuestion className="mr-1 h-3 w-3" />
+                          Edit Quiz
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          setQuizDialog({
+                            lessonId: lesson.id,
+                            lessonTitle: lesson.title,
+                          })
+                        }
+                      >
+                        <FileQuestion className="mr-1 h-3 w-3" />
+                        Add Quiz
+                      </Button>
+                    )}
+                    {lesson.assignment ? (
+                      <Link
+                        href={`/courses/${courseId}/lessons/${lesson.id}/assignment`}
+                      >
+                        <Button variant="ghost" size="sm">
+                          <ClipboardList className="mr-1 h-3 w-3" />
+                          Edit Assignment
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          setAssignmentDialog({
+                            lessonId: lesson.id,
+                            lessonTitle: lesson.title,
+                          })
+                        }
+                      >
+                        <ClipboardList className="mr-1 h-3 w-3" />
+                        Add Assignment
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -251,12 +308,26 @@ export function ChaptersLessonsEditor({
           courseId={courseId}
           chapterId={lessonDialog.chapterId}
           lesson={lessonDialog.lesson}
-          sortOrder={
-            chapters
-              .find((c) => c.id === lessonDialog.chapterId)
-              ?.lessons?.length ?? 0
-          }
+          sortOrder={chapterSortOrder(lessonDialog.chapterId)}
           onClose={() => setLessonDialog(null)}
+        />
+      )}
+
+      {quizDialog && (
+        <QuizDialog
+          courseId={courseId}
+          lessonId={quizDialog.lessonId}
+          lessonTitle={quizDialog.lessonTitle}
+          onClose={() => setQuizDialog(null)}
+        />
+      )}
+
+      {assignmentDialog && (
+        <AssignmentDialog
+          courseId={courseId}
+          lessonId={assignmentDialog.lessonId}
+          lessonTitle={assignmentDialog.lessonTitle}
+          onClose={() => setAssignmentDialog(null)}
         />
       )}
     </div>
@@ -277,8 +348,8 @@ function LessonDialog({
   onClose: () => void;
 }) {
   const [title, setTitle] = useState(lesson?.title ?? "");
-  const [lessonType, setLessonType] = useState<CourseLesson["lesson_type"]>(
-    lesson?.lesson_type ?? "video"
+  const [lessonType, setLessonType] = useState<"video" | "live">(
+    lesson?.lesson_type === "live" ? "live" : "video"
   );
   const [videoUrl, setVideoUrl] = useState(lesson?.video_url ?? "");
   const [durationSeconds, setDurationSeconds] = useState(
@@ -364,11 +435,12 @@ function LessonDialog({
           </div>
           <div>
             <Label>Type</Label>
-            <Select value={lessonType} onChange={(e) => setLessonType(e.target.value as CourseLesson["lesson_type"])}>
+            <Select
+              value={lessonType}
+              onChange={(e) => setLessonType(e.target.value as "video" | "live")}
+            >
               <option value="video">Video</option>
               <option value="live">Live</option>
-              <option value="quiz">Quiz</option>
-              <option value="assignment">Assignment</option>
             </Select>
           </div>
           {lessonType === "video" && (
@@ -431,6 +503,243 @@ function LessonDialog({
           )}
           <Button onClick={save} disabled={loading} className="w-full">
             {loading ? "Saving..." : "Save Lesson"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+type QuizQuestionDraft = {
+  question: string;
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  correct_option: QuizOption;
+};
+
+const emptyQuestion = (): QuizQuestionDraft => ({
+  question: "",
+  option_a: "",
+  option_b: "",
+  option_c: "",
+  option_d: "",
+  correct_option: "a",
+});
+
+function QuizDialog({
+  courseId,
+  lessonId,
+  lessonTitle,
+  onClose,
+}: {
+  courseId: string;
+  lessonId: string;
+  lessonTitle: string;
+  onClose: () => void;
+}) {
+  const [title, setTitle] = useState(`${lessonTitle} Quiz`);
+  const [questions, setQuestions] = useState<QuizQuestionDraft[]>([
+    emptyQuestion(),
+  ]);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  function updateQuestion(
+    index: number,
+    field: keyof QuizQuestionDraft,
+    value: string
+  ) {
+    setQuestions((prev) =>
+      prev.map((q, i) => (i === index ? { ...q, [field]: value } : q))
+    );
+  }
+
+  async function save() {
+    if (!title.trim()) {
+      toast.error("Quiz title is required");
+      return;
+    }
+    for (const [i, q] of questions.entries()) {
+      if (!q.question.trim()) {
+        toast.error(`Question ${i + 1} is required`);
+        return;
+      }
+      if (!q.option_a.trim() || !q.option_b.trim() || !q.option_c.trim() || !q.option_d.trim()) {
+        toast.error(`All options are required for question ${i + 1}`);
+        return;
+      }
+    }
+    setLoading(true);
+    try {
+      await createQuizAction(courseId, lessonId, {
+        title,
+        questions,
+      });
+      toast.success("Quiz created");
+      onClose();
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={() => onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto" onClose={onClose}>
+        <DialogHeader>
+          <DialogTitle>Add Quiz to &ldquo;{lessonTitle}&rdquo;</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label>Quiz Title</Label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+          </div>
+
+          {questions.map((q, index) => (
+            <div
+              key={index}
+              className="space-y-3 rounded-lg border border-dashed p-4"
+            >
+              <div className="flex items-center justify-between">
+                <Label>Question {index + 1}</Label>
+                {questions.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                      setQuestions((prev) => prev.filter((_, i) => i !== index))
+                    }
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                )}
+              </div>
+              <Textarea
+                value={q.question}
+                onChange={(e) =>
+                  updateQuestion(index, "question", e.target.value)
+                }
+                placeholder="Enter the question"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                {(["a", "b", "c", "d"] as const).map((key) => (
+                  <div key={key}>
+                    <Label>Option {key.toUpperCase()}</Label>
+                    <Input
+                      value={q[`option_${key}`]}
+                      onChange={(e) =>
+                        updateQuestion(index, `option_${key}`, e.target.value)
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+              <div>
+                <Label>Correct Option</Label>
+                <Select
+                  value={q.correct_option}
+                  onChange={(e) =>
+                    updateQuestion(
+                      index,
+                      "correct_option",
+                      e.target.value as QuizOption
+                    )
+                  }
+                >
+                  <option value="a">A</option>
+                  <option value="b">B</option>
+                  <option value="c">C</option>
+                  <option value="d">D</option>
+                </Select>
+              </div>
+            </div>
+          ))}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setQuestions((prev) => [...prev, emptyQuestion()])}
+          >
+            <Plus className="mr-1 h-3 w-3" />
+            Add Another Question
+          </Button>
+
+          <Button onClick={save} disabled={loading} className="w-full">
+            {loading ? "Saving..." : "Save Quiz"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AssignmentDialog({
+  courseId,
+  lessonId,
+  lessonTitle,
+  onClose,
+}: {
+  courseId: string;
+  lessonId: string;
+  lessonTitle: string;
+  onClose: () => void;
+}) {
+  const [title, setTitle] = useState(`${lessonTitle} Assignment`);
+  const [question, setQuestion] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  async function save() {
+    if (!title.trim()) {
+      toast.error("Assignment title is required");
+      return;
+    }
+    if (!question.trim()) {
+      toast.error("Question is required");
+      return;
+    }
+    setLoading(true);
+    try {
+      await createAssignmentAction(courseId, lessonId, {
+        title,
+        question,
+      });
+      toast.success("Assignment created");
+      onClose();
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={() => onClose()}>
+      <DialogContent onClose={onClose}>
+        <DialogHeader>
+          <DialogTitle>Add Assignment to &ldquo;{lessonTitle}&rdquo;</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label>Assignment Title</Label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+          </div>
+          <div>
+            <Label>Question</Label>
+            <Textarea
+              rows={4}
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Enter the assignment question"
+            />
+          </div>
+          <Button onClick={save} disabled={loading} className="w-full">
+            {loading ? "Saving..." : "Save Assignment"}
           </Button>
         </div>
       </DialogContent>

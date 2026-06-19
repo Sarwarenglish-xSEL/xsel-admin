@@ -40,36 +40,78 @@ function PurchaseActions({ purchase }: { purchase: Purchase }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  if (purchase.status !== "pending") return null;
+  const canReview =
+    purchase.status === "pending" && purchase.is_enrolled === false;
+
+  if (!canReview) {
+    if (purchase.status === "pending" && purchase.is_enrolled) {
+      return (
+        <span className="text-xs text-muted-foreground">Already enrolled</span>
+      );
+    }
+    if (purchase.status === "approved") {
+      return <span className="text-xs text-muted-foreground">Enrolled</span>;
+    }
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
 
   return (
-    <div className="flex gap-2">
-      <Button size="sm" disabled={loading} onClick={async () => {
-        setLoading(true);
-        try {
-          await approvePurchaseAction(purchase.id);
-          toast.success("Purchase approved");
-          router.refresh();
-        } catch (e) {
-          toast.error(e instanceof Error ? e.message : "Failed");
-        } finally { setLoading(false); }
-      }}>Approve</Button>
-      <Button size="sm" variant="danger" onClick={() => setRejectOpen(true)}>Reject</Button>
+    <div className="flex flex-wrap gap-2">
+      <Button
+        size="sm"
+        disabled={loading}
+        onClick={async () => {
+          setLoading(true);
+          try {
+            await approvePurchaseAction(purchase.id);
+            toast.success("Purchase approved and user enrolled");
+            router.refresh();
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Failed to approve");
+          } finally {
+            setLoading(false);
+          }
+        }}
+      >
+        Approve
+      </Button>
+      <Button
+        size="sm"
+        variant="danger"
+        disabled={loading}
+        onClick={() => setRejectOpen(true)}
+      >
+        Reject
+      </Button>
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
         <DialogContent onClose={() => setRejectOpen(false)}>
-          <DialogHeader><DialogTitle>Reject Purchase</DialogTitle></DialogHeader>
-          <Textarea placeholder="Reason..." value={note} onChange={(e) => setNote(e.target.value)} />
-          <Button variant="danger" disabled={loading || !note.trim()} onClick={async () => {
-            setLoading(true);
-            try {
-              await rejectPurchaseAction(purchase.id, note);
-              toast.success("Rejected");
-              setRejectOpen(false);
-              router.refresh();
-            } catch (e) {
-              toast.error(e instanceof Error ? e.message : "Failed");
-            } finally { setLoading(false); }
-          }}>Confirm Reject</Button>
+          <DialogHeader>
+            <DialogTitle>Reject Purchase</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            placeholder="Reason for rejection..."
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+          <Button
+            variant="danger"
+            disabled={loading || !note.trim()}
+            onClick={async () => {
+              setLoading(true);
+              try {
+                await rejectPurchaseAction(purchase.id, note);
+                toast.success("Purchase rejected");
+                setRejectOpen(false);
+                router.refresh();
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Failed to reject");
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            Confirm Reject
+          </Button>
         </DialogContent>
       </Dialog>
     </div>
@@ -77,25 +119,91 @@ function PurchaseActions({ purchase }: { purchase: Purchase }) {
 }
 
 const columns: ColumnDef<Purchase>[] = [
-  { accessorKey: "user", header: "User", cell: ({ row }) => row.original.user?.email ?? row.original.user_id },
-  { accessorKey: "course", header: "Course", cell: ({ row }) => row.original.course?.title ?? row.original.course_id },
-  { accessorKey: "amount", header: "Amount", cell: ({ row }) => `$${Number(row.original.amount).toFixed(2)}` },
-  { accessorKey: "status", header: "Status", cell: ({ row }) => <Badge variant="outline">{row.original.status}</Badge> },
   {
-    accessorKey: "receipt_url", header: "Receipt",
-    cell: ({ row }) => row.original.receipt_url ? (
-      <a href={row.original.receipt_url} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">View</a>
-    ) : "—",
+    accessorKey: "user",
+    header: "User",
+    cell: ({ row }) => row.original.user?.email ?? row.original.user_id,
   },
-  { accessorKey: "created_at", header: "Created", cell: ({ row }) => format(new Date(row.original.created_at), "MMM d, yyyy") },
-  { id: "actions", header: "Actions", cell: ({ row }) => <PurchaseActions purchase={row.original} /> },
+  {
+    accessorKey: "course",
+    header: "Course",
+    cell: ({ row }) => row.original.course?.title ?? row.original.course_id,
+  },
+  {
+    accessorKey: "amount",
+    header: "Amount",
+    cell: ({ row }) => `$${Number(row.original.amount).toFixed(2)}`,
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => (
+      <Badge
+        variant={
+          row.original.status === "approved"
+            ? "success"
+            : row.original.status === "rejected"
+              ? "warning"
+              : "outline"
+        }
+        className="capitalize"
+      >
+        {row.original.status}
+      </Badge>
+    ),
+  },
+  {
+    id: "enrolled",
+    header: "Enrolled",
+    cell: ({ row }) =>
+      row.original.is_enrolled ? (
+        <Badge variant="success">Yes</Badge>
+      ) : (
+        <Badge variant="outline">No</Badge>
+      ),
+  },
+  {
+    accessorKey: "receipt_url",
+    header: "Receipt",
+    cell: ({ row }) =>
+      row.original.receipt_url ? (
+        <a
+          href={row.original.receipt_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-brand hover:underline"
+        >
+          View
+        </a>
+      ) : (
+        "—"
+      ),
+  },
+  {
+    accessorKey: "created_at",
+    header: "Created",
+    cell: ({ row }) => format(new Date(row.original.created_at), "MMM d, yyyy"),
+  },
+  {
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => <PurchaseActions purchase={row.original} />,
+  },
 ];
 
-export function PurchasesTable({ purchases, status }: { purchases: Purchase[]; status?: PurchaseStatus }) {
+export function PurchasesTable({
+  purchases,
+  status,
+}: {
+  purchases: Purchase[];
+  status?: PurchaseStatus;
+}) {
   return (
     <div className="space-y-4">
       <StatusFilter status={status} />
-      <DataTable columns={columns} data={purchases} />
+      <div className="overflow-x-auto">
+        <DataTable columns={columns} data={purchases} />
+      </div>
     </div>
   );
 }

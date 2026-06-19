@@ -57,6 +57,7 @@ export type CourseInput = {
   instructor_id?: string | null;
   status: CourseStatus;
   registration_deadline?: string | null;
+  course_start_date?: string | null;
 };
 
 export async function createCourse(input: CourseInput): Promise<Course> {

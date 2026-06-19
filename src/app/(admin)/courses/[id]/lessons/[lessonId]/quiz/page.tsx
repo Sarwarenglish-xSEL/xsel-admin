@@ -15,7 +15,7 @@ export default async function QuizPage({
     getLessonById(lessonId),
     getQuizByLessonId(lessonId).catch(() => null),
   ]);
-  if (!lesson || lesson.lesson_type !== "quiz") notFound();
+  if (!lesson) notFound();
 
   return (
     <div className="space-y-6">

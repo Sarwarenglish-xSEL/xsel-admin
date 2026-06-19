@@ -23,7 +23,7 @@ do $$ begin
 exception when duplicate_object then null; end $$;
 
 do $$ begin
-  create type public.enrollment_status as enum ('active', 'completed', 'revoked');
+  create type public.enrollment_status as enum ('active', 'completed', 'blocked');
 exception when duplicate_object then null; end $$;
 
 do $$ begin

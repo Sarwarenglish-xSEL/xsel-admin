@@ -106,6 +106,14 @@ const columns: ColumnDef<Course>[] = [
     ),
   },
   {
+    accessorKey: "course_start_date",
+    header: "Start Date",
+    cell: ({ row }) =>
+      row.original.course_start_date
+        ? format(new Date(row.original.course_start_date), "MMM d, yyyy")
+        : "—",
+  },
+  {
     accessorKey: "created_at",
     header: "Created",
     cell: ({ row }) => format(new Date(row.original.created_at), "MMM d, yyyy"),

@@ -4,7 +4,7 @@ export type CourseCategory = "design" | "coding" | "business";
 export type CourseStatus = "draft" | "published" | "archived";
 export type LessonType = "video" | "live" | "quiz" | "assignment";
 export type LessonStatus = "draft" | "published";
-export type EnrollmentStatus = "active" | "completed" | "revoked";
+export type EnrollmentStatus = "active" | "blocked" | "completed";
 export type PurchaseStatus = "pending" | "approved" | "rejected";
 export type QuizOption = "a" | "b" | "c" | "d";
 
@@ -29,6 +29,7 @@ export interface Course {
   instructor_id: string | null;
   status: CourseStatus;
   registration_deadline: string | null;
+  course_start_date: string | null;
   created_at: string;
   updated_at: string;
   instructor?: Profile | null;
@@ -58,6 +59,8 @@ export interface CourseLesson {
   created_at: string;
   updated_at: string;
   chapter?: CourseChapter & { course?: Course };
+  quiz?: Pick<Quiz, "id" | "title"> | null;
+  assignment?: Pick<Assignment, "id" | "title"> | null;
 }
 
 export interface Purchase {
@@ -72,6 +75,7 @@ export interface Purchase {
   approved_at: string | null;
   user?: Profile;
   course?: Course;
+  is_enrolled?: boolean;
 }
 
 export interface CourseEnrollment {
