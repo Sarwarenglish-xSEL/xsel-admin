@@ -1,4 +1,5 @@
 import { getPurchases } from "@/lib/db/purchases";
+import { PageHeader } from "@/components/layout/page-header";
 import { PurchasesTable } from "@/components/purchases/purchases-table";
 import { PageEmpty } from "@/components/page-states";
 import type { PurchaseStatus } from "@/types/database";
@@ -23,21 +24,19 @@ export default async function PurchasesPage({
 
   if (error) {
     return (
-      <div>
-        <h1 className="mb-6 text-2xl font-bold">Purchases</h1>
-        <p className="text-destructive">{error}</p>
+      <div className="space-y-6">
+        <PageHeader title="Purchases" description="Review and approve manual purchase requests" />
+        <p className="text-red-600">{error}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Purchases</h1>
-        <p className="text-muted-foreground">
-          Review and approve manual purchase requests
-        </p>
-      </div>
+      <PageHeader
+        title="Purchases"
+        description="Review and approve manual purchase requests"
+      />
       {purchases!.length === 0 ? (
         <PageEmpty title="No purchases" description="Purchase requests will appear here." />
       ) : (

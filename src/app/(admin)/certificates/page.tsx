@@ -2,6 +2,7 @@ import { getCertificates } from "@/lib/db/certificates";
 import { getProfiles } from "@/lib/db/profiles";
 import { getCourses } from "@/lib/db/courses";
 import { CertificatesTable } from "@/components/certificates/certificates-table";
+import { PageHeader } from "@/components/layout/page-header";
 import { PageEmpty } from "@/components/page-states";
 
 export default async function CertificatesPage() {
@@ -22,21 +23,22 @@ export default async function CertificatesPage() {
 
   if (error) {
     return (
-      <div>
-        <h1 className="mb-6 text-2xl font-bold">Certificates</h1>
-        <p className="text-destructive">{error}</p>
+      <div className="space-y-6">
+        <PageHeader
+          title="Certificates"
+          description="Issue and manage course completion certificates"
+        />
+        <p className="text-red-600">{error}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Certificates</h1>
-        <p className="text-muted-foreground">
-          Issue and manage course completion certificates
-        </p>
-      </div>
+      <PageHeader
+        title="Certificates"
+        description="Issue and manage course completion certificates"
+      />
       <CertificatesTable
         certificates={certificates!}
         users={users!}

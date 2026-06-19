@@ -1,12 +1,11 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { getCourseById, getCourseReviews } from "@/lib/db/courses";
 import { getChaptersWithLessons } from "@/lib/db/chapters";
 import { getStaffProfiles } from "@/lib/db/profiles";
 import { CourseDetailsForm } from "@/components/courses/course-details-form";
 import { ChaptersLessonsEditor } from "@/components/courses/chapters-lessons-editor";
 import { ReviewsList } from "@/components/courses/reviews-list";
+import { PageHeader } from "@/components/layout/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default async function EditCoursePage({
@@ -40,18 +39,11 @@ export default async function EditCoursePage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/courses"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold">{course.title}</h1>
-          <p className="text-muted-foreground">Edit course content and settings</p>
-        </div>
-      </div>
+      <PageHeader
+        backHref="/courses"
+        title={course.title}
+        description="Edit course content and settings"
+      />
 
       <Tabs defaultValue="details">
         <TabsList>

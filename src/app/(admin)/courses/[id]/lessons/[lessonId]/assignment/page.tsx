@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { getLessonById } from "@/lib/db/chapters";
 import { getAssignmentByLessonId } from "@/lib/db/assignments";
 import { AssignmentForm } from "@/components/courses/assignment-form";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default async function AssignmentPage({
   params,
@@ -19,18 +18,11 @@ export default async function AssignmentPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          href={`/courses/${courseId}/edit`}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold">Assignment</h1>
-          <p className="text-muted-foreground">{lesson.title}</p>
-        </div>
-      </div>
+      <PageHeader
+        backHref={`/courses/${courseId}/edit`}
+        title="Assignment"
+        description={lesson.title}
+      />
       <AssignmentForm
         courseId={courseId}
         lessonId={lessonId}

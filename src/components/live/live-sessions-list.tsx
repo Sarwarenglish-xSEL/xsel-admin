@@ -154,7 +154,7 @@ function LiveSessionCard({
                   href={lesson.live_meeting_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="ml-4 text-[#3D30D7] hover:underline"
+                  className="ml-4 text-brand hover:underline"
                 >
                   Join meeting
                 </a>

@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand: #3d30d7;
-  --color-brand-dark: #2e24a8;
-  --color-brand-light: #5248e8;
-  --color-surface: #f8faff;
+  --color-brand: #0d9488;
+  --color-brand-dark: #0f766e;
+  --color-brand-light: #14b8a6;
+  --color-surface: #f0fdfa;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -14,5 +14,15 @@
   }
   body {
     @apply bg-surface text-gray-900 antialiased;
+  }
+}
+
+@layer utilities {
+  .login-grid-bg {
+    background-color: #f3f4f6;
+    background-image:
+      linear-gradient(to right, rgb(209 213 219 / 0.55) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(209 213 219 / 0.55) 1px, transparent 1px);
+    background-size: 32px 32px;
   }
 }

@@ -18,7 +18,7 @@ export default async function AdminLayout({
     <div className="flex min-h-screen bg-surface">
       <AppSidebar profile={profile} />
       <main className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-7xl p-6 lg:p-8">{children}</div>
+        <div className="w-full px-5 py-6 lg:px-8 lg:py-8">{children}</div>
       </main>
       <Toaster richColors position="top-right" />
     </div>

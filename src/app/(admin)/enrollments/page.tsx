@@ -2,6 +2,7 @@ import { getEnrollments } from "@/lib/db/enrollments";
 import { getProfiles } from "@/lib/db/profiles";
 import { getCourses } from "@/lib/db/courses";
 import { EnrollmentsTable } from "@/components/enrollments/enrollments-table";
+import { PageHeader } from "@/components/layout/page-header";
 import { PageEmpty } from "@/components/page-states";
 
 export default async function EnrollmentsPage() {
@@ -22,21 +23,19 @@ export default async function EnrollmentsPage() {
 
   if (error) {
     return (
-      <div>
-        <h1 className="mb-6 text-2xl font-bold">Enrollments</h1>
-        <p className="text-destructive">{error}</p>
+      <div className="space-y-6">
+        <PageHeader title="Enrollments" description="View and manage course enrollments" />
+        <p className="text-red-600">{error}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Enrollments</h1>
-        <p className="text-muted-foreground">
-          View and manage course enrollments
-        </p>
-      </div>
+      <PageHeader
+        title="Enrollments"
+        description="View and manage course enrollments"
+      />
       {enrollments!.length === 0 ? (
         <PageEmpty
           title="No enrollments"

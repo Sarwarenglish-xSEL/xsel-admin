@@ -1,4 +1,5 @@
 import { getProfiles, getCurrentProfile } from "@/lib/db/profiles";
+import { PageHeader } from "@/components/layout/page-header";
 import { UsersTable } from "@/components/users/users-table";
 import { PageEmpty } from "@/components/page-states";
 
@@ -20,22 +21,21 @@ export default async function UsersPage({
 
   if (error) {
     return (
-      <div>
-        <h1 className="mb-6 text-2xl font-bold">Users</h1>
-        <p className="text-destructive">{error}</p>
+      <div className="space-y-6">
+        <PageHeader title="Users" description="Manage platform users and roles" />
+        <p className="text-red-600">{error}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Users</h1>
-        <p className="text-muted-foreground">
-          Manage platform users and roles
-          {currentProfile?.role !== "admin" && " (role changes require admin)"}
-        </p>
-      </div>
+      <PageHeader
+        title="Users"
+        description={`Manage platform users and roles${
+          currentProfile?.role !== "admin" ? " (role changes require admin)" : ""
+        }`}
+      />
       {users!.length === 0 ? (
         <PageEmpty title="No users found" description="Try a different search term." />
       ) : (

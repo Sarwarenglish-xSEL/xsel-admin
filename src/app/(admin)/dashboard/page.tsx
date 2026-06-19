@@ -1,19 +1,33 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { getDashboardStats } from "@/lib/db/courses";
+import { getDashboardChartData } from "@/lib/db/dashboard";
 import { getRecentPendingPurchases } from "@/lib/db/purchases";
+import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
+import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageEmpty } from "@/components/page-states";
 
 export default async function DashboardPage() {
-  let stats, purchases, error: string | null = null;
+  let stats, chartData, purchases, error: string | null = null;
   try {
-    [stats, purchases] = await Promise.all([getDashboardStats(), getRecentPendingPurchases()]);
+    [stats, chartData, purchases] = await Promise.all([
+      getDashboardStats(),
+      getDashboardChartData(),
+      getRecentPendingPurchases(),
+    ]);
   } catch (e) { error = e instanceof Error ? e.message : "Failed to load dashboard"; }
 
-  if (error) return <div><h1 className="mb-6 text-2xl font-bold text-gray-900">Dashboard</h1><p className="text-red-600">{error}</p></div>;
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Dashboard" description="Overview of your learning platform" />
+        <p className="text-red-600">{error}</p>
+      </div>
+    );
+  }
 
   const statCards = [
     { label: "Total Users", value: stats!.totalUsers },
@@ -24,10 +38,10 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500">Overview of your learning platform</p>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        description="Overview of your learning platform"
+      />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((card) => (
           <Card key={card.label}>
@@ -40,6 +54,7 @@ export default async function DashboardPage() {
           </Card>
         ))}
       </div>
+      <DashboardCharts data={chartData!} />
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent Pending Purchases</CardTitle>

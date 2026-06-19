@@ -1,5 +1,6 @@
 import { getUpcomingLiveLessons } from "@/lib/db/chapters";
 import { LiveSessionsList } from "@/components/live/live-sessions-list";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default async function LivePage() {
   let lessons;
@@ -13,21 +14,22 @@ export default async function LivePage() {
 
   if (error) {
     return (
-      <div>
-        <h1 className="mb-6 text-2xl font-bold">Live Sessions</h1>
-        <p className="text-destructive">{error}</p>
+      <div className="space-y-6">
+        <PageHeader
+          title="Live Sessions"
+          description="Upcoming live lessons across all courses"
+        />
+        <p className="text-red-600">{error}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Live Sessions</h1>
-        <p className="text-muted-foreground">
-          Upcoming live lessons across all courses
-        </p>
-      </div>
+      <PageHeader
+        title="Live Sessions"
+        description="Upcoming live lessons across all courses"
+      />
       <LiveSessionsList lessons={lessons!} />
     </div>
   );

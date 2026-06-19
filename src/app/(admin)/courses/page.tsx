@@ -4,6 +4,7 @@ import { CreateCourseDialog } from "@/components/courses/create-course-dialog";
 import {
   CourseFilters,
 } from "@/components/courses/course-filters";
+import { PageHeader } from "@/components/layout/page-header";
 import { parseCourseFilters } from "@/lib/course-filters";
 import { PageEmpty } from "@/components/page-states";
 
@@ -25,22 +26,20 @@ export default async function CoursesPage({
 
   if (error) {
     return (
-      <div>
-        <h1 className="mb-6 text-2xl font-bold">Courses</h1>
-        <p className="text-destructive">{error}</p>
+      <div className="space-y-6">
+        <PageHeader title="Courses" description="Create and manage learning content" />
+        <p className="text-red-600">{error}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Courses</h1>
-          <p className="text-muted-foreground">Create and manage learning content</p>
-        </div>
-        <CreateCourseDialog />
-      </div>
+      <PageHeader
+        title="Courses"
+        description="Create and manage learning content"
+        actions={<CreateCourseDialog />}
+      />
       <CourseFilters
         courseType={params.type}
         status={params.status}

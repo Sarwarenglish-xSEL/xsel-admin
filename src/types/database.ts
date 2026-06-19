@@ -161,3 +161,16 @@ export interface DashboardStats {
   pendingPurchases: number;
   upcomingLiveLessons: number;
 }
+
+export interface DashboardChartData {
+  userSignupsByMonth: { month: string; count: number }[];
+  revenueByMonth: { month: string; revenue: number }[];
+  purchaseTrendByMonth: {
+    month: string;
+    approved: number;
+    pending: number;
+    rejected: number;
+  }[];
+  purchaseStatusCounts: { status: string; count: number }[];
+  enrollmentStatusCounts: { status: string; count: number }[];
+}
