@@ -39,8 +39,10 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && isAuthPage) {
+    const next = request.nextUrl.searchParams.get("next");
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = next?.startsWith("/payment/") ? next : "/dashboard";
+    url.search = "";
     return NextResponse.redirect(url);
   }
 

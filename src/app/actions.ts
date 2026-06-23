@@ -22,7 +22,8 @@ import {
   type LessonInput,
 } from "@/lib/db/chapters";
 import { updateUserRole } from "@/lib/db/profiles";
-import { approvePurchase, rejectPurchase } from "@/lib/db/purchases";
+import { approvePurchase, rejectPurchase, createPurchaseRequest } from "@/lib/db/purchases";
+import { getCourseById } from "@/lib/db/courses";
 import {
   createEnrollment,
   updateEnrollmentStatus,
@@ -192,6 +193,45 @@ export async function rejectPurchaseAction(id: string, adminNote: string) {
   revalidatePath("/purchases");
   revalidatePath("/dashboard");
   revalidatePath("/enrollments");
+}
+
+export async function submitPurchaseReceiptAction(
+  courseId: string,
+  userId: string,
+  receiptUrl: string
+) {
+  if (!userId?.trim()) {
+    throw new Error("User ID is required.");
+  }
+  if (!courseId?.trim()) {
+    throw new Error("Course ID is required.");
+  }
+  if (!receiptUrl?.trim()) {
+    throw new Error("Receipt URL is required.");
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Please sign in to submit your payment.");
+  if (user.id !== userId) {
+    throw new Error("Signed-in user does not match the payment account.");
+  }
+
+  const course = await getCourseById(courseId);
+  if (!course) throw new Error("Course not found.");
+  if (course.status !== "published") {
+    throw new Error("This course is not available for purchase.");
+  }
+
+  await createPurchaseRequest(
+    userId,
+    courseId,
+    Number(course.price),
+    receiptUrl
+  );
+  revalidatePath(`/payment/${courseId}`);
 }
 
 export async function createEnrollmentAction(userId: string, courseId: string) {

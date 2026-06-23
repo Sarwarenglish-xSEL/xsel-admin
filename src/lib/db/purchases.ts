@@ -134,3 +134,66 @@ export async function rejectPurchase(
     .eq("status", "pending");
   if (error) throw error;
 }
+
+export async function getUserPurchaseForCourse(
+  userId: string,
+  courseId: string
+): Promise<Purchase | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("purchases")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("course_id", courseId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data as Purchase | null;
+}
+
+export async function createPurchaseRequest(
+  userId: string,
+  courseId: string,
+  amount: number,
+  receiptUrl: string
+): Promise<Purchase> {
+  if (!userId?.trim()) {
+    throw new Error("User ID is required to save a purchase.");
+  }
+  if (!courseId?.trim()) {
+    throw new Error("Course ID is required to save a purchase.");
+  }
+  if (!receiptUrl?.trim()) {
+    throw new Error("Receipt is required to save a purchase.");
+  }
+
+  const supabase = await createClient();
+
+  const existing = await getUserPurchaseForCourse(userId, courseId);
+  if (existing?.status === "pending") {
+    throw new Error("You already have a payment pending review for this course.");
+  }
+  if (existing?.status === "approved") {
+    throw new Error("You have already purchased this course.");
+  }
+
+  const enrollment = await getActiveEnrollment(userId, courseId);
+  if (enrollment) {
+    throw new Error("You are already enrolled in this course.");
+  }
+
+  const { data, error } = await supabase
+    .from("purchases")
+    .insert({
+      user_id: userId,
+      course_id: courseId,
+      amount,
+      receipt_url: receiptUrl,
+      status: "pending",
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Purchase;
+}

@@ -10,6 +10,7 @@ export const config = {
     "/",
     "/login",
     "/signup",
+    "/payment/:path*",
     "/dashboard/:path*",
     "/courses/:path*",
     "/users/:path*",
