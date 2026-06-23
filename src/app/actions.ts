@@ -119,8 +119,9 @@ export async function createChapterAction(
   title: string,
   sortOrder: number
 ) {
-  await createChapter(courseId, title, sortOrder);
+  const chapter = await createChapter(courseId, title, sortOrder);
   revalidatePath(`/courses/${courseId}/edit`);
+  return chapter;
 }
 
 export async function updateChapterAction(
@@ -149,8 +150,9 @@ export async function createLessonAction(
   courseId: string,
   input: LessonInput
 ) {
-  await createLesson(input);
+  const lesson = await createLesson(input);
   revalidatePath(`/courses/${courseId}/edit`);
+  return lesson;
 }
 
 export async function updateLessonAction(
@@ -158,9 +160,10 @@ export async function updateLessonAction(
   id: string,
   input: Partial<LessonInput>
 ) {
-  await updateLesson(id, input);
+  const lesson = await updateLesson(id, input);
   revalidatePath(`/courses/${courseId}/edit`);
   revalidatePath("/live");
+  return lesson;
 }
 
 export async function deleteLessonAction(courseId: string, id: string) {
@@ -277,6 +280,7 @@ export async function createQuizAction(
   }
   revalidatePath(`/courses/${courseId}/edit`);
   revalidatePath(`/courses/${courseId}/lessons/${lessonId}/quiz`);
+  return { id: quiz.id, title: quiz.title };
 }
 
 export async function createAssignmentAction(
@@ -288,13 +292,14 @@ export async function createAssignmentAction(
     max_marks?: number;
   }
 ) {
-  await upsertAssignment(lessonId, {
+  const assignment = await upsertAssignment(lessonId, {
     title: input.title,
     description: input.question,
     max_marks: input.max_marks ?? 100,
   });
   revalidatePath(`/courses/${courseId}/edit`);
   revalidatePath(`/courses/${courseId}/lessons/${lessonId}/assignment`);
+  return { id: assignment.id, title: assignment.title };
 }
 
 export async function saveQuizAction(
@@ -321,8 +326,9 @@ export async function addQuizQuestionAction(
     sort_order: number;
   }
 ) {
-  await createQuizQuestion(quizId, input);
+  const question = await createQuizQuestion(quizId, input);
   revalidatePath(`/courses/${courseId}/lessons/${lessonId}/quiz`);
+  return question;
 }
 
 export async function updateQuizQuestionAction(
@@ -362,8 +368,9 @@ export async function saveAssignmentAction(
     due_date?: string | null;
   }
 ) {
-  await upsertAssignment(lessonId, input);
+  const assignment = await upsertAssignment(lessonId, input);
   revalidatePath(`/courses/${courseId}/lessons/${lessonId}/assignment`);
+  return assignment;
 }
 
 export async function gradeSubmissionAction(

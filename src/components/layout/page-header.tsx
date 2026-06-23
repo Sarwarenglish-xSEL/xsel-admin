@@ -1,6 +1,5 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BackLink } from "@/components/layout/back-link";
 
 function ThemedHeaderContent({
   title,
@@ -49,12 +48,10 @@ export function PageHeader({
   return (
     <div className={cn("flex items-start gap-4", className)}>
       {backHref && (
-        <Link
+        <BackLink
           href={backHref}
           className="mt-3 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
+        />
       )}
       <div
         className={cn(

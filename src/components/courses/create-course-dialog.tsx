@@ -53,6 +53,7 @@ export function CreateCourseDialog() {
       toast.success("Course created");
       setOpen(false);
       reset();
+      router.refresh();
       router.push(`/courses/${course.id}/edit`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to create course");

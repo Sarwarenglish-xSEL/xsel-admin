@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -41,7 +41,7 @@ export function ChaptersLessonsEditor({
   courseId: string;
   chapters: CourseChapter[];
 }) {
-  const [chapters] = useState(initialChapters);
+  const [chapters, setChapters] = useState(initialChapters);
   const [newChapterTitle, setNewChapterTitle] = useState("");
   const [lessonDialog, setLessonDialog] = useState<{
     chapterId: string;
@@ -57,6 +57,10 @@ export function ChaptersLessonsEditor({
   } | null>(null);
   const router = useRouter();
 
+  useEffect(() => {
+    setChapters(initialChapters);
+  }, [initialChapters]);
+
   function chapterSortOrder(chapterId: string) {
     return chapters.find((c) => c.id === chapterId)?.lessons?.length ?? 0;
   }
@@ -64,7 +68,12 @@ export function ChaptersLessonsEditor({
   async function addChapter() {
     if (!newChapterTitle.trim()) return;
     try {
-      await createChapterAction(courseId, newChapterTitle, chapters.length);
+      const chapter = await createChapterAction(
+        courseId,
+        newChapterTitle,
+        chapters.length
+      );
+      setChapters((prev) => [...prev, { ...chapter, lessons: [] }]);
       toast.success("Chapter added");
       setNewChapterTitle("");
       router.refresh();
@@ -147,6 +156,7 @@ export function ChaptersLessonsEditor({
                   if (!confirm("Delete this chapter and all its lessons?")) return;
                   try {
                     await deleteChapterAction(courseId, chapter.id);
+                    setChapters((prev) => prev.filter((ch) => ch.id !== chapter.id));
                     toast.success("Chapter deleted");
                     router.refresh();
                   } catch (e) {
@@ -278,6 +288,18 @@ export function ChaptersLessonsEditor({
                         if (!confirm("Delete this lesson?")) return;
                         try {
                           await deleteLessonAction(courseId, lesson.id);
+                          setChapters((prev) =>
+                            prev.map((ch) =>
+                              ch.id === chapter.id
+                                ? {
+                                    ...ch,
+                                    lessons: (ch.lessons ?? []).filter(
+                                      (l) => l.id !== lesson.id
+                                    ),
+                                  }
+                                : ch
+                            )
+                          );
                           toast.success("Lesson deleted");
                           router.refresh();
                         } catch (e) {
@@ -310,6 +332,25 @@ export function ChaptersLessonsEditor({
           lesson={lessonDialog.lesson}
           sortOrder={chapterSortOrder(lessonDialog.chapterId)}
           onClose={() => setLessonDialog(null)}
+          onSaved={(savedLesson, isNew) => {
+            setChapters((prev) =>
+              prev.map((ch) => {
+                if (ch.id !== lessonDialog.chapterId) return ch;
+                const lessons = ch.lessons ?? [];
+                return {
+                  ...ch,
+                  lessons: isNew
+                    ? [
+                        ...lessons,
+                        { ...savedLesson, quiz: null, assignment: null },
+                      ]
+                    : lessons.map((l) =>
+                        l.id === savedLesson.id ? { ...l, ...savedLesson } : l
+                      ),
+                };
+              })
+            );
+          }}
         />
       )}
 
@@ -319,6 +360,16 @@ export function ChaptersLessonsEditor({
           lessonId={quizDialog.lessonId}
           lessonTitle={quizDialog.lessonTitle}
           onClose={() => setQuizDialog(null)}
+          onSaved={(lessonId, quiz) => {
+            setChapters((prev) =>
+              prev.map((ch) => ({
+                ...ch,
+                lessons: (ch.lessons ?? []).map((l) =>
+                  l.id === lessonId ? { ...l, quiz } : l
+                ),
+              }))
+            );
+          }}
         />
       )}
 
@@ -328,6 +379,16 @@ export function ChaptersLessonsEditor({
           lessonId={assignmentDialog.lessonId}
           lessonTitle={assignmentDialog.lessonTitle}
           onClose={() => setAssignmentDialog(null)}
+          onSaved={(lessonId, assignment) => {
+            setChapters((prev) =>
+              prev.map((ch) => ({
+                ...ch,
+                lessons: (ch.lessons ?? []).map((l) =>
+                  l.id === lessonId ? { ...l, assignment } : l
+                ),
+              }))
+            );
+          }}
         />
       )}
     </div>
@@ -340,12 +401,14 @@ function LessonDialog({
   lesson,
   sortOrder,
   onClose,
+  onSaved,
 }: {
   courseId: string;
   chapterId: string;
   lesson?: CourseLesson;
   sortOrder: number;
   onClose: () => void;
+  onSaved: (lesson: CourseLesson, isNew: boolean) => void;
 }) {
   const [title, setTitle] = useState(lesson?.title ?? "");
   const [lessonType, setLessonType] = useState<"video" | "live">(
@@ -407,10 +470,12 @@ function LessonDialog({
     };
     try {
       if (lesson) {
-        await updateLessonAction(courseId, lesson.id, payload);
+        const saved = await updateLessonAction(courseId, lesson.id, payload);
+        onSaved(saved as CourseLesson, false);
         toast.success("Lesson updated");
       } else {
-        await createLessonAction(courseId, payload);
+        const saved = await createLessonAction(courseId, payload);
+        onSaved(saved as CourseLesson, true);
         toast.success("Lesson created");
       }
       onClose();
@@ -533,11 +598,13 @@ function QuizDialog({
   lessonId,
   lessonTitle,
   onClose,
+  onSaved,
 }: {
   courseId: string;
   lessonId: string;
   lessonTitle: string;
   onClose: () => void;
+  onSaved: (lessonId: string, quiz: { id: string; title: string }) => void;
 }) {
   const [title, setTitle] = useState(`${lessonTitle} Quiz`);
   const [questions, setQuestions] = useState<QuizQuestionDraft[]>([
@@ -573,10 +640,11 @@ function QuizDialog({
     }
     setLoading(true);
     try {
-      await createQuizAction(courseId, lessonId, {
+      const quiz = await createQuizAction(courseId, lessonId, {
         title,
         questions,
       });
+      onSaved(lessonId, quiz);
       toast.success("Quiz created");
       onClose();
       router.refresh();
@@ -682,11 +750,13 @@ function AssignmentDialog({
   lessonId,
   lessonTitle,
   onClose,
+  onSaved,
 }: {
   courseId: string;
   lessonId: string;
   lessonTitle: string;
   onClose: () => void;
+  onSaved: (lessonId: string, assignment: { id: string; title: string }) => void;
 }) {
   const [title, setTitle] = useState(`${lessonTitle} Assignment`);
   const [question, setQuestion] = useState("");
@@ -704,10 +774,11 @@ function AssignmentDialog({
     }
     setLoading(true);
     try {
-      await createAssignmentAction(courseId, lessonId, {
+      const assignment = await createAssignmentAction(courseId, lessonId, {
         title,
         question,
       });
+      onSaved(lessonId, assignment);
       toast.success("Assignment created");
       onClose();
       router.refresh();
