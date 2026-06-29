@@ -19,8 +19,13 @@ import {
   deleteLesson,
   reorderChapters,
   reorderLessons,
+  getLessonById,
   type LessonInput,
 } from "@/lib/db/chapters";
+import {
+  extractBunnyVideoId,
+  getBunnyVideoDuration,
+} from "@/lib/bunny-stream";
 import { updateUserRole } from "@/lib/db/profiles";
 import { approvePurchase, rejectPurchase, createPurchaseRequest } from "@/lib/db/purchases";
 import { getCourseById } from "@/lib/db/courses";
@@ -92,6 +97,12 @@ export async function signOutAction() {
   redirect("/login");
 }
 
+export async function paymentSignOutAction(returnTo: string) {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect(returnTo.startsWith("/payment/") ? returnTo : "/");
+}
+
 export async function createCourseAction(input: CourseInput) {
   const course = await createCourse(input);
   revalidatePath("/courses");
@@ -146,11 +157,61 @@ export async function reorderChaptersAction(
   revalidatePath(`/courses/${courseId}/edit`);
 }
 
+async function resolveVideoLessonFields(
+  input: Partial<LessonInput>,
+  existing?: {
+    lesson_type?: string;
+    video_url?: string | null;
+    duration_seconds?: number | null;
+  } | null
+): Promise<Partial<LessonInput>> {
+  const lessonType = input.lesson_type ?? existing?.lesson_type;
+
+  if (lessonType !== "video") {
+    if (input.lesson_type && input.lesson_type !== "video") {
+      return { ...input, duration_seconds: null };
+    }
+    return input;
+  }
+
+  if (!("video_url" in input)) {
+    return input;
+  }
+
+  const rawVideoUrl = input.video_url?.trim() ?? "";
+  if (!rawVideoUrl) {
+    return {
+      ...input,
+      video_url: null,
+      duration_seconds: null,
+    };
+  }
+
+  const videoId = extractBunnyVideoId(rawVideoUrl);
+  const videoChanged = existing?.video_url !== videoId;
+
+  if (!videoChanged && existing?.duration_seconds != null) {
+    return {
+      ...input,
+      video_url: videoId,
+      duration_seconds: existing.duration_seconds,
+    };
+  }
+
+  const duration_seconds = await getBunnyVideoDuration(videoId);
+  return {
+    ...input,
+    video_url: videoId,
+    duration_seconds,
+  };
+}
+
 export async function createLessonAction(
   courseId: string,
   input: LessonInput
 ) {
-  const lesson = await createLesson(input);
+  const resolved = await resolveVideoLessonFields(input);
+  const lesson = await createLesson({ ...input, ...resolved });
   revalidatePath(`/courses/${courseId}/edit`);
   return lesson;
 }
@@ -160,7 +221,9 @@ export async function updateLessonAction(
   id: string,
   input: Partial<LessonInput>
 ) {
-  const lesson = await updateLesson(id, input);
+  const existing = await getLessonById(id);
+  const resolved = await resolveVideoLessonFields(input, existing);
+  const lesson = await updateLesson(id, { ...input, ...resolved });
   revalidatePath(`/courses/${courseId}/edit`);
   revalidatePath("/live");
   return lesson;

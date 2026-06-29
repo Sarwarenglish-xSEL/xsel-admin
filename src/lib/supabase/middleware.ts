@@ -30,6 +30,11 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
+  // Payment is a standalone public page — never apply admin portal auth rules.
+  if (path.startsWith("/payment")) {
+    return response;
+  }
+
   const isAuthPage = path === "/login" || path === "/signup";
 
   if (!user && !isAuthPage && path.startsWith("/dashboard")) {

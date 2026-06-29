@@ -31,7 +31,6 @@ import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
 export function ChaptersLessonsEditor({
@@ -415,9 +414,6 @@ function LessonDialog({
     lesson?.lesson_type === "live" ? "live" : "video"
   );
   const [videoUrl, setVideoUrl] = useState(lesson?.video_url ?? "");
-  const [durationSeconds, setDurationSeconds] = useState(
-    lesson?.duration_seconds?.toString() ?? ""
-  );
   const [liveMeetingUrl, setLiveMeetingUrl] = useState(
     lesson?.live_meeting_url ?? ""
   );
@@ -429,11 +425,6 @@ function LessonDialog({
   );
   const [status, setStatus] = useState<CourseLesson["status"]>(
     lesson?.status ?? "draft"
-  );
-  const [goLive, setGoLive] = useState(
-    lesson?.status === "published" &&
-      !!lesson?.live_start_time &&
-      !!lesson?.live_end_time
   );
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -449,10 +440,6 @@ function LessonDialog({
       title,
       lesson_type: lessonType,
       video_url: lessonType === "video" ? videoUrl || null : null,
-      duration_seconds:
-        lessonType === "video" && durationSeconds
-          ? parseInt(durationSeconds, 10)
-          : null,
       live_meeting_url: lessonType === "live" ? liveMeetingUrl || null : null,
       live_start_time:
         lessonType === "live" && liveStart
@@ -463,10 +450,7 @@ function LessonDialog({
           ? new Date(liveEnd).toISOString()
           : null,
       sort_order: lesson?.sort_order ?? sortOrder,
-      status:
-        lessonType === "live" && goLive
-          ? ("published" as const)
-          : status,
+      status,
     };
     try {
       if (lesson) {
@@ -509,20 +493,20 @@ function LessonDialog({
             </Select>
           </div>
           {lessonType === "video" && (
-            <>
-              <div>
-                <Label>Video URL</Label>
-                <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
-              </div>
-              <div>
-                <Label>Duration (seconds)</Label>
-                <Input
-                  type="number"
-                  value={durationSeconds}
-                  onChange={(e) => setDurationSeconds(e.target.value)}
-                />
-              </div>
-            </>
+            <div>
+              <Label>Bunny Video ID</Label>
+              <Input
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="e.g. 0e143fb4-5bf5-4a2b-8871-7f6e05b4b371"
+              />
+              {lesson?.duration_seconds != null && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Current duration: {Math.floor(lesson.duration_seconds / 60)}m{" "}
+                  {lesson.duration_seconds % 60}s
+                </p>
+              )}
+            </div>
           )}
           {lessonType === "live" && (
             <>
@@ -551,21 +535,20 @@ function LessonDialog({
                   />
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Switch checked={goLive} onCheckedChange={setGoLive} />
-                <Label>Go Live (publish during session window)</Label>
-              </div>
             </>
           )}
-          {lessonType !== "live" && (
-            <div>
-              <Label>Status</Label>
-              <Select value={status} onChange={(e) => setStatus(e.target.value as CourseLesson["status"])}>
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-              </Select>
-            </div>
-          )}
+          <div>
+            <Label>Status</Label>
+            <Select
+              value={status}
+              onChange={(e) =>
+                setStatus(e.target.value as CourseLesson["status"])
+              }
+            >
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+            </Select>
+          </div>
           <Button onClick={save} disabled={loading} className="w-full">
             {loading ? "Saving..." : "Save Lesson"}
           </Button>

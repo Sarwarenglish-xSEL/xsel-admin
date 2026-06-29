@@ -140,6 +140,13 @@ export async function getUserPurchaseForCourse(
   courseId: string
 ): Promise<Purchase | null> {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // RLS: only own purchases or staff can read — skip when anonymous or unauthorized.
+  if (!user) return null;
+
   const { data, error } = await supabase
     .from("purchases")
     .select("*")
@@ -148,7 +155,11 @@ export async function getUserPurchaseForCourse(
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (error) throw error;
+
+  if (error) {
+    if (error.code === "PGRST116" || error.code === "42501") return null;
+    throw error;
+  }
   return data as Purchase | null;
 }
 

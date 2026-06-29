@@ -49,9 +49,9 @@ export function PaymentAuthForm() {
 
   return (
     <div className="rounded-2xl border border-gray-200/80 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-gray-900">Sign in to continue</h2>
+      <h2 className="text-lg font-semibold text-gray-900">Sign in to upload receipt</h2>
       <p className="mt-1 text-sm text-gray-500">
-        Use the same account as your XSEL app to submit payment.
+        Use your XSEL app account. This page is separate from the admin portal.
       </p>
       <form onSubmit={handleSubmit(onSubmit)} className="mt-5 space-y-4">
         <div>

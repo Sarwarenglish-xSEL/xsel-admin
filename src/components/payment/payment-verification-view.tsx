@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Course, Purchase } from "@/types/database";
-import { submitPurchaseReceiptAction } from "@/app/actions";
+import { submitPurchaseReceiptAction, paymentSignOutAction } from "@/app/actions";
 import { uploadFile } from "@/lib/db/storage";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -451,6 +451,116 @@ export function InvalidPaymentLink({ courseId }: { courseId: string }) {
   );
 }
 
+export function PaymentAccessError() {
+  return (
+    <div className="flex min-h-dvh items-center justify-center bg-[#f4f6f8] px-4">
+      <div className="max-w-lg rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
+        <h1 className="text-lg font-semibold text-gray-900">
+          Payment page database access
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-gray-500">
+          Anonymous users need read access to published courses. Run this in the
+          Supabase SQL Editor, or add <code className="text-xs">SUPABASE_SERVICE_ROLE_KEY</code> to{" "}
+          <code className="text-xs">.env.local</code>:
+        </p>
+        <pre className="mt-4 overflow-x-auto rounded-lg bg-gray-900 p-4 text-xs text-gray-100">
+{`grant usage on schema public to anon, authenticated;
+grant select on table public.courses to anon, authenticated;
+grant select, insert on table public.purchases to authenticated;`}
+        </pre>
+      </div>
+    </div>
+  );
+}
+
+function AccountMismatchPanel({
+  courseId,
+  userId,
+  userEmail,
+}: {
+  courseId: string;
+  userId: string;
+  userEmail: string;
+}) {
+  const [loading, setLoading] = useState(false);
+  const returnTo = `/payment/${courseId}?userId=${userId}`;
+
+  return (
+    <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
+      <h2 className="font-semibold text-amber-950">Different account signed in</h2>
+      <p className="mt-2 text-sm text-amber-900/90">
+        You are signed in as <strong>{userEmail}</strong>, but this payment
+        belongs to another user. Sign out to continue with the correct account.
+      </p>
+      <Button
+        className="mt-4 w-full"
+        variant="outline"
+        disabled={loading}
+        onClick={async () => {
+          setLoading(true);
+          try {
+            await paymentSignOutAction(returnTo);
+          } catch {
+            toast.error("Could not sign out");
+            setLoading(false);
+          }
+        }}
+      >
+        {loading ? "Signing out..." : "Sign out and continue"}
+      </Button>
+    </section>
+  );
+}
+
+function PaymentRightPanel({
+  course,
+  courseId,
+  userId,
+  userEmail,
+  userIdMismatch,
+  existingPurchase,
+  showUpload,
+}: {
+  course: Course;
+  courseId: string;
+  userId: string;
+  userEmail: string | null;
+  userIdMismatch: boolean;
+  existingPurchase: Purchase | null;
+  showUpload: boolean;
+}) {
+  if (userIdMismatch && userEmail) {
+    return (
+      <AccountMismatchPanel
+        courseId={courseId}
+        userId={userId}
+        userEmail={userEmail}
+      />
+    );
+  }
+
+  if (!userEmail) {
+    return <PaymentAuthForm />;
+  }
+
+  if (existingPurchase && existingPurchase.status !== "rejected") {
+    return <StatusMessage purchase={existingPurchase} />;
+  }
+
+  if (showUpload) {
+    return (
+      <ReceiptUploadForm
+        course={course}
+        courseId={courseId}
+        userId={userId}
+        userEmail={userEmail}
+      />
+    );
+  }
+
+  return null;
+}
+
 export function PaymentVerificationView({
   course,
   courseId,
@@ -490,45 +600,29 @@ export function PaymentVerificationView({
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         <CourseSummaryBar course={course} />
 
-        {userIdMismatch ? (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-900">
-            <h2 className="font-semibold">Account mismatch</h2>
-            <p className="mt-2 text-sm">
-              The signed-in account does not match user{" "}
-              <span className="font-mono text-xs">{userId}</span> from the app.
-              Sign in with the correct account or reopen the payment link from
-              the app.
-            </p>
-          </div>
-        ) : !userEmail ? (
-          <div className="mt-6 max-w-md">
-            <PaymentAuthForm />
-          </div>
-        ) : existingPurchase && existingPurchase.status !== "rejected" ? (
-          <div className="mt-6">
-            <StatusMessage purchase={existingPurchase} />
-          </div>
-        ) : (
-          <div className="mt-6 grid gap-6 lg:grid-cols-5 lg:gap-8">
-            <div className="lg:col-span-3">
-              <div className="mb-3">
-                <StepBadge step={1} label="Send payment" />
-              </div>
-              <PaymentMethodsPanel />
+        <div className="mt-6 grid gap-6 lg:grid-cols-5 lg:gap-8">
+          <div className="lg:col-span-3">
+            <div className="mb-3">
+              <StepBadge step={1} label="Send payment" />
             </div>
+            <PaymentMethodsPanel />
+          </div>
 
-            <div className="lg:col-span-2">
-              {showUpload && (
-                <ReceiptUploadForm
-                  course={course}
-                  courseId={courseId}
-                  userId={userId}
-                  userEmail={userEmail}
-                />
-              )}
+          <div className="lg:col-span-2">
+            <div className="mb-3">
+              <StepBadge step={2} label="Sign in & upload receipt" />
             </div>
+            <PaymentRightPanel
+              course={course}
+              courseId={courseId}
+              userId={userId}
+              userEmail={userEmail}
+              userIdMismatch={userIdMismatch}
+              existingPurchase={existingPurchase}
+              showUpload={showUpload}
+            />
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

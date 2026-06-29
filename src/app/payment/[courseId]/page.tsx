@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCourseById } from "@/lib/db/courses";
+import { getPublishedCourseById } from "@/lib/db/courses";
 import { getUserPurchaseForCourse } from "@/lib/db/purchases";
 import {
   InvalidPaymentLink,
+  PaymentAccessError,
   PaymentVerificationView,
 } from "@/components/payment/payment-verification-view";
 
@@ -31,8 +32,20 @@ export default async function PaymentPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const course = await getCourseById(courseId);
-  if (!course || course.status !== "published") notFound();
+  let course;
+  try {
+    course = await getPublishedCourseById(courseId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (
+      message.includes("42501") ||
+      message.includes("permission denied for table courses")
+    ) {
+      return <PaymentAccessError />;
+    }
+    throw error;
+  }
+  if (!course) notFound();
 
   const sessionUserId = user?.id ?? null;
   const userIdMismatch = !!sessionUserId && sessionUserId !== userId;

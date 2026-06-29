@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/admin";
 import type {
   Course,
   CourseCategory,
@@ -45,6 +46,20 @@ export async function getCourseById(id: string): Promise<Course | null> {
     throw error;
   }
   return data as Course;
+}
+
+/** Public payment page — works for anonymous users (published courses only). */
+export async function getPublishedCourseById(id: string): Promise<Course | null> {
+  const service = createServiceClient();
+  const supabase = service ?? (await createClient());
+  const { data, error } = await supabase
+    .from("courses")
+    .select("*")
+    .eq("id", id)
+    .eq("status", "published")
+    .maybeSingle();
+  if (error) throw error;
+  return data as Course | null;
 }
 
 export type CourseInput = {
