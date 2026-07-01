@@ -19,7 +19,7 @@ export default async function LivePage() {
           title="Live Sessions"
           description="Upcoming live lessons across all courses"
         />
-        <p className="text-red-600">{error}</p>
+        <p className="text-danger">{error}</p>
       </div>
     );
   }

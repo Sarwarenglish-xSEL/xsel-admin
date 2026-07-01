@@ -25,7 +25,7 @@ export default async function EnrollmentsPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Enrollments" description="View and manage course enrollments" />
-        <p className="text-red-600">{error}</p>
+        <p className="text-danger">{error}</p>
       </div>
     );
   }

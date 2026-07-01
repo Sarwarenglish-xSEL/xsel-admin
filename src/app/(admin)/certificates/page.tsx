@@ -28,7 +28,7 @@ export default async function CertificatesPage() {
           title="Certificates"
           description="Issue and manage course completion certificates"
         />
-        <p className="text-red-600">{error}</p>
+        <p className="text-danger">{error}</p>
       </div>
     );
   }

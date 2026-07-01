@@ -1,10 +1,28 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand: #0d9488;
-  --color-brand-dark: #0f766e;
-  --color-brand-light: #14b8a6;
-  --color-surface: #f0fdfa;
+  /* Primary — navy blue */
+  --color-brand: #04267c;
+  --color-brand-dark: #031952;
+  --color-brand-light: #0a3a9e;
+
+  /* Accent — cyan */
+  --color-accent: #30bfdc;
+  --color-accent-dark: #1a9cb5;
+
+  /* Semantic */
+  --color-success: #228212;
+  --color-success-light: #248112;
+  --color-danger: #c70104;
+  --color-danger-dark: #9e0103;
+  --color-destructive: #c70104;
+  --color-warning: #30bfdc;
+  --color-warning-dark: #1a9cb5;
+
+  /* Surfaces */
+  --color-surface: #f4f8fc;
+  --color-surface-muted: #eef4fb;
+
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -19,10 +37,18 @@
 
 @layer utilities {
   .login-grid-bg {
-    background-color: #f3f4f6;
+    background-color: var(--color-surface-muted);
     background-image:
-      linear-gradient(to right, rgb(209 213 219 / 0.55) 1px, transparent 1px),
-      linear-gradient(to bottom, rgb(209 213 219 / 0.55) 1px, transparent 1px);
+      linear-gradient(to right, rgb(4 38 124 / 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(4 38 124 / 0.06) 1px, transparent 1px);
     background-size: 32px 32px;
+  }
+
+  .brand-gradient {
+    @apply bg-gradient-to-br from-brand/10 via-white to-accent/10;
+  }
+
+  .brand-accent-bar {
+    @apply bg-gradient-to-b from-brand to-accent;
   }
 }

@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { approvePurchaseAction, rejectPurchaseAction } from "@/app/actions";
+import { cn } from "@/lib/utils";
 
 function StatusFilter({ status }: { status?: string }) {
   return (
@@ -143,10 +144,13 @@ const columns: ColumnDef<Purchase>[] = [
           row.original.status === "approved"
             ? "success"
             : row.original.status === "rejected"
-              ? "warning"
-              : "outline"
+              ? "default"
+              : "warning"
         }
-        className="capitalize"
+        className={cn(
+          "capitalize",
+          row.original.status === "rejected" && "bg-danger/10 text-danger"
+        )}
       >
         {row.original.status}
       </Badge>

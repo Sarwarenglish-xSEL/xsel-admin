@@ -26,7 +26,7 @@ export default async function PurchasesPage({
     return (
       <div className="space-y-6">
         <PageHeader title="Purchases" description="Review and approve manual purchase requests" />
-        <p className="text-red-600">{error}</p>
+        <p className="text-danger">{error}</p>
       </div>
     );
   }

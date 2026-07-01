@@ -180,7 +180,7 @@ function QuestionManager({
                   }
                 }}
               >
-                <Trash2 className="h-4 w-4 text-red-500" />
+                <Trash2 className="h-4 w-4 text-danger" />
               </Button>
             </div>
             <div className="mt-2 grid grid-cols-2 gap-1 text-sm text-gray-500">

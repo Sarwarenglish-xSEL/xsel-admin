@@ -18,16 +18,17 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { SectionHeader } from "@/components/layout/page-header";
 import type { DashboardChartData } from "@/types/database";
+import { chartColors } from "@/lib/theme";
 
-const BRAND = "#0d9488";
+const BRAND = chartColors.brand;
 
 const STATUS_COLORS: Record<string, string> = {
-  approved: BRAND,
-  pending: "#f59e0b",
-  rejected: "#ef4444",
-  active: BRAND,
-  completed: "#6366f1",
-  blocked: "#ef4444",
+  approved: chartColors.approved,
+  pending: chartColors.pending,
+  rejected: chartColors.rejected,
+  active: chartColors.active,
+  completed: chartColors.completed,
+  blocked: chartColors.blocked,
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -149,7 +150,7 @@ export function DashboardCharts({ data }: { data: DashboardChartData }) {
                 <defs>
                   <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={BRAND} stopOpacity={0.35} />
-                    <stop offset="100%" stopColor={BRAND} stopOpacity={0.02} />
+                    <stop offset="100%" stopColor={chartColors.accent} stopOpacity={0.05} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />

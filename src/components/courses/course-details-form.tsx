@@ -80,7 +80,7 @@ export function CourseDetailsForm({ course, instructors }: { course: Course; ins
       <div>
         <Label>Title</Label>
         <Input {...register("title")} />
-        {errors.title && <p className="mt-1 text-xs text-red-600">{errors.title.message}</p>}
+        {errors.title && <p className="mt-1 text-xs text-danger">{errors.title.message}</p>}
       </div>
       <div>
         <Label>Description</Label>

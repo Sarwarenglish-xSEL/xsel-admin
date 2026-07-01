@@ -29,7 +29,7 @@ function CourseActions({ course }: { course: Course }) {
       </DropdownMenuItem>
       {course.status !== "archived" && (
         <DropdownMenuItem
-          className="text-red-600 hover:bg-red-50"
+          className="text-danger hover:bg-danger/5"
           onClick={async () => {
             try {
               await archiveCourseAction(course.id);
@@ -44,7 +44,7 @@ function CourseActions({ course }: { course: Course }) {
         </DropdownMenuItem>
       )}
       <DropdownMenuItem
-        className="text-red-600 hover:bg-red-50"
+        className="text-danger hover:bg-danger/5"
         onClick={async () => {
           if (
             !confirm(

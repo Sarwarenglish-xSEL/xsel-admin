@@ -185,22 +185,22 @@ function StatusMessage({ purchase }: { purchase: Purchase }) {
       title: "Payment under review",
       description:
         "We received your receipt. An admin will verify your payment shortly.",
-      className: "border-amber-200 bg-amber-50 text-amber-900",
-      icon: <CloudUpload className="h-5 w-5 text-amber-600" />,
+      className: "border-accent/30 bg-accent/10 text-gray-900",
+      icon: <CloudUpload className="h-5 w-5 text-accent-dark" />,
     },
     approved: {
       title: "Payment approved",
       description: "Your enrollment is active. You can return to the app.",
-      className: "border-green-200 bg-green-50 text-green-900",
-      icon: <CheckCircle2 className="h-5 w-5 text-green-600" />,
+      className: "border-success/25 bg-success/5 text-gray-900",
+      icon: <CheckCircle2 className="h-5 w-5 text-success" />,
     },
     rejected: {
       title: "Payment rejected",
       description:
         purchase.admin_note ??
         "Your payment was not approved. Please contact support or submit again.",
-      className: "border-red-200 bg-red-50 text-red-900",
-      icon: <X className="h-5 w-5 text-red-600" />,
+      className: "border-danger/25 bg-danger/5 text-gray-900",
+      icon: <X className="h-5 w-5 text-danger" />,
     },
   } as const;
 
@@ -436,8 +436,8 @@ function StepBadge({ step, label }: { step: number; label: string }) {
 
 export function InvalidPaymentLink({ courseId }: { courseId: string }) {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-[#f4f6f8] px-4">
-      <div className="max-w-md rounded-2xl border border-amber-200 bg-white p-6 text-center shadow-sm">
+    <div className="flex min-h-dvh items-center justify-center bg-surface px-4">
+      <div className="max-w-md rounded-2xl border border-accent/30 bg-white p-6 text-center shadow-sm">
         <h1 className="text-lg font-semibold text-gray-900">Invalid payment link</h1>
         <p className="mt-2 text-sm leading-relaxed text-gray-500">
           A valid <strong>userId</strong> is required together with the course ID.
@@ -453,8 +453,8 @@ export function InvalidPaymentLink({ courseId }: { courseId: string }) {
 
 export function PaymentAccessError() {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-[#f4f6f8] px-4">
-      <div className="max-w-lg rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
+    <div className="flex min-h-dvh items-center justify-center bg-surface px-4">
+      <div className="max-w-lg rounded-2xl border border-danger/25 bg-white p-6 shadow-sm">
         <h1 className="text-lg font-semibold text-gray-900">
           Payment page database access
         </h1>
@@ -486,9 +486,9 @@ function AccountMismatchPanel({
   const returnTo = `/payment/${courseId}?userId=${userId}`;
 
   return (
-    <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
-      <h2 className="font-semibold text-amber-950">Different account signed in</h2>
-      <p className="mt-2 text-sm text-amber-900/90">
+    <section className="rounded-2xl border border-accent/30 bg-accent/10 p-5 sm:p-6">
+      <h2 className="font-semibold text-gray-900">Different account signed in</h2>
+      <p className="mt-2 text-sm text-gray-700">
         You are signed in as <strong>{userEmail}</strong>, but this payment
         belongs to another user. Sign out to continue with the correct account.
       </p>
@@ -580,7 +580,7 @@ export function PaymentVerificationView({
     !existingPurchase || existingPurchase.status === "rejected";
 
   return (
-    <div className="min-h-dvh bg-[#f4f6f8]">
+    <div className="min-h-dvh bg-surface">
       <div className="border-b border-gray-200/80 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
           <div>

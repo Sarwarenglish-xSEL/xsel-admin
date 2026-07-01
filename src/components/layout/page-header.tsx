@@ -55,7 +55,7 @@ export function PageHeader({
       )}
       <div
         className={cn(
-          "min-w-0 flex-1 rounded-xl border border-brand/20 bg-gradient-to-br from-brand/10 via-white to-brand/5 px-6 py-5 shadow-sm",
+          "min-w-0 flex-1 rounded-xl border border-brand/15 brand-gradient px-6 py-5 shadow-sm",
           actions && "sm:pr-4"
         )}
       >
@@ -66,7 +66,7 @@ export function PageHeader({
           headingAs="h1"
           titleClassName="text-2xl font-bold tracking-tight text-brand-dark"
           descriptionClassName="mt-1 text-sm text-brand/80"
-          accentClassName="mt-1.5 h-9 w-1 shrink-0 rounded-full bg-brand"
+          accentClassName="mt-1.5 h-9 w-1 shrink-0 rounded-full brand-accent-bar"
         />
       </div>
     </div>
@@ -87,7 +87,7 @@ export function SectionHeader({
   return (
     <div
       className={cn(
-        "border-b border-brand/10 bg-gradient-to-br from-brand/10 via-white to-brand/5 px-5 py-4",
+        "border-b border-brand/10 brand-gradient px-5 py-4",
         className
       )}
     >
@@ -98,7 +98,7 @@ export function SectionHeader({
         headingAs="h3"
         titleClassName="text-base font-semibold tracking-tight text-brand-dark"
         descriptionClassName="mt-0.5 text-xs text-brand/80"
-        accentClassName="mt-1 h-7 w-1 shrink-0 rounded-full bg-brand"
+        accentClassName="mt-1 h-7 w-1 shrink-0 rounded-full brand-accent-bar"
       />
     </div>
   );

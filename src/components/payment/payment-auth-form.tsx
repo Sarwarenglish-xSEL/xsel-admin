@@ -64,7 +64,7 @@ export function PaymentAuthForm() {
             {...register("email")}
           />
           {errors.email && (
-            <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
+            <p className="mt-1 text-xs text-danger">{errors.email.message}</p>
           )}
         </div>
         <div>
@@ -77,7 +77,7 @@ export function PaymentAuthForm() {
             {...register("password")}
           />
           {errors.password && (
-            <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
+            <p className="mt-1 text-xs text-danger">{errors.password.message}</p>
           )}
         </div>
         <Button type="submit" className="w-full" disabled={loading}>

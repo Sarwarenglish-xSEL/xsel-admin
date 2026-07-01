@@ -20,7 +20,7 @@ export default async function SubmissionsPage() {
           title="Assignment Submissions"
           description="Review and grade student work"
         />
-        <p className="text-red-600">{error}</p>
+        <p className="text-danger">{error}</p>
       </div>
     );
   }

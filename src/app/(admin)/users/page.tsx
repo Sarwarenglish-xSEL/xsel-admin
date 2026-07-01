@@ -23,7 +23,7 @@ export default async function UsersPage({
     return (
       <div className="space-y-6">
         <PageHeader title="Users" description="Manage platform users and roles" />
-        <p className="text-red-600">{error}</p>
+        <p className="text-danger">{error}</p>
       </div>
     );
   }

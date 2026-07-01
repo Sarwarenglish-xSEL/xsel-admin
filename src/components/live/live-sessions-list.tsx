@@ -99,7 +99,7 @@ function LiveSessionCard({
           </p>
         </div>
         <div className="flex gap-2">
-          {isLiveNow && <Badge className="bg-red-500">Live Now</Badge>}
+          {isLiveNow && <Badge className="bg-danger text-white">Live Now</Badge>}
           <Badge variant="outline" className="capitalize">
             {lesson.status}
           </Badge>

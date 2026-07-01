@@ -122,7 +122,7 @@ export default function LoginForm() {
                     {...register("email")}
                   />
                   {errors.email && (
-                    <p className="text-xs text-red-600">{errors.email.message}</p>
+                    <p className="text-xs text-danger">{errors.email.message}</p>
                   )}
                 </div>
 
@@ -139,7 +139,7 @@ export default function LoginForm() {
                     {...register("password")}
                   />
                   {errors.password && (
-                    <p className="text-xs text-red-600">{errors.password.message}</p>
+                    <p className="text-xs text-danger">{errors.password.message}</p>
                   )}
                 </div>
 

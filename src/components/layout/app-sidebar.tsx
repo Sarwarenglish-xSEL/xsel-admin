@@ -90,7 +90,7 @@ function SidebarUserMenu({ profile }: { profile: Profile }) {
         <form action={signOutAction}>
           <button
             type="submit"
-            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600"
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-gray-600 transition-colors hover:bg-danger/5 hover:text-danger"
           >
             <LogOut className="h-4 w-4 shrink-0" />
             Logout

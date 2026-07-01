@@ -77,12 +77,12 @@ export function CreateCourseDialog() {
             <div>
               <Label>Title</Label>
               <Input {...register("title")} />
-              {errors.title && <p className="mt-1 text-xs text-red-600">{errors.title.message}</p>}
+              {errors.title && <p className="mt-1 text-xs text-danger">{errors.title.message}</p>}
             </div>
             <div>
               <Label>Description</Label>
               <Textarea {...register("description")} />
-              {errors.description && <p className="mt-1 text-xs text-red-600">{errors.description.message}</p>}
+              {errors.description && <p className="mt-1 text-xs text-danger">{errors.description.message}</p>}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
