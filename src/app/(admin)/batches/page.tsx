@@ -37,7 +37,7 @@ export default async function BatchesPage() {
         description="Each batch has its own chapters, lessons, schedule, and enrolled students"
         actions={<CreateBatchDialog courses={courses!} />}
       />
-      <BatchesOverview batches={batches!} />
+      <BatchesOverview batches={batches!} courses={courses!} />
     </div>
   );
 }

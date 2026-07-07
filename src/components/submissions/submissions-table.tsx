@@ -17,7 +17,32 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { gradeSubmissionAction } from "@/app/actions";
+import { gradeSubmissionAction, getSubmissionFileUrlAction } from "@/app/actions";
+
+function ViewSubmissionLink({ fileUrl }: { fileUrl: string }) {
+  const [loading, setLoading] = useState(false);
+
+  return (
+    <button
+      type="button"
+      disabled={loading}
+      onClick={async () => {
+        setLoading(true);
+        try {
+          const url = await getSubmissionFileUrlAction(fileUrl);
+          window.open(url, "_blank", "noopener,noreferrer");
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "Failed to open submission");
+        } finally {
+          setLoading(false);
+        }
+      }}
+      className="text-sm text-brand hover:underline disabled:opacity-50"
+    >
+      {loading ? "Opening..." : "View submission"}
+    </button>
+  );
+}
 
 function GradeDialog({ submission }: { submission: AssignmentSubmission }) {
   const [open, setOpen] = useState(false);
@@ -39,14 +64,7 @@ function GradeDialog({ submission }: { submission: AssignmentSubmission }) {
           <div className="space-y-4">
             <div>
               <Label>File</Label>
-              <a
-                href={submission.file_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-brand hover:underline"
-              >
-                View submission
-              </a>
+              <ViewSubmissionLink fileUrl={submission.file_url} />
             </div>
             <div>
               <Label>Marks</Label>

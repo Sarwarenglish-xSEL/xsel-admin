@@ -46,7 +46,10 @@ import {
   deleteQuizQuestion,
 } from "@/lib/db/quizzes";
 import { upsertAssignment } from "@/lib/db/assignments";
-import { gradeSubmission } from "@/lib/db/submissions";
+import {
+  gradeSubmission,
+  getAssignmentSubmissionSignedUrl,
+} from "@/lib/db/submissions";
 import { issueCertificate } from "@/lib/db/certificates";
 import type { BatchStatus, EnrollmentStatus, Profile, QuizOption, UserRole } from "@/types/database";
 
@@ -519,6 +522,10 @@ export async function gradeSubmissionAction(
 ) {
   await gradeSubmission(id, obtainedMarks, feedback);
   revalidatePath("/submissions");
+}
+
+export async function getSubmissionFileUrlAction(fileUrl: string) {
+  return getAssignmentSubmissionSignedUrl(fileUrl);
 }
 
 export async function issueCertificateAction(

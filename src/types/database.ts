@@ -157,6 +157,27 @@ export interface AssignmentSubmission {
   assignment?: Assignment & { lesson?: CourseLesson };
 }
 
+export interface QuizAnswer {
+  id: string;
+  attempt_id: string;
+  question_id: string;
+  selected_option: QuizOption;
+  is_correct: boolean;
+  question?: QuizQuestion;
+}
+
+export interface QuizAttempt {
+  id: string;
+  quiz_id: string;
+  user_id: string;
+  obtained_marks: number;
+  is_passed: boolean;
+  submitted_at: string;
+  user?: Profile;
+  quiz?: Quiz & { lesson?: CourseLesson };
+  answers?: QuizAnswer[];
+}
+
 export interface CourseReview {
   id: string;
   course_id: string;

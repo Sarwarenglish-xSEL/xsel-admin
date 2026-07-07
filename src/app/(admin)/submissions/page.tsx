@@ -1,14 +1,17 @@
-import { getAssignmentSubmissions } from "@/lib/db/submissions";
+import { getAssignmentSubmissions, getQuizAttempts } from "@/lib/db/submissions";
 import { PageHeader } from "@/components/layout/page-header";
-import { SubmissionsTable } from "@/components/submissions/submissions-table";
-import { PageEmpty } from "@/components/page-states";
+import { SubmissionsView } from "@/components/submissions/submissions-view";
 
 export default async function SubmissionsPage() {
   let submissions;
+  let quizAttempts;
   let error: string | null = null;
 
   try {
-    submissions = await getAssignmentSubmissions();
+    [submissions, quizAttempts] = await Promise.all([
+      getAssignmentSubmissions(),
+      getQuizAttempts(),
+    ]);
   } catch (e) {
     error = e instanceof Error ? e.message : "Failed to load submissions";
   }
@@ -17,8 +20,8 @@ export default async function SubmissionsPage() {
     return (
       <div className="space-y-6">
         <PageHeader
-          title="Assignment Submissions"
-          description="Review and grade student work"
+          title="Submissions"
+          description="Review assignment submissions and quiz attempts"
         />
         <p className="text-danger">{error}</p>
       </div>
@@ -28,17 +31,10 @@ export default async function SubmissionsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Assignment Submissions"
-        description="Review and grade student work"
+        title="Submissions"
+        description="Review assignment submissions and quiz attempts"
       />
-      {submissions!.length === 0 ? (
-        <PageEmpty
-          title="No submissions"
-          description="Student assignment submissions will appear here."
-        />
-      ) : (
-        <SubmissionsTable submissions={submissions!} />
-      )}
+      <SubmissionsView submissions={submissions!} quizAttempts={quizAttempts!} />
     </div>
   );
 }
