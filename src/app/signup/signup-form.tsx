@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -9,7 +8,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { signUpAction } from "@/app/actions";
-import loginHero from "@/assets/login-hero.png";
+import { AuthHeroPanel } from "@/components/auth/auth-hero-panel";
+import { AuthFormPanel } from "@/components/auth/auth-form-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -95,20 +95,10 @@ export default function SignupForm() {
 
   return (
     <div className="flex h-full flex-col lg:flex-row">
-      <div className="relative hidden h-full shrink-0 bg-white lg:block lg:w-[46%] xl:w-1/2">
-        <Image
-          src={loginHero}
-          alt="Sarwar's English Lab — Learn, Practice, Excel"
-          fill
-          priority
-          className="object-cover object-center"
-          sizes="50vw"
-        />
-      </div>
+      <AuthHeroPanel />
 
-      <div className="login-grid-bg flex h-full min-h-0 flex-1 items-center justify-center overflow-y-auto px-5 py-6 sm:px-8 lg:px-12 lg:py-8 xl:px-16">
-        <div className="w-full max-w-[420px] shrink-0">
-          <div className="overflow-hidden rounded-2xl bg-white shadow-2xl shadow-gray-300/20 ring-1 ring-gray-200/70">
+      <AuthFormPanel scrollable>
+        <div className="overflow-hidden rounded-2xl bg-white shadow-2xl shadow-gray-300/20 ring-1 ring-gray-200/70">
             <div className="border-b border-gray-100 px-7 pb-6 pt-7 sm:px-8 sm:pt-8">
               <span className="inline-flex items-center rounded-full bg-brand/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-brand">
                 Admin Portal
@@ -226,8 +216,7 @@ export default function SignupForm() {
               </p>
             </div>
           </div>
-        </div>
-      </div>
+      </AuthFormPanel>
     </div>
   );
 }
