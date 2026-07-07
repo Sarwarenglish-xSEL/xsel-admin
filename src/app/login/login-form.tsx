@@ -50,14 +50,15 @@ export default function LoginForm() {
     try {
       const result = await signInAction(values.email, values.password);
       if (!result.ok) {
-        toast.error(result.message);
+        toast.error(result.message || "Login failed");
         return;
       }
-      toast.success("Signed in successfully");
+      toast.success("Login successful");
+      await new Promise((resolve) => setTimeout(resolve, 800));
       router.push("/dashboard");
       router.refresh();
     } catch {
-      toast.error("Sign in failed");
+      toast.error("Login failed");
     } finally {
       setLoading(false);
     }

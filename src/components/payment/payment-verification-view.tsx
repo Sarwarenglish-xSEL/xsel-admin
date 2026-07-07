@@ -303,6 +303,7 @@ function ReceiptUploadForm({
           id: "",
           user_id: userId,
           course_id: courseId,
+          batch_id: null,
           amount: Number(course.price),
           status: "pending",
           receipt_url: null,

@@ -26,13 +26,19 @@ import {
   extractBunnyVideoId,
   getBunnyVideoDuration,
 } from "@/lib/bunny-stream";
-import { updateUserRole } from "@/lib/db/profiles";
+import { createUser, deleteUser, updateUser, updateUserRole } from "@/lib/db/profiles";
 import { approvePurchase, rejectPurchase, createPurchaseRequest } from "@/lib/db/purchases";
 import { getCourseById } from "@/lib/db/courses";
 import {
   createEnrollment,
   updateEnrollmentStatus,
 } from "@/lib/db/enrollments";
+import {
+  createBatch,
+  updateBatch,
+  deleteBatch,
+  type BatchInput,
+} from "@/lib/db/batches";
 import {
   upsertQuiz,
   createQuizQuestion,
@@ -42,7 +48,7 @@ import {
 import { upsertAssignment } from "@/lib/db/assignments";
 import { gradeSubmission } from "@/lib/db/submissions";
 import { issueCertificate } from "@/lib/db/certificates";
-import type { EnrollmentStatus, Profile, QuizOption, UserRole } from "@/types/database";
+import type { BatchStatus, EnrollmentStatus, Profile, QuizOption, UserRole } from "@/types/database";
 
 type AuthActionResult =
   | { ok: true; needsEmailConfirmation?: boolean }
@@ -242,9 +248,51 @@ export async function reorderLessonsAction(
   revalidatePath(`/courses/${courseId}/edit`);
 }
 
+type UserActionResult = { ok: true } | { ok: false; message: string };
+
 export async function updateUserRoleAction(userId: string, role: Profile["role"]) {
   await updateUserRole(userId, role);
   revalidatePath("/users");
+}
+
+export async function updateUserAction(
+  userId: string,
+  fullName: string,
+  email: string,
+  role: UserRole
+): Promise<UserActionResult> {
+  const result = await updateUser(userId, {
+    full_name: fullName,
+    email,
+    role,
+  });
+  if (!result.ok) {
+    return { ok: false, message: formatAuthError(result.message) };
+  }
+  revalidatePath("/users");
+  return { ok: true };
+}
+
+export async function deleteUserAction(userId: string): Promise<UserActionResult> {
+  const result = await deleteUser(userId);
+  if (!result.ok) {
+    return { ok: false, message: formatAuthError(result.message) };
+  }
+  revalidatePath("/users");
+  return { ok: true };
+}
+
+export async function createUserAction(
+  email: string,
+  fullName: string,
+  role: UserRole
+): Promise<AuthActionResult> {
+  const result = await createUser(email, fullName, role);
+  if (!result.ok) {
+    return { ok: false, message: formatAuthError(result.message) };
+  }
+  revalidatePath("/users");
+  return { ok: true, needsEmailConfirmation: result.needsEmailConfirmation };
 }
 
 export async function approvePurchaseAction(id: string) {
@@ -300,9 +348,14 @@ export async function submitPurchaseReceiptAction(
   revalidatePath(`/payment/${courseId}`);
 }
 
-export async function createEnrollmentAction(userId: string, courseId: string) {
-  await createEnrollment(userId, courseId);
+export async function createEnrollmentAction(
+  userId: string,
+  courseId: string,
+  batchId: string
+) {
+  await createEnrollment(userId, courseId, batchId);
   revalidatePath("/enrollments");
+  revalidatePath("/batches");
 }
 
 export async function updateEnrollmentStatusAction(
@@ -311,6 +364,30 @@ export async function updateEnrollmentStatusAction(
 ) {
   await updateEnrollmentStatus(id, status);
   revalidatePath("/enrollments");
+  revalidatePath("/batches");
+}
+
+export async function createBatchAction(input: BatchInput) {
+  const batch = await createBatch(input);
+  revalidatePath("/batches");
+  revalidatePath(`/courses/${input.course_id}/edit`);
+  return batch;
+}
+
+export async function updateBatchAction(
+  id: string,
+  courseId: string,
+  input: Partial<Omit<BatchInput, "course_id">>
+) {
+  await updateBatch(id, input);
+  revalidatePath("/batches");
+  revalidatePath(`/courses/${courseId}/edit`);
+}
+
+export async function deleteBatchAction(id: string, courseId: string) {
+  await deleteBatch(id);
+  revalidatePath("/batches");
+  revalidatePath(`/courses/${courseId}/edit`);
 }
 
 export async function createQuizAction(

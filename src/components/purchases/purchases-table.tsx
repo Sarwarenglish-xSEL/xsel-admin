@@ -131,6 +131,11 @@ const columns: ColumnDef<Purchase>[] = [
     cell: ({ row }) => row.original.course?.title ?? row.original.course_id,
   },
   {
+    id: "batch",
+    header: "Batch",
+    cell: ({ row }) => row.original.batch?.name ?? "—",
+  },
+  {
     accessorKey: "amount",
     header: "Amount",
     cell: ({ row }) => `$${Number(row.original.amount).toFixed(2)}`,

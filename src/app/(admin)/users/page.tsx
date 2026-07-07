@@ -1,5 +1,6 @@
 import { getProfiles, getCurrentProfile } from "@/lib/db/profiles";
 import { PageHeader } from "@/components/layout/page-header";
+import { CreateUserDialog } from "@/components/users/create-user-dialog";
 import { UsersTable } from "@/components/users/users-table";
 import { PageEmpty } from "@/components/page-states";
 
@@ -28,20 +29,31 @@ export default async function UsersPage({
     );
   }
 
+  const isAdmin = currentProfile?.role === "admin";
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Users"
-        description={`Manage platform users and roles${
-          currentProfile?.role !== "admin" ? " (role changes require admin)" : ""
+        description={`Create, edit, and manage platform users${
+          !isAdmin ? " (management requires admin)" : ""
         }`}
+        actions={isAdmin ? <CreateUserDialog /> : undefined}
       />
       {users!.length === 0 ? (
-        <PageEmpty title="No users found" description="Try a different search term." />
+        <PageEmpty
+          title="No users found"
+          description={
+            isAdmin
+              ? "Create a user or try a different search term."
+              : "Try a different search term."
+          }
+        />
       ) : (
         <UsersTable
           users={users!}
-          isAdmin={currentProfile?.role === "admin"}
+          isAdmin={isAdmin}
+          currentUserId={currentProfile!.id}
         />
       )}
     </div>

@@ -5,6 +5,7 @@ export type CourseStatus = "draft" | "published" | "archived";
 export type LessonType = "video" | "live" | "quiz" | "assignment";
 export type LessonStatus = "draft" | "published";
 export type EnrollmentStatus = "active" | "blocked" | "completed";
+export type BatchStatus = "upcoming" | "active" | "completed" | "cancelled";
 export type PurchaseStatus = "pending" | "approved" | "rejected";
 export type QuizOption = "a" | "b" | "c" | "d";
 
@@ -63,10 +64,27 @@ export interface CourseLesson {
   assignment?: Pick<Assignment, "id" | "title"> | null;
 }
 
+export interface CourseBatch {
+  id: string;
+  course_id: string;
+  name: string;
+  start_date: string | null;
+  end_date: string | null;
+  registration_deadline: string | null;
+  status: BatchStatus;
+  max_seats: number | null;
+  created_at: string;
+  updated_at: string;
+  course?: Course;
+  enrollment_count?: number;
+  active_enrollment_count?: number;
+}
+
 export interface Purchase {
   id: string;
   user_id: string;
   course_id: string;
+  batch_id: string | null;
   amount: number;
   status: PurchaseStatus;
   receipt_url: string | null;
@@ -75,6 +93,7 @@ export interface Purchase {
   approved_at: string | null;
   user?: Profile;
   course?: Course;
+  batch?: CourseBatch;
   is_enrolled?: boolean;
 }
 
@@ -82,11 +101,13 @@ export interface CourseEnrollment {
   id: string;
   user_id: string;
   course_id: string;
+  batch_id: string | null;
   purchase_id: string | null;
   status: EnrollmentStatus;
   created_at: string;
   user?: Profile;
   course?: Course;
+  batch?: CourseBatch;
 }
 
 export interface Quiz {
