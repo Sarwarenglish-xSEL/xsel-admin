@@ -18,6 +18,21 @@ export async function getAssignmentSubmissionSignedUrl(fileUrl: string): Promise
   return data.signedUrl;
 }
 
+export async function getAssignmentSubmissionById(
+  id: string
+): Promise<AssignmentSubmission | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("assignment_submissions")
+    .select(
+      "*, user:profiles(*), assignment:assignments(*, lesson:course_lessons(title, chapter:course_chapters(course:courses(title))))"
+    )
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data as AssignmentSubmission | null;
+}
+
 export async function getAssignmentSubmissions(): Promise<
   AssignmentSubmission[]
 > {

@@ -150,7 +150,8 @@ export interface AssignmentSubmission {
   id: string;
   assignment_id: string;
   user_id: string;
-  file_url: string;
+  file_url: string | null;
+  text_answer: string | null;
   obtained_marks: number | null;
   feedback: string | null;
   submitted_at: string;
