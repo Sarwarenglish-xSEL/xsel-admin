@@ -222,6 +222,7 @@ async function seedCourse(
           option_c: "Avoid projects",
           option_d: "None of the above",
           correct_option: "a",
+          reason: "The course is designed to teach core concepts and build practical skills.",
           sort_order: 0,
         });
       }

@@ -131,6 +131,7 @@ export interface QuizQuestion {
   option_c: string;
   option_d: string;
   correct_option: QuizOption;
+  reason: string;
   sort_order: number;
 }
 

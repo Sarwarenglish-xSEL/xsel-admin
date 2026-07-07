@@ -77,6 +77,11 @@ function ViewAttemptDialog({ attempt }: { attempt: QuizAttempt }) {
                       Correct: {optionLabel(question.correct_option)} —{" "}
                       {options[question.correct_option]}
                     </p>
+                    {question.reason && (
+                      <p className="mt-1 text-gray-500">
+                        Reason: {question.reason}
+                      </p>
+                    )}
                     <Badge
                       variant={answer.is_correct ? "success" : "warning"}
                       className="mt-2"

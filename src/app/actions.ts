@@ -465,6 +465,7 @@ export async function addQuizQuestionAction(
     option_c: string;
     option_d: string;
     correct_option: QuizOption;
+    reason: string;
     sort_order: number;
   }
 ) {
@@ -484,11 +485,13 @@ export async function updateQuizQuestionAction(
     option_c: string;
     option_d: string;
     correct_option: QuizOption;
+    reason: string;
     sort_order: number;
   }>
 ) {
-  await updateQuizQuestion(questionId, input);
+  const question = await updateQuizQuestion(questionId, input);
   revalidatePath(`/batches/${batchId}/lessons/${lessonId}/quiz`);
+  return question;
 }
 
 export async function deleteQuizQuestionAction(
