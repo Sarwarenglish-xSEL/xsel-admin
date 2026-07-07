@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { CourseChapter, CourseLesson } from "@/types/database";
 
 export async function getChaptersWithLessons(
-  courseId: string
+  batchId: string
 ): Promise<CourseChapter[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -10,7 +10,7 @@ export async function getChaptersWithLessons(
     .select(
       "*, lessons:course_lessons(*, quiz:quizzes(id, title), assignment:assignments(id, title))"
     )
-    .eq("course_id", courseId)
+    .eq("batch_id", batchId)
     .order("sort_order");
   if (error) throw error;
 
@@ -35,6 +35,7 @@ function normalizeRelation<T>(value: T | T[] | null | undefined): T | null {
 }
 
 export async function createChapter(
+  batchId: string,
   courseId: string,
   title: string,
   sortOrder: number
@@ -42,7 +43,7 @@ export async function createChapter(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("course_chapters")
-    .insert({ course_id: courseId, title, sort_order: sortOrder })
+    .insert({ batch_id: batchId, course_id: courseId, title, sort_order: sortOrder })
     .select()
     .single();
   if (error) throw error;

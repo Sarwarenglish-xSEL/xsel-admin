@@ -132,35 +132,36 @@ export async function deleteCourseAction(id: string) {
 }
 
 export async function createChapterAction(
+  batchId: string,
   courseId: string,
   title: string,
   sortOrder: number
 ) {
-  const chapter = await createChapter(courseId, title, sortOrder);
-  revalidatePath(`/courses/${courseId}/edit`);
+  const chapter = await createChapter(batchId, courseId, title, sortOrder);
+  revalidatePath(`/batches/${batchId}/edit`);
   return chapter;
 }
 
 export async function updateChapterAction(
-  courseId: string,
+  batchId: string,
   id: string,
   input: { title?: string; sort_order?: number }
 ) {
   await updateChapter(id, input);
-  revalidatePath(`/courses/${courseId}/edit`);
+  revalidatePath(`/batches/${batchId}/edit`);
 }
 
-export async function deleteChapterAction(courseId: string, id: string) {
+export async function deleteChapterAction(batchId: string, id: string) {
   await deleteChapter(id);
-  revalidatePath(`/courses/${courseId}/edit`);
+  revalidatePath(`/batches/${batchId}/edit`);
 }
 
 export async function reorderChaptersAction(
-  courseId: string,
+  batchId: string,
   items: { id: string; sort_order: number }[]
 ) {
   await reorderChapters(items);
-  revalidatePath(`/courses/${courseId}/edit`);
+  revalidatePath(`/batches/${batchId}/edit`);
 }
 
 async function resolveVideoLessonFields(
@@ -213,39 +214,39 @@ async function resolveVideoLessonFields(
 }
 
 export async function createLessonAction(
-  courseId: string,
+  batchId: string,
   input: LessonInput
 ) {
   const resolved = await resolveVideoLessonFields(input);
   const lesson = await createLesson({ ...input, ...resolved });
-  revalidatePath(`/courses/${courseId}/edit`);
+  revalidatePath(`/batches/${batchId}/edit`);
   return lesson;
 }
 
 export async function updateLessonAction(
-  courseId: string,
+  batchId: string,
   id: string,
   input: Partial<LessonInput>
 ) {
   const existing = await getLessonById(id);
   const resolved = await resolveVideoLessonFields(input, existing);
   const lesson = await updateLesson(id, { ...input, ...resolved });
-  revalidatePath(`/courses/${courseId}/edit`);
+  revalidatePath(`/batches/${batchId}/edit`);
   revalidatePath("/live");
   return lesson;
 }
 
-export async function deleteLessonAction(courseId: string, id: string) {
+export async function deleteLessonAction(batchId: string, id: string) {
   await deleteLesson(id);
-  revalidatePath(`/courses/${courseId}/edit`);
+  revalidatePath(`/batches/${batchId}/edit`);
 }
 
 export async function reorderLessonsAction(
-  courseId: string,
+  batchId: string,
   items: { id: string; sort_order: number }[]
 ) {
   await reorderLessons(items);
-  revalidatePath(`/courses/${courseId}/edit`);
+  revalidatePath(`/batches/${batchId}/edit`);
 }
 
 type UserActionResult = { ok: true } | { ok: false; message: string };
@@ -356,6 +357,7 @@ export async function createEnrollmentAction(
   await createEnrollment(userId, courseId, batchId);
   revalidatePath("/enrollments");
   revalidatePath("/batches");
+  revalidatePath(`/batches/${batchId}/edit`);
 }
 
 export async function updateEnrollmentStatusAction(
@@ -370,28 +372,25 @@ export async function updateEnrollmentStatusAction(
 export async function createBatchAction(input: BatchInput) {
   const batch = await createBatch(input);
   revalidatePath("/batches");
-  revalidatePath(`/courses/${input.course_id}/edit`);
   return batch;
 }
 
 export async function updateBatchAction(
   id: string,
-  courseId: string,
   input: Partial<Omit<BatchInput, "course_id">>
 ) {
   await updateBatch(id, input);
   revalidatePath("/batches");
-  revalidatePath(`/courses/${courseId}/edit`);
+  revalidatePath(`/batches/${id}/edit`);
 }
 
-export async function deleteBatchAction(id: string, courseId: string) {
+export async function deleteBatchAction(id: string) {
   await deleteBatch(id);
   revalidatePath("/batches");
-  revalidatePath(`/courses/${courseId}/edit`);
 }
 
 export async function createQuizAction(
-  courseId: string,
+  batchId: string,
   lessonId: string,
   input: {
     title: string;
@@ -418,13 +417,13 @@ export async function createQuizAction(
       sort_order: i,
     });
   }
-  revalidatePath(`/courses/${courseId}/edit`);
-  revalidatePath(`/courses/${courseId}/lessons/${lessonId}/quiz`);
+  revalidatePath(`/batches/${batchId}/edit`);
+  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/quiz`);
   return { id: quiz.id, title: quiz.title };
 }
 
 export async function createAssignmentAction(
-  courseId: string,
+  batchId: string,
   lessonId: string,
   input: {
     title: string;
@@ -437,23 +436,23 @@ export async function createAssignmentAction(
     description: input.question,
     max_marks: input.max_marks ?? 100,
   });
-  revalidatePath(`/courses/${courseId}/edit`);
-  revalidatePath(`/courses/${courseId}/lessons/${lessonId}/assignment`);
+  revalidatePath(`/batches/${batchId}/edit`);
+  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/assignment`);
   return { id: assignment.id, title: assignment.title };
 }
 
 export async function saveQuizAction(
-  courseId: string,
+  batchId: string,
   lessonId: string,
   input: { title: string; passing_marks: number; total_marks: number }
 ) {
   const quiz = await upsertQuiz(lessonId, input);
-  revalidatePath(`/courses/${courseId}/lessons/${lessonId}/quiz`);
+  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/quiz`);
   return quiz;
 }
 
 export async function addQuizQuestionAction(
-  courseId: string,
+  batchId: string,
   lessonId: string,
   quizId: string,
   input: {
@@ -467,12 +466,12 @@ export async function addQuizQuestionAction(
   }
 ) {
   const question = await createQuizQuestion(quizId, input);
-  revalidatePath(`/courses/${courseId}/lessons/${lessonId}/quiz`);
+  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/quiz`);
   return question;
 }
 
 export async function updateQuizQuestionAction(
-  courseId: string,
+  batchId: string,
   lessonId: string,
   questionId: string,
   input: Partial<{
@@ -486,20 +485,20 @@ export async function updateQuizQuestionAction(
   }>
 ) {
   await updateQuizQuestion(questionId, input);
-  revalidatePath(`/courses/${courseId}/lessons/${lessonId}/quiz`);
+  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/quiz`);
 }
 
 export async function deleteQuizQuestionAction(
-  courseId: string,
+  batchId: string,
   lessonId: string,
   questionId: string
 ) {
   await deleteQuizQuestion(questionId);
-  revalidatePath(`/courses/${courseId}/lessons/${lessonId}/quiz`);
+  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/quiz`);
 }
 
 export async function saveAssignmentAction(
-  courseId: string,
+  batchId: string,
   lessonId: string,
   input: {
     title: string;
@@ -509,7 +508,7 @@ export async function saveAssignmentAction(
   }
 ) {
   const assignment = await upsertAssignment(lessonId, input);
-  revalidatePath(`/courses/${courseId}/lessons/${lessonId}/assignment`);
+  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/assignment`);
   return assignment;
 }
 

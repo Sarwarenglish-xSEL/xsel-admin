@@ -175,7 +175,7 @@ function EnrollDialog({
                   {courseId
                     ? courseBatches.length
                       ? "Select batch"
-                      : "No batches — create one in course settings"
+                      : "No batches — create one on the Batches page"
                     : "Select a course first"}
                 </option>
                 {courseBatches.map((b) => (

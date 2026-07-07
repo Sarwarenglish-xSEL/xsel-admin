@@ -27,11 +27,11 @@ const quizSchema = z.object({
 });
 
 export function QuizBuilder({
-  courseId,
+  batchId,
   lessonId,
   quiz: initialQuiz,
 }: {
-  courseId: string;
+  batchId: string;
   lessonId: string;
   quiz: Quiz | null;
 }) {
@@ -63,7 +63,7 @@ export function QuizBuilder({
             onSubmit={handleSubmit(async (values) => {
               setLoading(true);
               try {
-                const saved = await saveQuizAction(courseId, lessonId, values);
+                const saved = await saveQuizAction(batchId, lessonId, values);
                 setQuiz({ ...saved, questions: quiz?.questions ?? [] });
                 toast.success("Quiz saved");
                 router.refresh();
@@ -103,7 +103,7 @@ export function QuizBuilder({
       </Card>
       {quiz && (
         <QuestionManager
-          courseId={courseId}
+          batchId={batchId}
           lessonId={lessonId}
           quizId={quiz.id}
           questions={quiz.questions ?? []}
@@ -133,14 +133,14 @@ export function QuizBuilder({
 }
 
 function QuestionManager({
-  courseId,
+  batchId,
   lessonId,
   quizId,
   questions,
   onQuestionAdded,
   onQuestionDeleted,
 }: {
-  courseId: string;
+  batchId: string;
   lessonId: string;
   quizId: string;
   questions: QuizQuestion[];
@@ -171,7 +171,7 @@ function QuestionManager({
                 onClick={async () => {
                   onQuestionDeleted(q.id);
                   try {
-                    await deleteQuizQuestionAction(courseId, lessonId, q.id);
+                    await deleteQuizQuestionAction(batchId, lessonId, q.id);
                     toast.success("Deleted");
                     router.refresh();
                   } catch (e) {
@@ -197,7 +197,7 @@ function QuestionManager({
         ))}
         {showAdd && (
           <AddQuestionForm
-            courseId={courseId}
+            batchId={batchId}
             lessonId={lessonId}
             quizId={quizId}
             sortOrder={questions.length}
@@ -215,14 +215,14 @@ function QuestionManager({
 }
 
 function AddQuestionForm({
-  courseId,
+  batchId,
   lessonId,
   quizId,
   sortOrder,
   onDone,
   onAdded,
 }: {
-  courseId: string;
+  batchId: string;
   lessonId: string;
   quizId: string;
   sortOrder: number;
@@ -270,7 +270,7 @@ function AddQuestionForm({
             setLoading(true);
             try {
               const created = await addQuizQuestionAction(
-                courseId,
+                batchId,
                 lessonId,
                 quizId,
                 {

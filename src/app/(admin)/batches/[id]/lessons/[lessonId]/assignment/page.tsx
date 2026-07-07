@@ -4,12 +4,12 @@ import { getAssignmentByLessonId } from "@/lib/db/assignments";
 import { AssignmentForm } from "@/components/courses/assignment-form";
 import { PageHeader } from "@/components/layout/page-header";
 
-export default async function AssignmentPage({
+export default async function BatchAssignmentPage({
   params,
 }: {
   params: Promise<{ id: string; lessonId: string }>;
 }) {
-  const { id: courseId, lessonId } = await params;
+  const { id: batchId, lessonId } = await params;
   const [lesson, assignment] = await Promise.all([
     getLessonById(lessonId),
     getAssignmentByLessonId(lessonId).catch(() => null),
@@ -19,15 +19,11 @@ export default async function AssignmentPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        backHref={`/courses/${courseId}/edit`}
+        backHref={`/batches/${batchId}/edit`}
         title="Assignment"
         description={lesson.title}
       />
-      <AssignmentForm
-        courseId={courseId}
-        lessonId={lessonId}
-        assignment={assignment}
-      />
+      <AssignmentForm batchId={batchId} lessonId={lessonId} assignment={assignment} />
     </div>
   );
 }

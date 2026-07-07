@@ -34,9 +34,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 export function ChaptersLessonsEditor({
+  batchId,
   courseId,
   chapters: initialChapters,
 }: {
+  batchId: string;
   courseId: string;
   chapters: CourseChapter[];
 }) {
@@ -68,6 +70,7 @@ export function ChaptersLessonsEditor({
     if (!newChapterTitle.trim()) return;
     try {
       const chapter = await createChapterAction(
+        batchId,
         courseId,
         newChapterTitle,
         chapters.length
@@ -89,7 +92,7 @@ export function ChaptersLessonsEditor({
       sort_order: i === index ? newIndex : i === newIndex ? index : i,
     }));
     try {
-      await reorderChaptersAction(courseId, items);
+      await reorderChaptersAction(batchId, items);
       router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to reorder");
@@ -121,7 +124,7 @@ export function ChaptersLessonsEditor({
                 onBlur={async (e) => {
                   if (e.target.value !== chapter.title) {
                     try {
-                      await updateChapterAction(courseId, chapter.id, {
+                      await updateChapterAction(batchId, chapter.id, {
                         title: e.target.value,
                       });
                       router.refresh();
@@ -154,7 +157,7 @@ export function ChaptersLessonsEditor({
                 onClick={async () => {
                   if (!confirm("Delete this chapter and all its lessons?")) return;
                   try {
-                    await deleteChapterAction(courseId, chapter.id);
+                    await deleteChapterAction(batchId, chapter.id);
                     setChapters((prev) => prev.filter((ch) => ch.id !== chapter.id));
                     toast.success("Chapter deleted");
                     router.refresh();
@@ -207,7 +210,7 @@ export function ChaptersLessonsEditor({
                     </Button>
                     {lesson.quiz ? (
                       <Link
-                        href={`/courses/${courseId}/lessons/${lesson.id}/quiz`}
+                        href={`/batches/${batchId}/lessons/${lesson.id}/quiz`}
                       >
                         <Button variant="ghost" size="sm">
                           <FileQuestion className="mr-1 h-3 w-3" />
@@ -231,7 +234,7 @@ export function ChaptersLessonsEditor({
                     )}
                     {lesson.assignment ? (
                       <Link
-                        href={`/courses/${courseId}/lessons/${lesson.id}/assignment`}
+                        href={`/batches/${batchId}/lessons/${lesson.id}/assignment`}
                       >
                         <Button variant="ghost" size="sm">
                           <ClipboardList className="mr-1 h-3 w-3" />
@@ -271,7 +274,7 @@ export function ChaptersLessonsEditor({
                                 : i,
                         }));
                         try {
-                          await reorderLessonsAction(courseId, items);
+                          await reorderLessonsAction(batchId, items);
                           router.refresh();
                         } catch {
                           toast.error("Failed to reorder");
@@ -286,7 +289,7 @@ export function ChaptersLessonsEditor({
                       onClick={async () => {
                         if (!confirm("Delete this lesson?")) return;
                         try {
-                          await deleteLessonAction(courseId, lesson.id);
+                          await deleteLessonAction(batchId, lesson.id);
                           setChapters((prev) =>
                             prev.map((ch) =>
                               ch.id === chapter.id
@@ -326,7 +329,7 @@ export function ChaptersLessonsEditor({
 
       {lessonDialog && (
         <LessonDialog
-          courseId={courseId}
+          batchId={batchId}
           chapterId={lessonDialog.chapterId}
           lesson={lessonDialog.lesson}
           sortOrder={chapterSortOrder(lessonDialog.chapterId)}
@@ -355,7 +358,7 @@ export function ChaptersLessonsEditor({
 
       {quizDialog && (
         <QuizDialog
-          courseId={courseId}
+          batchId={batchId}
           lessonId={quizDialog.lessonId}
           lessonTitle={quizDialog.lessonTitle}
           onClose={() => setQuizDialog(null)}
@@ -374,7 +377,7 @@ export function ChaptersLessonsEditor({
 
       {assignmentDialog && (
         <AssignmentDialog
-          courseId={courseId}
+          batchId={batchId}
           lessonId={assignmentDialog.lessonId}
           lessonTitle={assignmentDialog.lessonTitle}
           onClose={() => setAssignmentDialog(null)}
@@ -395,14 +398,14 @@ export function ChaptersLessonsEditor({
 }
 
 function LessonDialog({
-  courseId,
+  batchId,
   chapterId,
   lesson,
   sortOrder,
   onClose,
   onSaved,
 }: {
-  courseId: string;
+  batchId: string;
   chapterId: string;
   lesson?: CourseLesson;
   sortOrder: number;
@@ -454,11 +457,11 @@ function LessonDialog({
     };
     try {
       if (lesson) {
-        const saved = await updateLessonAction(courseId, lesson.id, payload);
+        const saved = await updateLessonAction(batchId, lesson.id, payload);
         onSaved(saved as CourseLesson, false);
         toast.success("Lesson updated");
       } else {
-        const saved = await createLessonAction(courseId, payload);
+        const saved = await createLessonAction(batchId, payload);
         onSaved(saved as CourseLesson, true);
         toast.success("Lesson created");
       }
@@ -577,13 +580,13 @@ const emptyQuestion = (): QuizQuestionDraft => ({
 });
 
 function QuizDialog({
-  courseId,
+  batchId,
   lessonId,
   lessonTitle,
   onClose,
   onSaved,
 }: {
-  courseId: string;
+  batchId: string;
   lessonId: string;
   lessonTitle: string;
   onClose: () => void;
@@ -623,7 +626,7 @@ function QuizDialog({
     }
     setLoading(true);
     try {
-      const quiz = await createQuizAction(courseId, lessonId, {
+      const quiz = await createQuizAction(batchId, lessonId, {
         title,
         questions,
       });
@@ -729,13 +732,13 @@ function QuizDialog({
 }
 
 function AssignmentDialog({
-  courseId,
+  batchId,
   lessonId,
   lessonTitle,
   onClose,
   onSaved,
 }: {
-  courseId: string;
+  batchId: string;
   lessonId: string;
   lessonTitle: string;
   onClose: () => void;
@@ -757,7 +760,7 @@ function AssignmentDialog({
     }
     setLoading(true);
     try {
-      const assignment = await createAssignmentAction(courseId, lessonId, {
+      const assignment = await createAssignmentAction(batchId, lessonId, {
         title,
         question,
       });

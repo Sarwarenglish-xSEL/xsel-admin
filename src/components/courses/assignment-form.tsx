@@ -21,11 +21,11 @@ const schema = z.object({
 });
 
 export function AssignmentForm({
-  courseId,
+  batchId,
   lessonId,
   assignment: initialAssignment,
 }: {
-  courseId: string;
+  batchId: string;
   lessonId: string;
   assignment: Assignment | null;
 }) {
@@ -58,7 +58,7 @@ export function AssignmentForm({
       onSubmit={handleSubmit(async (values) => {
         setLoading(true);
         try {
-          const saved = await saveAssignmentAction(courseId, lessonId, {
+          const saved = await saveAssignmentAction(batchId, lessonId, {
             ...values,
             due_date: values.due_date
               ? new Date(values.due_date).toISOString()

@@ -39,6 +39,7 @@ export interface Course {
 export interface CourseChapter {
   id: string;
   course_id: string;
+  batch_id: string | null;
   title: string;
   sort_order: number;
   created_at: string;
