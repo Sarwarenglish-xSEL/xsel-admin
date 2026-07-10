@@ -8,7 +8,9 @@ import {
   updateCourse,
   archiveCourse,
   deleteCourse,
+  createCourseReview,
   type CourseInput,
+  type CourseReviewInput,
 } from "@/lib/db/courses";
 import {
   createChapter,
@@ -538,4 +540,9 @@ export async function issueCertificateAction(
 ) {
   await issueCertificate(userId, courseId, certificateUrl);
   revalidatePath("/certificates");
+}
+
+export async function createCourseReviewAction(input: CourseReviewInput) {
+  await createCourseReview(input);
+  revalidatePath(`/courses/${input.course_id}/edit`);
 }

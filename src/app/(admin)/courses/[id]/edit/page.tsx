@@ -50,7 +50,7 @@ export default async function EditCoursePage({
           <CourseDetailsForm course={course} instructors={instructors!} />
         </TabsContent>
         <TabsContent value="reviews" className="mt-6">
-          <ReviewsList reviews={reviews!} />
+          <ReviewsList reviews={reviews!} courseId={id} />
         </TabsContent>
       </Tabs>
     </div>

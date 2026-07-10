@@ -183,7 +183,8 @@ export interface QuizAttempt {
 export interface CourseReview {
   id: string;
   course_id: string;
-  user_id: string;
+  user_id: string | null;
+  reviewer_name: string | null;
   rating: number;
   review: string;
   created_at: string;

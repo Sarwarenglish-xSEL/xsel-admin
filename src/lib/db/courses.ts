@@ -151,3 +151,29 @@ export async function getCourseReviews(courseId: string) {
   if (error) throw error;
   return data ?? [];
 }
+
+export type CourseReviewInput = {
+  course_id: string;
+  reviewer_name: string;
+  rating: number;
+  review: string;
+  created_at: string;
+};
+
+export async function createCourseReview(input: CourseReviewInput) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("course_reviews")
+    .insert({
+      course_id: input.course_id,
+      user_id: null,
+      reviewer_name: input.reviewer_name.trim(),
+      rating: input.rating,
+      review: input.review,
+      created_at: input.created_at,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
