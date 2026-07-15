@@ -406,6 +406,7 @@ export async function createQuizAction(
       option_c: string;
       option_d: string;
       correct_option: QuizOption;
+      reason?: string;
     }[];
     passing_marks?: number;
     total_marks?: number;
@@ -419,6 +420,7 @@ export async function createQuizAction(
   for (let i = 0; i < input.questions.length; i++) {
     await createQuizQuestion(quiz.id, {
       ...input.questions[i],
+      reason: input.questions[i].reason ?? "",
       sort_order: i,
     });
   }
