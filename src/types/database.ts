@@ -8,6 +8,8 @@ export type EnrollmentStatus = "active" | "blocked" | "completed";
 export type BatchStatus = "upcoming" | "active" | "completed" | "cancelled";
 export type PurchaseStatus = "pending" | "approved" | "rejected";
 export type QuizOption = "a" | "b" | "c" | "d";
+export type QuizType = "lesson" | "video";
+export type AssignmentType = "written" | "file";
 
 export interface Profile {
   id: string;
@@ -61,8 +63,8 @@ export interface CourseLesson {
   created_at: string;
   updated_at: string;
   chapter?: CourseChapter & { course?: Course };
-  quiz?: Pick<Quiz, "id" | "title"> | null;
-  assignment?: Pick<Assignment, "id" | "title"> | null;
+  quizzes?: Pick<Quiz, "id" | "title" | "quiz_type" | "sort_order">[];
+  assignments?: Pick<Assignment, "id" | "title" | "type" | "sort_order">[];
 }
 
 export interface CourseBatch {
@@ -117,6 +119,8 @@ export interface Quiz {
   title: string;
   passing_marks: number;
   total_marks: number;
+  quiz_type: QuizType;
+  sort_order: number;
   created_at: string;
   updated_at: string;
   questions?: QuizQuestion[];
@@ -140,8 +144,11 @@ export interface Assignment {
   lesson_id: string;
   title: string;
   description: string;
+  question: string;
+  type: AssignmentType;
   max_marks: number;
   due_date: string | null;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }

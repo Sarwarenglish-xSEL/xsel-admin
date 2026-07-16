@@ -42,18 +42,27 @@ import {
   type BatchInput,
 } from "@/lib/db/batches";
 import {
-  upsertQuiz,
+  createQuiz,
+  updateQuiz,
   createQuizQuestion,
   updateQuizQuestion,
   deleteQuizQuestion,
 } from "@/lib/db/quizzes";
-import { upsertAssignment } from "@/lib/db/assignments";
+import { createAssignment, updateAssignment } from "@/lib/db/assignments";
 import {
   gradeSubmission,
   getAssignmentSubmissionSignedUrl,
 } from "@/lib/db/submissions";
 import { issueCertificate } from "@/lib/db/certificates";
-import type { BatchStatus, EnrollmentStatus, Profile, QuizOption, UserRole } from "@/types/database";
+import type {
+  AssignmentType,
+  BatchStatus,
+  EnrollmentStatus,
+  Profile,
+  QuizOption,
+  QuizType,
+  UserRole,
+} from "@/types/database";
 
 type AuthActionResult =
   | { ok: true; needsEmailConfirmation?: boolean }
@@ -409,22 +418,30 @@ export async function createQuizAction(
     }[];
     passing_marks?: number;
     total_marks?: number;
+    quiz_type?: QuizType;
   }
 ) {
-  const quiz = await upsertQuiz(lessonId, {
+  const quiz = await createQuiz(lessonId, {
     title: input.title,
     passing_marks: input.passing_marks ?? 0,
     total_marks: input.total_marks ?? input.questions.length * 10,
+    quiz_type: input.quiz_type ?? "lesson",
   });
   for (let i = 0; i < input.questions.length; i++) {
     await createQuizQuestion(quiz.id, {
       ...input.questions[i],
+      reason: "",
       sort_order: i,
     });
   }
   revalidatePath(`/batches/${batchId}/edit`);
-  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/quiz`);
-  return { id: quiz.id, title: quiz.title };
+  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/quiz/${quiz.id}`);
+  return {
+    id: quiz.id,
+    title: quiz.title,
+    quiz_type: quiz.quiz_type,
+    sort_order: quiz.sort_order,
+  };
 }
 
 export async function createAssignmentAction(
@@ -433,26 +450,44 @@ export async function createAssignmentAction(
   input: {
     title: string;
     question: string;
+    description?: string;
     max_marks?: number;
+    type?: AssignmentType;
   }
 ) {
-  const assignment = await upsertAssignment(lessonId, {
+  const assignment = await createAssignment(lessonId, {
     title: input.title,
-    description: input.question,
+    question: input.question,
+    description: input.description ?? "",
     max_marks: input.max_marks ?? 100,
+    type: input.type ?? "written",
   });
   revalidatePath(`/batches/${batchId}/edit`);
-  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/assignment`);
-  return { id: assignment.id, title: assignment.title };
+  revalidatePath(
+    `/batches/${batchId}/lessons/${lessonId}/assignment/${assignment.id}`
+  );
+  return {
+    id: assignment.id,
+    title: assignment.title,
+    type: assignment.type,
+    sort_order: assignment.sort_order,
+  };
 }
 
 export async function saveQuizAction(
   batchId: string,
   lessonId: string,
-  input: { title: string; passing_marks: number; total_marks: number }
+  quizId: string,
+  input: {
+    title: string;
+    passing_marks: number;
+    total_marks: number;
+    quiz_type?: QuizType;
+  }
 ) {
-  const quiz = await upsertQuiz(lessonId, input);
-  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/quiz`);
+  const quiz = await updateQuiz(quizId, input);
+  revalidatePath(`/batches/${batchId}/edit`);
+  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/quiz/${quizId}`);
   return quiz;
 }
 
@@ -472,13 +507,14 @@ export async function addQuizQuestionAction(
   }
 ) {
   const question = await createQuizQuestion(quizId, input);
-  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/quiz`);
+  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/quiz/${quizId}`);
   return question;
 }
 
 export async function updateQuizQuestionAction(
   batchId: string,
   lessonId: string,
+  quizId: string,
   questionId: string,
   input: Partial<{
     question: string;
@@ -492,31 +528,38 @@ export async function updateQuizQuestionAction(
   }>
 ) {
   const question = await updateQuizQuestion(questionId, input);
-  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/quiz`);
+  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/quiz/${quizId}`);
   return question;
 }
 
 export async function deleteQuizQuestionAction(
   batchId: string,
   lessonId: string,
+  quizId: string,
   questionId: string
 ) {
   await deleteQuizQuestion(questionId);
-  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/quiz`);
+  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/quiz/${quizId}`);
 }
 
 export async function saveAssignmentAction(
   batchId: string,
   lessonId: string,
+  assignmentId: string,
   input: {
     title: string;
     description: string;
+    question: string;
     max_marks: number;
     due_date?: string | null;
+    type?: AssignmentType;
   }
 ) {
-  const assignment = await upsertAssignment(lessonId, input);
-  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/assignment`);
+  const assignment = await updateAssignment(assignmentId, input);
+  revalidatePath(`/batches/${batchId}/edit`);
+  revalidatePath(
+    `/batches/${batchId}/lessons/${lessonId}/assignment/${assignmentId}`
+  );
   return assignment;
 }
 

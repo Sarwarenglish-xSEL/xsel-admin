@@ -8,7 +8,7 @@ export async function getChaptersWithLessons(
   const { data, error } = await supabase
     .from("course_chapters")
     .select(
-      "*, lessons:course_lessons(*, quiz:quizzes(id, title), assignment:assignments(id, title))"
+      "*, lessons:course_lessons(*, quizzes(id, title, quiz_type, sort_order), assignments(id, title, type, sort_order))"
     )
     .eq("batch_id", batchId)
     .order("sort_order");
@@ -17,21 +17,31 @@ export async function getChaptersWithLessons(
   return (data ?? []).map((ch) => ({
     ...ch,
     lessons: (ch.lessons ?? [])
-      .map((lesson: CourseLesson & { quiz?: unknown; assignment?: unknown }) => ({
-        ...lesson,
-        quiz: normalizeRelation(lesson.quiz),
-        assignment: normalizeRelation(lesson.assignment),
-      }))
+      .map(
+        (
+          lesson: CourseLesson & {
+            quizzes?: CourseLesson["quizzes"];
+            assignments?: CourseLesson["assignments"];
+          }
+        ) => ({
+          ...lesson,
+          quizzes: sortByOrder(asArray(lesson.quizzes)),
+          assignments: sortByOrder(asArray(lesson.assignments)),
+        })
+      )
       .sort(
         (a: CourseLesson, b: CourseLesson) => a.sort_order - b.sort_order
       ),
   }));
 }
 
-function normalizeRelation<T>(value: T | T[] | null | undefined): T | null {
-  if (!value) return null;
-  if (Array.isArray(value)) return value[0] ?? null;
-  return value;
+function asArray<T>(value: T | T[] | null | undefined): T[] {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+function sortByOrder<T extends { sort_order: number }>(items: T[]): T[] {
+  return [...items].sort((a, b) => a.sort_order - b.sort_order);
 }
 
 export async function createChapter(

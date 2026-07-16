@@ -12,7 +12,12 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { CourseChapter, CourseLesson, QuizOption } from "@/types/database";
+import type {
+  CourseChapter,
+  CourseLesson,
+  QuizOption,
+  QuizType,
+} from "@/types/database";
 import {
   createChapterAction,
   updateChapterAction,
@@ -51,6 +56,7 @@ export function ChaptersLessonsEditor({
   const [quizDialog, setQuizDialog] = useState<{
     lessonId: string;
     lessonTitle: string;
+    hasVideoQuiz: boolean;
   } | null>(null);
   const [assignmentDialog, setAssignmentDialog] = useState<{
     lessonId: string;
@@ -171,149 +177,199 @@ export function ChaptersLessonsEditor({
             </div>
 
             <div className="space-y-2 pl-4">
-              {(chapter.lessons ?? []).map((lesson, lessonIndex) => (
-                <div
-                  key={lesson.id}
-                  className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">{lesson.title}</span>
-                    <Badge variant="outline" className="capitalize text-xs">
-                      {lesson.lesson_type}
-                    </Badge>
-                    <Badge
-                      variant={lesson.status === "published" ? "success" : "outline"}
-                      className="text-xs capitalize"
-                    >
-                      {lesson.status}
-                    </Badge>
-                    {lesson.quiz && (
-                      <Badge variant="outline" className="text-xs">
-                        Quiz
-                      </Badge>
-                    )}
-                    {lesson.assignment && (
-                      <Badge variant="outline" className="text-xs">
-                        Assignment
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap items-center justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        setLessonDialog({ chapterId: chapter.id, lesson })
-                      }
-                    >
-                      Edit
-                    </Button>
-                    {lesson.quiz ? (
-                      <Link
-                        href={`/batches/${batchId}/lessons/${lesson.id}/quiz`}
-                      >
-                        <Button variant="ghost" size="sm">
-                          <FileQuestion className="mr-1 h-3 w-3" />
-                          Edit Quiz
+              {(chapter.lessons ?? []).map((lesson, lessonIndex) => {
+                const quizzes = lesson.quizzes ?? [];
+                const assignments = lesson.assignments ?? [];
+                const hasVideoQuiz = quizzes.some((q) => q.quiz_type === "video");
+
+                return (
+                  <div
+                    key={lesson.id}
+                    className="space-y-2 rounded-md bg-muted/50 px-3 py-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm">{lesson.title}</span>
+                        <Badge variant="outline" className="capitalize text-xs">
+                          {lesson.lesson_type}
+                        </Badge>
+                        <Badge
+                          variant={
+                            lesson.status === "published" ? "success" : "outline"
+                          }
+                          className="text-xs capitalize"
+                        >
+                          {lesson.status}
+                        </Badge>
+                        {quizzes.length > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            {quizzes.length} Quiz
+                            {quizzes.length === 1 ? "" : "zes"}
+                          </Badge>
+                        )}
+                        {assignments.length > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            {assignments.length} Assignment
+                            {assignments.length === 1 ? "" : "s"}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setLessonDialog({ chapterId: chapter.id, lesson })
+                          }
+                        >
+                          Edit
                         </Button>
-                      </Link>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setQuizDialog({
-                            lessonId: lesson.id,
-                            lessonTitle: lesson.title,
-                          })
-                        }
-                      >
-                        <FileQuestion className="mr-1 h-3 w-3" />
-                        Add Quiz
-                      </Button>
-                    )}
-                    {lesson.assignment ? (
-                      <Link
-                        href={`/batches/${batchId}/lessons/${lesson.id}/assignment`}
-                      >
-                        <Button variant="ghost" size="sm">
-                          <ClipboardList className="mr-1 h-3 w-3" />
-                          Edit Assignment
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={async () => {
+                            const lessons = chapter.lessons ?? [];
+                            const newIndex =
+                              lessonIndex > 0 ? lessonIndex - 1 : lessonIndex + 1;
+                            if (newIndex < 0 || newIndex >= lessons.length) return;
+                            const items = lessons.map((l, i) => ({
+                              id: l.id,
+                              sort_order:
+                                i === lessonIndex
+                                  ? newIndex
+                                  : i === newIndex
+                                    ? lessonIndex
+                                    : i,
+                            }));
+                            try {
+                              await reorderLessonsAction(batchId, items);
+                              router.refresh();
+                            } catch {
+                              toast.error("Failed to reorder");
+                            }
+                          }}
+                        >
+                          <ChevronUp className="h-4 w-4" />
                         </Button>
-                      </Link>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setAssignmentDialog({
-                            lessonId: lesson.id,
-                            lessonTitle: lesson.title,
-                          })
-                        }
-                      >
-                        <ClipboardList className="mr-1 h-3 w-3" />
-                        Add Assignment
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={async () => {
-                        const lessons = chapter.lessons ?? [];
-                        const newIndex =
-                          lessonIndex > 0 ? lessonIndex - 1 : lessonIndex + 1;
-                        if (newIndex < 0 || newIndex >= lessons.length) return;
-                        const items = lessons.map((l, i) => ({
-                          id: l.id,
-                          sort_order:
-                            i === lessonIndex
-                              ? newIndex
-                              : i === newIndex
-                                ? lessonIndex
-                                : i,
-                        }));
-                        try {
-                          await reorderLessonsAction(batchId, items);
-                          router.refresh();
-                        } catch {
-                          toast.error("Failed to reorder");
-                        }
-                      }}
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={async () => {
-                        if (!confirm("Delete this lesson?")) return;
-                        try {
-                          await deleteLessonAction(batchId, lesson.id);
-                          setChapters((prev) =>
-                            prev.map((ch) =>
-                              ch.id === chapter.id
-                                ? {
-                                    ...ch,
-                                    lessons: (ch.lessons ?? []).filter(
-                                      (l) => l.id !== lesson.id
-                                    ),
-                                  }
-                                : ch
-                            )
-                          );
-                          toast.success("Lesson deleted");
-                          router.refresh();
-                        } catch (e) {
-                          toast.error(e instanceof Error ? e.message : "Failed");
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={async () => {
+                            if (!confirm("Delete this lesson?")) return;
+                            try {
+                              await deleteLessonAction(batchId, lesson.id);
+                              setChapters((prev) =>
+                                prev.map((ch) =>
+                                  ch.id === chapter.id
+                                    ? {
+                                        ...ch,
+                                        lessons: (ch.lessons ?? []).filter(
+                                          (l) => l.id !== lesson.id
+                                        ),
+                                      }
+                                    : ch
+                                )
+                              );
+                              toast.success("Lesson deleted");
+                              router.refresh();
+                            } catch (e) {
+                              toast.error(
+                                e instanceof Error ? e.message : "Failed"
+                              );
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 border-t border-border/60 pt-2 pl-1">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <p className="text-xs font-medium text-muted-foreground">
+                            Quizzes
+                          </p>
+                          {quizzes.length === 0 ? (
+                            <p className="text-xs text-muted-foreground">
+                              None yet
+                            </p>
+                          ) : (
+                            <div className="flex flex-wrap gap-1">
+                              {quizzes.map((quiz) => (
+                                <Link
+                                  key={quiz.id}
+                                  href={`/batches/${batchId}/lessons/${lesson.id}/quiz/${quiz.id}`}
+                                >
+                                  <Button variant="outline" size="sm" className="h-7">
+                                    <FileQuestion className="mr-1 h-3 w-3" />
+                                    {quiz.title}
+                                    {quiz.quiz_type === "video" ? " (video)" : ""}
+                                  </Button>
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setQuizDialog({
+                              lessonId: lesson.id,
+                              lessonTitle: lesson.title,
+                              hasVideoQuiz,
+                            })
+                          }
+                        >
+                          <Plus className="mr-1 h-3 w-3" />
+                          Add Quiz
+                        </Button>
+                      </div>
+
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <p className="text-xs font-medium text-muted-foreground">
+                            Assignments
+                          </p>
+                          {assignments.length === 0 ? (
+                            <p className="text-xs text-muted-foreground">
+                              None yet
+                            </p>
+                          ) : (
+                            <div className="flex flex-wrap gap-1">
+                              {assignments.map((assignment) => (
+                                <Link
+                                  key={assignment.id}
+                                  href={`/batches/${batchId}/lessons/${lesson.id}/assignment/${assignment.id}`}
+                                >
+                                  <Button variant="outline" size="sm" className="h-7">
+                                    <ClipboardList className="mr-1 h-3 w-3" />
+                                    {assignment.title}
+                                  </Button>
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setAssignmentDialog({
+                              lessonId: lesson.id,
+                              lessonTitle: lesson.title,
+                            })
+                          }
+                        >
+                          <Plus className="mr-1 h-3 w-3" />
+                          Add Assignment
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <Button
                 variant="outline"
                 size="sm"
@@ -344,7 +400,7 @@ export function ChaptersLessonsEditor({
                   lessons: isNew
                     ? [
                         ...lessons,
-                        { ...savedLesson, quiz: null, assignment: null },
+                        { ...savedLesson, quizzes: [], assignments: [] },
                       ]
                     : lessons.map((l) =>
                         l.id === savedLesson.id ? { ...l, ...savedLesson } : l
@@ -361,13 +417,21 @@ export function ChaptersLessonsEditor({
           batchId={batchId}
           lessonId={quizDialog.lessonId}
           lessonTitle={quizDialog.lessonTitle}
+          hasVideoQuiz={quizDialog.hasVideoQuiz}
           onClose={() => setQuizDialog(null)}
           onSaved={(lessonId, quiz) => {
             setChapters((prev) =>
               prev.map((ch) => ({
                 ...ch,
                 lessons: (ch.lessons ?? []).map((l) =>
-                  l.id === lessonId ? { ...l, quiz } : l
+                  l.id === lessonId
+                    ? {
+                        ...l,
+                        quizzes: [...(l.quizzes ?? []), quiz].sort(
+                          (a, b) => a.sort_order - b.sort_order
+                        ),
+                      }
+                    : l
                 ),
               }))
             );
@@ -386,7 +450,14 @@ export function ChaptersLessonsEditor({
               prev.map((ch) => ({
                 ...ch,
                 lessons: (ch.lessons ?? []).map((l) =>
-                  l.id === lessonId ? { ...l, assignment } : l
+                  l.id === lessonId
+                    ? {
+                        ...l,
+                        assignments: [...(l.assignments ?? []), assignment].sort(
+                          (a, b) => a.sort_order - b.sort_order
+                        ),
+                      }
+                    : l
                 ),
               }))
             );
@@ -583,16 +654,27 @@ function QuizDialog({
   batchId,
   lessonId,
   lessonTitle,
+  hasVideoQuiz,
   onClose,
   onSaved,
 }: {
   batchId: string;
   lessonId: string;
   lessonTitle: string;
+  hasVideoQuiz: boolean;
   onClose: () => void;
-  onSaved: (lessonId: string, quiz: { id: string; title: string }) => void;
+  onSaved: (
+    lessonId: string,
+    quiz: {
+      id: string;
+      title: string;
+      quiz_type: QuizType;
+      sort_order: number;
+    }
+  ) => void;
 }) {
   const [title, setTitle] = useState(`${lessonTitle} Quiz`);
+  const [quizType, setQuizType] = useState<QuizType>("lesson");
   const [questions, setQuestions] = useState<QuizQuestionDraft[]>([
     emptyQuestion(),
   ]);
@@ -614,6 +696,10 @@ function QuizDialog({
       toast.error("Quiz title is required");
       return;
     }
+    if (quizType === "video" && hasVideoQuiz) {
+      toast.error("This lesson already has a video quiz");
+      return;
+    }
     for (const [i, q] of questions.entries()) {
       if (!q.question.trim()) {
         toast.error(`Question ${i + 1} is required`);
@@ -629,6 +715,7 @@ function QuizDialog({
       const quiz = await createQuizAction(batchId, lessonId, {
         title,
         questions,
+        quiz_type: quizType,
       });
       onSaved(lessonId, quiz);
       toast.success("Quiz created");
@@ -651,6 +738,18 @@ function QuizDialog({
           <div>
             <Label>Quiz Title</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+          </div>
+          <div>
+            <Label>Quiz Type</Label>
+            <Select
+              value={quizType}
+              onChange={(e) => setQuizType(e.target.value as QuizType)}
+            >
+              <option value="lesson">Lesson</option>
+              <option value="video" disabled={hasVideoQuiz}>
+                Video{hasVideoQuiz ? " (already exists)" : ""}
+              </option>
+            </Select>
           </div>
 
           {questions.map((q, index) => (
@@ -742,7 +841,15 @@ function AssignmentDialog({
   lessonId: string;
   lessonTitle: string;
   onClose: () => void;
-  onSaved: (lessonId: string, assignment: { id: string; title: string }) => void;
+  onSaved: (
+    lessonId: string,
+    assignment: {
+      id: string;
+      title: string;
+      type: "written" | "file";
+      sort_order: number;
+    }
+  ) => void;
 }) {
   const [title, setTitle] = useState(`${lessonTitle} Assignment`);
   const [question, setQuestion] = useState("");

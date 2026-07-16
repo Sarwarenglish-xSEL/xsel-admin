@@ -25,6 +25,7 @@ const quizSchema = z.object({
   title: z.string().min(1),
   passing_marks: z.number().min(0),
   total_marks: z.number().min(1),
+  quiz_type: z.enum(["lesson", "video"]),
 });
 
 export function QuizBuilder({
@@ -34,7 +35,7 @@ export function QuizBuilder({
 }: {
   batchId: string;
   lessonId: string;
-  quiz: Quiz | null;
+  quiz: Quiz;
 }) {
   const [quiz, setQuiz] = useState(initialQuiz);
   const [loading, setLoading] = useState(false);
@@ -47,9 +48,10 @@ export function QuizBuilder({
   const { register, handleSubmit } = useForm({
     resolver: zodResolver(quizSchema),
     defaultValues: {
-      title: quiz?.title ?? "",
-      passing_marks: quiz?.passing_marks ?? 0,
-      total_marks: quiz?.total_marks ?? 100,
+      title: quiz.title,
+      passing_marks: quiz.passing_marks,
+      total_marks: quiz.total_marks,
+      quiz_type: quiz.quiz_type,
     },
   });
 
@@ -64,8 +66,13 @@ export function QuizBuilder({
             onSubmit={handleSubmit(async (values) => {
               setLoading(true);
               try {
-                const saved = await saveQuizAction(batchId, lessonId, values);
-                setQuiz({ ...saved, questions: quiz?.questions ?? [] });
+                const saved = await saveQuizAction(
+                  batchId,
+                  lessonId,
+                  quiz.id,
+                  values
+                );
+                setQuiz({ ...saved, questions: quiz.questions ?? [] });
                 toast.success("Quiz saved");
                 router.refresh();
               } catch (e) {
@@ -79,6 +86,13 @@ export function QuizBuilder({
             <div>
               <Label>Title</Label>
               <Input {...register("title")} />
+            </div>
+            <div>
+              <Label>Quiz Type</Label>
+              <Select {...register("quiz_type")}>
+                <option value="lesson">Lesson</option>
+                <option value="video">Video</option>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -102,45 +116,32 @@ export function QuizBuilder({
           </form>
         </CardContent>
       </Card>
-      {quiz && (
-        <QuestionManager
-          batchId={batchId}
-          lessonId={lessonId}
-          quizId={quiz.id}
-          questions={quiz.questions ?? []}
-          onQuestionAdded={(question) => {
-            setQuiz((prev) =>
-              prev
-                ? { ...prev, questions: [...(prev.questions ?? []), question] }
-                : prev
-            );
-          }}
-          onQuestionDeleted={(questionId) => {
-            setQuiz((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    questions: (prev.questions ?? []).filter(
-                      (q) => q.id !== questionId
-                    ),
-                  }
-                : prev
-            );
-          }}
-          onQuestionUpdated={(question) => {
-            setQuiz((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    questions: (prev.questions ?? []).map((q) =>
-                      q.id === question.id ? question : q
-                    ),
-                  }
-                : prev
-            );
-          }}
-        />
-      )}
+      <QuestionManager
+        batchId={batchId}
+        lessonId={lessonId}
+        quizId={quiz.id}
+        questions={quiz.questions ?? []}
+        onQuestionAdded={(question) => {
+          setQuiz((prev) => ({
+            ...prev,
+            questions: [...(prev.questions ?? []), question],
+          }));
+        }}
+        onQuestionDeleted={(questionId) => {
+          setQuiz((prev) => ({
+            ...prev,
+            questions: (prev.questions ?? []).filter((q) => q.id !== questionId),
+          }));
+        }}
+        onQuestionUpdated={(question) => {
+          setQuiz((prev) => ({
+            ...prev,
+            questions: (prev.questions ?? []).map((q) =>
+              q.id === question.id ? question : q
+            ),
+          }));
+        }}
+      />
     </div>
   );
 }
@@ -220,7 +221,12 @@ function QuestionManager({
                     onClick={async () => {
                       onQuestionDeleted(q.id);
                       try {
-                        await deleteQuizQuestionAction(batchId, lessonId, q.id);
+                        await deleteQuizQuestionAction(
+                          batchId,
+                          lessonId,
+                          quizId,
+                          q.id
+                        );
                         toast.success("Deleted");
                         router.refresh();
                       } catch (e) {
@@ -361,6 +367,7 @@ function QuestionForm({
                 ? await updateQuizQuestionAction(
                     batchId,
                     lessonId,
+                    quizId,
                     question.id,
                     payload
                   )
