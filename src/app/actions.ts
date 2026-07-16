@@ -415,6 +415,7 @@ export async function createQuizAction(
       option_c: string;
       option_d: string;
       correct_option: QuizOption;
+      reason?: string;
     }[];
     passing_marks?: number;
     total_marks?: number;
