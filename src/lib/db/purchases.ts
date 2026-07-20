@@ -1,5 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/admin";
 import type { Purchase, PurchaseStatus } from "@/types/database";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+/** Prefer service role for public payment flow (no sign-in). */
+async function getPaymentDbClient(): Promise<SupabaseClient> {
+  const service = createServiceClient();
+  if (service) return service;
+  return createClient();
+}
 
 async function attachEnrollmentStatus(
   purchases: Purchase[]
@@ -33,8 +42,12 @@ async function attachEnrollmentStatus(
   }));
 }
 
-async function getActiveEnrollmentForBatch(userId: string, batchId: string) {
-  const supabase = await createClient();
+async function getActiveEnrollmentForBatch(
+  userId: string,
+  batchId: string,
+  client?: SupabaseClient
+) {
+  const supabase = client ?? (await createClient());
   const { data, error } = await supabase
     .from("course_enrollments")
     .select("id")
@@ -48,9 +61,10 @@ async function getActiveEnrollmentForBatch(userId: string, batchId: string) {
 
 async function getActiveEnrollment(
   userId: string,
-  courseId: string
+  courseId: string,
+  client?: SupabaseClient
 ) {
-  const supabase = await createClient();
+  const supabase = client ?? (await createClient());
   const { data, error } = await supabase
     .from("course_enrollments")
     .select("id")
@@ -175,13 +189,7 @@ export async function getUserPurchaseForCourse(
   userId: string,
   courseId: string
 ): Promise<Purchase | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // RLS: only own purchases or staff can read — skip when anonymous or unauthorized.
-  if (!user) return null;
+  const supabase = await getPaymentDbClient();
 
   const { data, error } = await supabase
     .from("purchases")
@@ -216,7 +224,13 @@ export async function createPurchaseRequest(
     throw new Error("Receipt is required to save a purchase.");
   }
 
-  const supabase = await createClient();
+  const service = createServiceClient();
+  if (!service) {
+    throw new Error(
+      "Saving purchases without sign-in requires SUPABASE_SERVICE_ROLE_KEY in server config."
+    );
+  }
+  const supabase = service;
 
   const existing = await getUserPurchaseForCourse(userId, courseId);
   if (existing?.status === "pending") {
@@ -227,12 +241,22 @@ export async function createPurchaseRequest(
   }
 
   const enrollment = batchId
-    ? await getActiveEnrollmentForBatch(userId, batchId)
-    : await getActiveEnrollment(userId, courseId);
+    ? await getActiveEnrollmentForBatch(userId, batchId, supabase)
+    : await getActiveEnrollment(userId, courseId, supabase);
   if (enrollment) {
     throw new Error(
       batchId ? "You are already enrolled in this batch." : "You are already enrolled in this course."
     );
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", userId)
+    .maybeSingle();
+  if (profileError) throw profileError;
+  if (!profile) {
+    throw new Error("Invalid payment link: user was not found.");
   }
 
   const { data, error } = await supabase
@@ -249,4 +273,30 @@ export async function createPurchaseRequest(
     .single();
   if (error) throw error;
   return data as Purchase;
+}
+
+export async function uploadPurchaseReceipt(
+  userId: string,
+  courseId: string,
+  file: File
+): Promise<string> {
+  const service = createServiceClient();
+  if (!service) {
+    throw new Error(
+      "Receipt upload requires SUPABASE_SERVICE_ROLE_KEY in server config."
+    );
+  }
+
+  const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
+  const path = `${userId}/${courseId}/${Date.now()}.${ext}`;
+  const { error } = await service.storage
+    .from("purchase-receipts")
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (error) throw error;
+
+  const { data, error: signedError } = await service.storage
+    .from("purchase-receipts")
+    .createSignedUrl(path, 60 * 60 * 24 * 365);
+  if (signedError) throw signedError;
+  return data.signedUrl;
 }

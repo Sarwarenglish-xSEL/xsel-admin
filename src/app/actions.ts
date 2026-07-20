@@ -29,8 +29,9 @@ import {
   getBunnyVideoDuration,
 } from "@/lib/bunny-stream";
 import { createUser, deleteUser, updateUser, updateUserRole } from "@/lib/db/profiles";
-import { approvePurchase, rejectPurchase, createPurchaseRequest } from "@/lib/db/purchases";
-import { getCourseById } from "@/lib/db/courses";
+import { approvePurchase, rejectPurchase, createPurchaseRequest, uploadPurchaseReceipt } from "@/lib/db/purchases";
+import { getPublishedCourseById } from "@/lib/db/courses";
+import { RECEIPT_ACCEPT, RECEIPT_MAX_BYTES } from "@/lib/payment-config";
 import {
   createEnrollment,
   updateEnrollmentStatus,
@@ -115,12 +116,6 @@ export async function signOutAction() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
-}
-
-export async function paymentSignOutAction(returnTo: string) {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect(returnTo.startsWith("/payment/") ? returnTo : "/");
 }
 
 export async function createCourseAction(input: CourseInput) {
@@ -324,36 +319,29 @@ export async function rejectPurchaseAction(id: string, adminNote: string) {
   revalidatePath("/enrollments");
 }
 
-export async function submitPurchaseReceiptAction(
-  courseId: string,
-  userId: string,
-  receiptUrl: string
-) {
-  if (!userId?.trim()) {
-    throw new Error("User ID is required.");
-  }
-  if (!courseId?.trim()) {
-    throw new Error("Course ID is required.");
-  }
-  if (!receiptUrl?.trim()) {
-    throw new Error("Receipt URL is required.");
+export async function submitPurchaseReceiptAction(formData: FormData) {
+  const courseId = String(formData.get("courseId") ?? "").trim();
+  const userId = String(formData.get("userId") ?? "").trim();
+  const file = formData.get("file");
+
+  if (!userId) throw new Error("User ID is required.");
+  if (!courseId) throw new Error("Course ID is required.");
+  if (!(file instanceof File) || file.size === 0) {
+    throw new Error("Please select a receipt to upload.");
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Please sign in to submit your payment.");
-  if (user.id !== userId) {
-    throw new Error("Signed-in user does not match the payment account.");
+  const acceptedTypes = Object.keys(RECEIPT_ACCEPT);
+  if (!acceptedTypes.includes(file.type)) {
+    throw new Error("Please upload a JPG, PNG, or PDF file.");
+  }
+  if (file.size > RECEIPT_MAX_BYTES) {
+    throw new Error("File must be 5MB or smaller.");
   }
 
-  const course = await getCourseById(courseId);
-  if (!course) throw new Error("Course not found.");
-  if (course.status !== "published") {
-    throw new Error("This course is not available for purchase.");
-  }
+  const course = await getPublishedCourseById(courseId);
+  if (!course) throw new Error("Course not found or not available for purchase.");
 
+  const receiptUrl = await uploadPurchaseReceipt(userId, courseId, file);
   await createPurchaseRequest(
     userId,
     courseId,
@@ -361,6 +349,7 @@ export async function submitPurchaseReceiptAction(
     receiptUrl
   );
   revalidatePath(`/payment/${courseId}`);
+  revalidatePath("/purchases");
 }
 
 export async function createEnrollmentAction(

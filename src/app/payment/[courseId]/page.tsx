@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { getPublishedCourseById } from "@/lib/db/courses";
 import { getUserPurchaseForCourse } from "@/lib/db/purchases";
 import {
@@ -27,11 +26,6 @@ export default async function PaymentPage({
     return <InvalidPaymentLink courseId={courseId} />;
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   let course;
   try {
     course = await getPublishedCourseById(courseId);
@@ -47,8 +41,6 @@ export default async function PaymentPage({
   }
   if (!course) notFound();
 
-  const sessionUserId = user?.id ?? null;
-  const userIdMismatch = !!sessionUserId && sessionUserId !== userId;
   const existingPurchase = await getUserPurchaseForCourse(userId, courseId);
 
   return (
@@ -56,8 +48,6 @@ export default async function PaymentPage({
       course={course}
       courseId={courseId}
       userId={userId}
-      userEmail={user?.email ?? null}
-      userIdMismatch={userIdMismatch}
       existingPurchase={existingPurchase}
     />
   );

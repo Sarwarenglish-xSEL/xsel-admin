@@ -14,9 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Course, Purchase } from "@/types/database";
-import { submitPurchaseReceiptAction, paymentSignOutAction } from "@/app/actions";
-import { uploadFile } from "@/lib/db/storage";
-import { createClient } from "@/lib/supabase/client";
+import { submitPurchaseReceiptAction } from "@/app/actions";
 import {
   bankDetails,
   easyPaisaDetails,
@@ -24,7 +22,6 @@ import {
   RECEIPT_ACCEPT,
   RECEIPT_MAX_BYTES,
 } from "@/lib/payment-config";
-import { PaymentAuthForm } from "@/components/payment/payment-auth-form";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -223,12 +220,10 @@ function ReceiptUploadForm({
   course,
   courseId,
   userId,
-  userEmail,
 }: {
   course: Course;
   courseId: string;
   userId: string;
-  userEmail: string;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -276,16 +271,11 @@ function ReceiptUploadForm({
 
     setLoading(true);
     try {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Please sign in again.");
-
-      const ext = file.name.split(".").pop() ?? "bin";
-      const path = `${userId}/${courseId}/${Date.now()}.${ext}`;
-      const receiptUrl = await uploadFile("purchase-receipts", path, file);
-      await submitPurchaseReceiptAction(courseId, userId, receiptUrl);
+      const formData = new FormData();
+      formData.set("courseId", courseId);
+      formData.set("userId", userId);
+      formData.set("file", file);
+      await submitPurchaseReceiptAction(formData);
       setSubmitted(true);
       toast.success("Receipt submitted for verification");
       router.refresh();
@@ -325,7 +315,7 @@ function ReceiptUploadForm({
           <div>
             <h2 className="text-base font-semibold text-gray-900">Upload receipt</h2>
             <p className="text-sm text-gray-500">
-              {userEmail} · User {userId.slice(0, 8)}…
+              JPG, PNG or PDF · Max 5MB
             </p>
           </div>
         </div>
@@ -460,121 +450,28 @@ export function PaymentAccessError() {
           Payment page database access
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-gray-500">
-          Anonymous users need read access to published courses. Run this in the
-          Supabase SQL Editor, or add <code className="text-xs">SUPABASE_SERVICE_ROLE_KEY</code> to{" "}
-          <code className="text-xs">.env.local</code>:
+          Add <code className="text-xs">SUPABASE_SERVICE_ROLE_KEY</code> to{" "}
+          <code className="text-xs">.env.local</code> so receipts can be saved
+          without sign-in. Or run this in the Supabase SQL Editor for course reads:
         </p>
         <pre className="mt-4 overflow-x-auto rounded-lg bg-gray-900 p-4 text-xs text-gray-100">
 {`grant usage on schema public to anon, authenticated;
-grant select on table public.courses to anon, authenticated;
-grant select, insert on table public.purchases to authenticated;`}
+grant select on table public.courses to anon, authenticated;`}
         </pre>
       </div>
     </div>
   );
 }
 
-function AccountMismatchPanel({
-  courseId,
-  userId,
-  userEmail,
-}: {
-  courseId: string;
-  userId: string;
-  userEmail: string;
-}) {
-  const [loading, setLoading] = useState(false);
-  const returnTo = `/payment/${courseId}?userId=${userId}`;
-
-  return (
-    <section className="rounded-2xl border border-accent/30 bg-accent/10 p-5 sm:p-6">
-      <h2 className="font-semibold text-gray-900">Different account signed in</h2>
-      <p className="mt-2 text-sm text-gray-700">
-        You are signed in as <strong>{userEmail}</strong>, but this payment
-        belongs to another user. Sign out to continue with the correct account.
-      </p>
-      <Button
-        className="mt-4 w-full"
-        variant="outline"
-        disabled={loading}
-        onClick={async () => {
-          setLoading(true);
-          try {
-            await paymentSignOutAction(returnTo);
-          } catch {
-            toast.error("Could not sign out");
-            setLoading(false);
-          }
-        }}
-      >
-        {loading ? "Signing out..." : "Sign out and continue"}
-      </Button>
-    </section>
-  );
-}
-
-function PaymentRightPanel({
-  course,
-  courseId,
-  userId,
-  userEmail,
-  userIdMismatch,
-  existingPurchase,
-  showUpload,
-}: {
-  course: Course;
-  courseId: string;
-  userId: string;
-  userEmail: string | null;
-  userIdMismatch: boolean;
-  existingPurchase: Purchase | null;
-  showUpload: boolean;
-}) {
-  if (userIdMismatch && userEmail) {
-    return (
-      <AccountMismatchPanel
-        courseId={courseId}
-        userId={userId}
-        userEmail={userEmail}
-      />
-    );
-  }
-
-  if (!userEmail) {
-    return <PaymentAuthForm />;
-  }
-
-  if (existingPurchase && existingPurchase.status !== "rejected") {
-    return <StatusMessage purchase={existingPurchase} />;
-  }
-
-  if (showUpload) {
-    return (
-      <ReceiptUploadForm
-        course={course}
-        courseId={courseId}
-        userId={userId}
-        userEmail={userEmail}
-      />
-    );
-  }
-
-  return null;
-}
-
 export function PaymentVerificationView({
   course,
   courseId,
   userId,
-  userEmail,
-  userIdMismatch,
   existingPurchase,
 }: {
   course: Course;
   courseId: string;
   userId: string;
-  userEmail: string | null;
-  userIdMismatch: boolean;
   existingPurchase: Purchase | null;
 }) {
   const showUpload =
@@ -611,17 +508,17 @@ export function PaymentVerificationView({
 
           <div className="lg:col-span-2">
             <div className="mb-3">
-              <StepBadge step={2} label="Sign in & upload receipt" />
+              <StepBadge step={2} label="Upload receipt" />
             </div>
-            <PaymentRightPanel
-              course={course}
-              courseId={courseId}
-              userId={userId}
-              userEmail={userEmail}
-              userIdMismatch={userIdMismatch}
-              existingPurchase={existingPurchase}
-              showUpload={showUpload}
-            />
+            {existingPurchase && existingPurchase.status !== "rejected" ? (
+              <StatusMessage purchase={existingPurchase} />
+            ) : showUpload ? (
+              <ReceiptUploadForm
+                course={course}
+                courseId={courseId}
+                userId={userId}
+              />
+            ) : null}
           </div>
         </div>
       </div>
