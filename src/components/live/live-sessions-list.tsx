@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import { CalendarClock, Radio } from "lucide-react";
 import { toast } from "sonner";
 import { updateLessonAction } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { SectionHeader } from "@/components/layout/page-header";
 import { PageEmpty } from "@/components/page-states";
 
 type LiveLesson = {
@@ -31,7 +34,7 @@ export function LiveSessionsList({ lessons }: { lessons: LiveLesson[] }) {
     return (
       <PageEmpty
         title="No upcoming live sessions"
-        description="Schedule live lessons in course editor."
+        description="Schedule live lessons in the course editor."
       />
     );
   }
@@ -39,7 +42,11 @@ export function LiveSessionsList({ lessons }: { lessons: LiveLesson[] }) {
   return (
     <div className="grid gap-4">
       {lessons.map((lesson) => (
-        <LiveSessionCard key={lesson.id} lesson={lesson} onSaved={() => router.refresh()} />
+        <LiveSessionCard
+          key={lesson.id}
+          lesson={lesson}
+          onSaved={() => router.refresh()}
+        />
       ))}
     </div>
   );
@@ -90,31 +97,35 @@ function LiveSessionCard({
     new Date(lesson.live_end_time) >= new Date();
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between">
-        <div>
-          <CardTitle className="text-lg">{lesson.title}</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            {lesson.chapter?.course?.title} · {lesson.chapter?.title}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {isLiveNow && <Badge className="bg-danger text-white">Live Now</Badge>}
-          <Badge variant="outline" className="capitalize">
-            {lesson.status}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
+    <Card className="overflow-hidden border-brand/10 shadow-sm">
+      <SectionHeader
+        title={lesson.title}
+        description={`${lesson.chapter?.course?.title ?? "Course"} · ${lesson.chapter?.title ?? "Chapter"}`}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {isLiveNow && (
+              <Badge className="bg-danger text-white hover:bg-danger">Live Now</Badge>
+            )}
+            <Badge variant="outline" className="capitalize">
+              {lesson.status}
+            </Badge>
+          </div>
+        }
+      />
+      <CardContent className="p-5">
         {editing ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Meeting URL</label>
-              <Input value={meetingUrl} onChange={(e) => setMeetingUrl(e.target.value)} />
+              <Label>Meeting URL</Label>
+              <Input
+                value={meetingUrl}
+                onChange={(e) => setMeetingUrl(e.target.value)}
+                placeholder="https://..."
+              />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-sm font-medium">Start</label>
+                <Label>Start</Label>
                 <Input
                   type="datetime-local"
                   value={startTime}
@@ -122,7 +133,7 @@ function LiveSessionCard({
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">End</label>
+                <Label>End</Label>
                 <Input
                   type="datetime-local"
                   value={endTime}
@@ -134,28 +145,38 @@ function LiveSessionCard({
               <Button onClick={save} disabled={loading} size="sm">
                 {loading ? "Saving..." : "Save"}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setEditing(false)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditing(false)}
+              >
                 Cancel
               </Button>
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">
-              {lesson.live_start_time && (
-                <span>
-                  {format(new Date(lesson.live_start_time), "MMM d, yyyy h:mm a")}
-                  {lesson.live_end_time &&
-                    ` – ${format(new Date(lesson.live_end_time), "h:mm a")}`}
-                </span>
-              )}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-2 text-sm text-gray-600">
+              <p className="inline-flex items-center gap-2">
+                <CalendarClock className="h-4 w-4 text-brand" />
+                {lesson.live_start_time ? (
+                  <span>
+                    {format(new Date(lesson.live_start_time), "MMM d, yyyy h:mm a")}
+                    {lesson.live_end_time &&
+                      ` – ${format(new Date(lesson.live_end_time), "h:mm a")}`}
+                  </span>
+                ) : (
+                  <span>No schedule set</span>
+                )}
+              </p>
               {lesson.live_meeting_url && (
                 <a
                   href={lesson.live_meeting_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="ml-4 text-brand hover:underline"
+                  className="inline-flex items-center gap-2 font-medium text-brand hover:underline"
                 >
+                  <Radio className="h-4 w-4" />
                   Join meeting
                 </a>
               )}

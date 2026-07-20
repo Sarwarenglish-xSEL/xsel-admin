@@ -244,7 +244,7 @@ function EnrollmentFilters({
   const hasFilters = Boolean(courseId || batchId);
 
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4">
+    <div className="flex flex-wrap items-end gap-3 rounded-xl border border-brand/10 bg-white p-4 shadow-sm">
       <div className="min-w-[180px] flex-1">
         <Label>Course</Label>
         <Select

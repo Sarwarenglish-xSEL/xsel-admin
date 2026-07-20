@@ -26,9 +26,11 @@ export function PageError({ message }: { message: string }) {
 
 export function PageEmpty({ title, description }: { title: string; description?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
-      <Inbox className="mb-4 h-10 w-10 text-gray-300" />
-      <h3 className="text-lg font-medium text-gray-900">{title}</h3>
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-brand/15 bg-white py-16 text-center">
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand/10 text-brand">
+        <Inbox className="h-5 w-5" />
+      </div>
+      <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
       {description && (
         <p className="mt-1 max-w-sm text-sm text-gray-500">{description}</p>
       )}

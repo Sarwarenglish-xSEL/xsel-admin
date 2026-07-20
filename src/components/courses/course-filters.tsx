@@ -1,5 +1,6 @@
 "use client";
 
+import { Filter } from "lucide-react";
 import { Select } from "@/components/ui/select";
 
 export function CourseFilters({
@@ -19,7 +20,11 @@ export function CourseFilters({
   }
 
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-brand/10 bg-white px-4 py-3 shadow-sm">
+      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
+        <Filter className="h-3.5 w-3.5 text-brand" />
+        Filters
+      </div>
       <Select
         className="w-40"
         defaultValue={courseType ?? "all"}

@@ -3,13 +3,25 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { BookOpen, Calendar, ChevronRight, Pencil, Users } from "lucide-react";
+import {
+  BookOpen,
+  Calendar,
+  ChevronRight,
+  Layers,
+  Pencil,
+  Radio,
+  Users,
+  Video,
+} from "lucide-react";
 import type { BatchStatus, Course, CourseBatch, CourseStatus } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 type StatusFilter = "all" | CourseStatus;
+
+const PAGE_SIZE = 6;
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "All" },
@@ -18,7 +30,9 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "archived", label: "Archived" },
 ];
 
-function batchStatusVariant(status: BatchStatus): "default" | "outline" | "success" | "warning" {
+function batchStatusVariant(
+  status: BatchStatus
+): "default" | "outline" | "success" | "warning" {
   if (status === "active") return "success";
   if (status === "upcoming") return "default";
   if (status === "completed") return "outline";
@@ -35,17 +49,58 @@ type CourseWithBatches = {
   batches: CourseBatch[];
 };
 
+type SectionTone = "live" | "prerecorded";
+
+const SECTION_THEME: Record<
+  SectionTone,
+  {
+    icon: typeof Radio;
+    iconWrap: string;
+    accentBar: string;
+    headerBg: string;
+    bodyBg: string;
+    filterActive: string;
+    cardAccent: string;
+    emptyBg: string;
+  }
+> = {
+  live: {
+    icon: Radio,
+    iconWrap: "bg-accent/20 text-accent-dark",
+    accentBar: "from-accent to-brand",
+    headerBg: "bg-gradient-to-br from-accent/15 via-white to-brand/5",
+    bodyBg: "bg-gradient-to-b from-accent/5 to-surface-muted/40",
+    filterActive: "bg-accent-dark text-white shadow-sm shadow-accent/30",
+    cardAccent: "from-accent to-brand",
+    emptyBg: "bg-accent/5 border-accent/20",
+  },
+  prerecorded: {
+    icon: Video,
+    iconWrap: "bg-brand/15 text-brand",
+    accentBar: "from-brand to-accent",
+    headerBg: "bg-gradient-to-br from-brand/10 via-white to-accent/10",
+    bodyBg: "bg-gradient-to-b from-brand/5 to-surface-muted/40",
+    filterActive: "bg-brand text-white shadow-sm shadow-brand/25",
+    cardAccent: "from-brand to-accent",
+    emptyBg: "bg-brand/5 border-brand/15",
+  },
+};
+
 function StatusFilterBar({
   value,
   onChange,
   counts,
+  tone,
 }: {
   value: StatusFilter;
   onChange: (value: StatusFilter) => void;
   counts: Record<StatusFilter, number>;
+  tone: SectionTone;
 }) {
+  const theme = SECTION_THEME[tone];
+
   return (
-    <div className="flex flex-wrap gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
+    <div className="flex flex-wrap gap-1 rounded-lg border border-white/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm">
       {STATUS_FILTERS.map((option) => (
         <button
           key={option.value}
@@ -54,111 +109,160 @@ function StatusFilterBar({
           className={cn(
             "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
             value === option.value
-              ? "bg-white text-brand shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
+              ? theme.filterActive
+              : "text-gray-500 hover:bg-brand/5 hover:text-brand"
           )}
         >
           {option.label}
-          <span className="ml-1 text-gray-400">({counts[option.value]})</span>
+          <span
+            className={cn(
+              "ml-1",
+              value === option.value ? "text-white/70" : "text-gray-400"
+            )}
+          >
+            ({counts[option.value]})
+          </span>
         </button>
       ))}
     </div>
   );
 }
 
-function BatchCard({ batch }: { batch: CourseBatch }) {
+function BatchCard({
+  batch,
+  tone,
+}: {
+  batch: CourseBatch;
+  tone: SectionTone;
+}) {
+  const theme = SECTION_THEME[tone];
   const seatLabel =
     batch.max_seats != null
       ? `${batch.enrollment_count ?? 0} / ${batch.max_seats}`
       : String(batch.enrollment_count ?? 0);
 
   return (
-    <Card className="transition-shadow hover:shadow-md">
-      <CardHeader className="pb-2">
+    <div className="group overflow-hidden rounded-xl border border-brand/10 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/25 hover:shadow-md hover:shadow-brand/10">
+      <div className={cn("h-1 bg-gradient-to-r", theme.cardAccent)} />
+      <div className="space-y-3 p-4">
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-base">{batch.name}</CardTitle>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-brand-dark">
+              {batch.name}
+            </p>
+          </div>
           <Badge variant={batchStatusVariant(batch.status)}>{batch.status}</Badge>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
+
         <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="rounded-lg bg-gray-50 px-3 py-2">
-            <p className="text-xs text-gray-500">Students</p>
-            <p className="mt-0.5 flex items-center gap-1 font-semibold text-gray-900">
+          <div className="rounded-lg border border-brand/10 bg-gradient-to-br from-brand/5 to-white px-3 py-2">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-brand/60">
+              Students
+            </p>
+            <p className="mt-0.5 flex items-center gap-1 font-semibold text-brand-dark">
               <Users className="h-3.5 w-3.5 text-brand" />
               {seatLabel}
             </p>
           </div>
-          <div className="rounded-lg bg-gray-50 px-3 py-2">
-            <p className="text-xs text-gray-500">Active</p>
-            <p className="mt-0.5 font-semibold text-gray-900">
+          <div className="rounded-lg border border-accent/20 bg-gradient-to-br from-accent/10 to-white px-3 py-2">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-accent-dark/70">
+              Active
+            </p>
+            <p className="mt-0.5 font-semibold text-accent-dark">
               {batch.active_enrollment_count ?? 0}
             </p>
           </div>
         </div>
-        <div className="space-y-1 text-xs text-gray-500">
+
+        <div className="space-y-1.5 rounded-lg bg-surface-muted/60 px-3 py-2 text-xs text-gray-600">
           <p className="inline-flex items-center gap-1.5">
-            <Calendar className="h-3.5 w-3.5" />
+            <Calendar className="h-3.5 w-3.5 text-brand" />
             Start: {formatDate(batch.start_date)}
           </p>
           <p className="inline-flex items-center gap-1.5">
-            <Calendar className="h-3.5 w-3.5" />
+            <Calendar className="h-3.5 w-3.5 text-accent-dark" />
             Reg. deadline: {formatDate(batch.registration_deadline)}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3 pt-1">
+
+        <div className="flex flex-wrap items-center gap-2 pt-0.5">
           <Link
             href={`/batches/${batch.id}/edit`}
-            className="inline-flex items-center gap-1 text-sm font-medium text-brand hover:underline"
+            className="inline-flex items-center gap-1 rounded-lg bg-brand px-2.5 py-1.5 text-xs font-medium text-white shadow-sm shadow-brand/20 transition-colors hover:bg-brand-dark"
           >
             <Pencil className="h-3.5 w-3.5" />
-            Manage content
+            Manage
           </Link>
           <Link
             href={`/enrollments?batch=${batch.id}`}
-            className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-brand"
+            className="inline-flex items-center gap-1 rounded-lg border border-brand/15 bg-white px-2.5 py-1.5 text-xs font-medium text-brand transition-colors hover:bg-brand/5"
           >
-            Enrollments <ChevronRight className="h-3.5 w-3.5" />
+            Enrollments
+            <ChevronRight className="h-3.5 w-3.5" />
           </Link>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
-function CourseGroupCard({ course, batches }: CourseWithBatches) {
+function CourseGroupCard({
+  course,
+  batches,
+  tone,
+}: CourseWithBatches & { tone: SectionTone }) {
+  const theme = SECTION_THEME[tone];
+
   return (
-    <div className="flex h-full flex-col space-y-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-brand/10 bg-white shadow-sm">
+      <div
+        className={cn(
+          "flex items-center gap-3 border-b border-brand/10 px-4 py-3",
+          theme.headerBg
+        )}
+      >
+        <div
+          className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+            theme.iconWrap
+          )}
+        >
           <BookOpen className="h-5 w-5" />
         </div>
         <div className="min-w-0">
           <Link
             href={`/courses/${course.id}/edit`}
-            className="block truncate text-base font-semibold text-gray-900 hover:text-brand"
+            className="block truncate text-base font-semibold text-brand-dark hover:text-brand"
           >
             {course.title}
           </Link>
-          <div className="mt-0.5">
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
             <Badge variant={course.status === "published" ? "default" : "outline"}>
               {course.status}
+            </Badge>
+            <Badge variant="warning">
+              {batches.length} batch{batches.length === 1 ? "" : "es"}
             </Badge>
           </div>
         </div>
       </div>
 
-      {batches.length === 0 ? (
-        <p className="flex flex-1 items-center justify-center rounded-lg bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
-          No batches yet for this course.
-        </p>
-      ) : (
-        <div className="space-y-3">
-          {batches.map((batch) => (
-            <BatchCard key={batch.id} batch={batch} />
-          ))}
-        </div>
-      )}
+      <div className="flex flex-1 flex-col gap-3 p-3">
+        {batches.length === 0 ? (
+          <p
+            className={cn(
+              "flex flex-1 items-center justify-center rounded-lg border border-dashed px-4 py-8 text-center text-sm text-gray-500",
+              theme.emptyBg
+            )}
+          >
+            No batches yet for this course.
+          </p>
+        ) : (
+          batches.map((batch) => (
+            <BatchCard key={batch.id} batch={batch} tone={tone} />
+          ))
+        )}
+      </div>
     </div>
   );
 }
@@ -175,53 +279,229 @@ function getStatusCounts(groups: CourseWithBatches[]): Record<StatusFilter, numb
 function CourseTypeSection({
   title,
   groups,
+  tone,
 }: {
   title: string;
   groups: CourseWithBatches[];
+  tone: SectionTone;
 }) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [page, setPage] = useState(0);
   const statusCounts = useMemo(() => getStatusCounts(groups), [groups]);
+  const theme = SECTION_THEME[tone];
+  const Icon = theme.icon;
+  const batchCount = groups.reduce((sum, g) => sum + g.batches.length, 0);
 
   const filteredGroups = useMemo(() => {
     if (statusFilter === "all") return groups;
     return groups.filter((group) => group.course.status === statusFilter);
   }, [groups, statusFilter]);
 
+  const pageCount = Math.max(1, Math.ceil(filteredGroups.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount - 1);
+  const pagedGroups = filteredGroups.slice(
+    currentPage * PAGE_SIZE,
+    currentPage * PAGE_SIZE + PAGE_SIZE
+  );
+  const showingFrom =
+    filteredGroups.length === 0 ? 0 : currentPage * PAGE_SIZE + 1;
+  const showingTo = Math.min(
+    (currentPage + 1) * PAGE_SIZE,
+    filteredGroups.length
+  );
+
+  function changeFilter(next: StatusFilter) {
+    setStatusFilter(next);
+    setPage(0);
+  }
+
   return (
-    <section className="flex w-full flex-col rounded-xl border border-gray-200 bg-gray-50/50 p-4">
-      <div className="space-y-3 border-b border-gray-200 pb-4">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-          <p className="mt-1 text-sm text-gray-500">
-            {filteredGroups.length} of {groups.length} course
-            {groups.length === 1 ? "" : "s"}
-          </p>
+    <section className="flex w-full flex-col overflow-hidden rounded-xl border border-brand/10 bg-white shadow-sm">
+      <div className={cn("space-y-3 border-b border-brand/10 px-5 py-4", theme.headerBg)}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div
+              className={cn(
+                "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+                theme.iconWrap
+              )}
+            >
+              <Icon className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <div
+                  className={cn("h-5 w-1 rounded-full bg-gradient-to-b", theme.accentBar)}
+                />
+                <h2 className="text-base font-semibold tracking-tight text-brand-dark">
+                  {title}
+                </h2>
+              </div>
+              <p className="mt-1 text-xs text-brand/70">
+                {filteredGroups.length} of {groups.length} course
+                {groups.length === 1 ? "" : "s"} · {batchCount} batch
+                {batchCount === 1 ? "" : "es"}
+              </p>
+            </div>
+          </div>
+          <StatusFilterBar
+            value={statusFilter}
+            onChange={changeFilter}
+            counts={statusCounts}
+            tone={tone}
+          />
         </div>
-        <StatusFilterBar value={statusFilter} onChange={setStatusFilter} counts={statusCounts} />
       </div>
 
-      <div className="mt-4">
+      <div className={cn("p-4", theme.bodyBg)}>
         {groups.length === 0 ? (
-          <Card>
-            <CardContent className="py-10 text-center text-sm text-gray-500">
-              No {title.toLowerCase()} found.
-            </CardContent>
-          </Card>
-        ) : filteredGroups.length === 0 ? (
-          <Card>
-            <CardContent className="py-10 text-center text-sm text-gray-500">
-              No {statusFilter} courses in this section.
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredGroups.map(({ course, batches }) => (
-              <CourseGroupCard key={course.id} course={course} batches={batches} />
-            ))}
+          <div
+            className={cn(
+              "rounded-xl border border-dashed px-4 py-12 text-center text-sm text-gray-500",
+              theme.emptyBg
+            )}
+          >
+            No {title.toLowerCase()} found.
           </div>
+        ) : filteredGroups.length === 0 ? (
+          <div
+            className={cn(
+              "rounded-xl border border-dashed px-4 py-12 text-center text-sm text-gray-500",
+              theme.emptyBg
+            )}
+          >
+            No {statusFilter} courses in this section.
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {pagedGroups.map(({ course, batches }) => (
+                <CourseGroupCard
+                  key={course.id}
+                  course={course}
+                  batches={batches}
+                  tone={tone}
+                />
+              ))}
+            </div>
+
+            {filteredGroups.length > PAGE_SIZE && (
+              <div className="mt-4 flex flex-col gap-3 border-t border-brand/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-brand/70">
+                  Showing {showingFrom}–{showingTo} of {filteredGroups.length}{" "}
+                  courses
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === 0}
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  >
+                    Previous
+                  </Button>
+                  <span className="min-w-[5.5rem] text-center text-sm font-medium text-brand-dark">
+                    Page {currentPage + 1} of {pageCount}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage >= pageCount - 1}
+                    onClick={() =>
+                      setPage((p) => Math.min(pageCount - 1, p + 1))
+                    }
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </section>
+  );
+}
+
+function BatchesSummary({
+  courses,
+  batches,
+}: {
+  courses: Course[];
+  batches: CourseBatch[];
+}) {
+  const liveCount = courses.filter((c) => c.course_type === "live").length;
+  const prerecordedCount = courses.filter((c) => c.course_type === "prerecorded").length;
+  const activeBatches = batches.filter((b) => b.status === "active").length;
+  const totalStudents = batches.reduce(
+    (sum, b) => sum + (b.enrollment_count ?? 0),
+    0
+  );
+
+  const cards = [
+    {
+      label: "Total Batches",
+      value: batches.length,
+      icon: Layers,
+      wrap: "bg-brand/10 text-brand",
+      valueClass: "text-brand-dark",
+    },
+    {
+      label: "Live Courses",
+      value: liveCount,
+      icon: Radio,
+      wrap: "bg-accent/15 text-accent-dark",
+      valueClass: "text-accent-dark",
+    },
+    {
+      label: "Pre-recorded",
+      value: prerecordedCount,
+      icon: Video,
+      wrap: "bg-brand/10 text-brand",
+      valueClass: "text-brand",
+    },
+    {
+      label: "Active Batches",
+      value: activeBatches,
+      icon: Users,
+      wrap: "bg-success/10 text-success",
+      valueClass: "text-success",
+    },
+  ];
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {cards.map((card) => (
+        <Card
+          key={card.label}
+          className="overflow-hidden border-brand/10 bg-gradient-to-br from-white to-surface-muted/50 shadow-sm"
+        >
+          <CardContent className="flex items-center justify-between gap-3 p-4">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                {card.label}
+              </p>
+              <p className={cn("mt-1 text-2xl font-bold tracking-tight", card.valueClass)}>
+                {card.value}
+              </p>
+              {card.label === "Total Batches" && (
+                <p className="mt-0.5 text-xs text-gray-400">
+                  {totalStudents} enrolled seat{totalStudents === 1 ? "" : "s"}
+                </p>
+              )}
+            </div>
+            <div
+              className={cn(
+                "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
+                card.wrap
+              )}
+            >
+              <card.icon className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 }
 
@@ -262,13 +542,15 @@ export function BatchesOverview({
 
   if (courses.length === 0) {
     return (
-      <Card>
+      <Card className="overflow-hidden border-brand/10 border-dashed shadow-sm">
         <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-          <BookOpen className="mb-3 h-10 w-10 text-gray-300" />
-          <p className="font-medium text-gray-900">No courses found</p>
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand/10 text-brand">
+            <BookOpen className="h-5 w-5" />
+          </div>
+          <p className="font-semibold text-brand-dark">No courses found</p>
           <p className="mt-1 max-w-md text-sm text-gray-500">
-            Create a course first, then add batches to manage chapters, lessons, schedule, and
-            student enrollment.
+            Create a course first, then add batches to manage chapters, lessons, schedule,
+            and student enrollment.
           </p>
         </CardContent>
       </Card>
@@ -277,8 +559,13 @@ export function BatchesOverview({
 
   return (
     <div className="flex flex-col gap-6">
-      <CourseTypeSection title="Live Courses" groups={liveCourses} />
-      <CourseTypeSection title="Pre-recorded Courses" groups={prerecordedCourses} />
+      <BatchesSummary courses={courses} batches={batches} />
+      <CourseTypeSection title="Live Courses" groups={liveCourses} tone="live" />
+      <CourseTypeSection
+        title="Pre-recorded Courses"
+        groups={prerecordedCourses}
+        tone="prerecorded"
+      />
     </div>
   );
 }

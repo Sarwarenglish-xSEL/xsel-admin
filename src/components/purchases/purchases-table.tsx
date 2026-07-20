@@ -17,21 +17,26 @@ import { cn } from "@/lib/utils";
 
 function StatusFilter({ status }: { status?: string }) {
   return (
-    <Select
-      className="w-40"
-      defaultValue={status ?? "all"}
-      onChange={(e) => {
-        const params = new URLSearchParams(window.location.search);
-        if (e.target.value === "all") params.delete("status");
-        else params.set("status", e.target.value);
-        window.location.search = params.toString();
-      }}
-    >
-      <option value="all">All</option>
-      <option value="pending">Pending</option>
-      <option value="approved">Approved</option>
-      <option value="rejected">Rejected</option>
-    </Select>
+    <div className="inline-flex items-center gap-3 rounded-xl border border-brand/10 bg-white px-4 py-3 shadow-sm">
+      <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+        Status
+      </span>
+      <Select
+        className="w-40"
+        defaultValue={status ?? "all"}
+        onChange={(e) => {
+          const params = new URLSearchParams(window.location.search);
+          if (e.target.value === "all") params.delete("status");
+          else params.set("status", e.target.value);
+          window.location.search = params.toString();
+        }}
+      >
+        <option value="all">All</option>
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="rejected">Rejected</option>
+      </Select>
+    </div>
   );
 }
 

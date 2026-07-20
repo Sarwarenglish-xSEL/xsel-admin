@@ -418,9 +418,10 @@ export async function createQuizAction(
     quiz_type: input.quiz_type ?? "lesson",
   });
   for (let i = 0; i < input.questions.length; i++) {
+    const q = input.questions[i];
     await createQuizQuestion(quiz.id, {
-      ...input.questions[i],
-      reason: "",
+      ...q,
+      reason: q.reason ?? "",
       sort_order: i,
     });
   }

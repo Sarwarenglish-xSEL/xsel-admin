@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { ImageIcon, Save } from "lucide-react";
 import { toast } from "sonner";
 import type { Course, Profile } from "@/types/database";
 import { updateCourseAction } from "@/app/actions";
@@ -14,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { SectionHeader } from "@/components/layout/page-header";
 
 const schema = z.object({
   title: z.string().min(1),
@@ -30,12 +33,24 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-export function CourseDetailsForm({ course, instructors }: { course: Course; instructors: Profile[] }) {
+export function CourseDetailsForm({
+  course,
+  instructors,
+}: {
+  course: Course;
+  instructors: Profile[];
+}) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const router = useRouter();
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       title: course.title,
@@ -76,94 +91,134 @@ export function CourseDetailsForm({ course, instructors }: { course: Course; ins
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-4">
-      <div>
-        <Label>Title</Label>
-        <Input {...register("title")} />
-        {errors.title && <p className="mt-1 text-xs text-danger">{errors.title.message}</p>}
-      </div>
-      <div>
-        <Label>Description</Label>
-        <Textarea rows={4} {...register("description")} />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label>Type</Label>
-          <Select {...register("course_type")}>
-            <option value="prerecorded">Pre-recorded</option>
-            <option value="live">Live</option>
-          </Select>
-        </div>
-        <div>
-          <Label>Category</Label>
-          <Select {...register("category")}>
-            <option value="design">Design</option>
-            <option value="coding">Coding</option>
-            <option value="business">Business</option>
-          </Select>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label>Price ($)</Label>
-          <Input type="number" step="0.01" {...register("price", { valueAsNumber: true })} />
-        </div>
-        <div>
-          <Label>Status</Label>
-          <Select {...register("status")}>
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-            <option value="archived">Archived</option>
-          </Select>
-        </div>
-      </div>
-      <div>
-        <Label>Instructor</Label>
-        <Select {...register("instructor_id")} defaultValue={course.instructor_id ?? ""}>
-          <option value="">No instructor</option>
-          {instructors.map((p) => (
-            <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
-          ))}
-        </Select>
-      </div>
-      {courseType === "live" && (
-        <div className="grid grid-cols-2 gap-4">
+    <Card className="overflow-hidden border-brand/10 shadow-sm">
+      <SectionHeader
+        title="Course details"
+        description="Edit the public course information, pricing, and media."
+      />
+      <CardContent className="p-5 sm:p-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="mx-auto max-w-2xl space-y-5">
           <div>
-            <Label>Registration Deadline</Label>
-            <Input type="datetime-local" {...register("registration_deadline")} />
-            <p className="mt-1 text-xs text-muted-foreground">
-              Last date students can register
-            </p>
+            <Label>Title</Label>
+            <Input {...register("title")} />
+            {errors.title && (
+              <p className="mt-1 text-xs text-danger">{errors.title.message}</p>
+            )}
           </div>
           <div>
-            <Label>Course Start Date</Label>
-            <Input type="datetime-local" {...register("course_start_date")} />
-            <p className="mt-1 text-xs text-muted-foreground">
-              When the live course begins
-            </p>
+            <Label>Description</Label>
+            <Textarea rows={4} {...register("description")} />
           </div>
-        </div>
-      )}
- 
-      <div>
-        <Label>Thumbnail</Label>
-        {thumbnailUrl && (
-          <img src={thumbnailUrl} alt="Thumbnail" className="mb-2 h-32 rounded-lg object-cover" />
-        )}
-        <Input type="file" accept="image/*" disabled={uploading} onChange={async (e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-          setUploading(true);
-          try {
-            const url = await uploadFile("course-thumbnails", `${course.id}/${file.name}`, file);
-            setValue("thumbnail_url", url);
-            toast.success("Thumbnail uploaded");
-          } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Upload failed");
-          } finally { setUploading(false); }
-        }} />
-      </div>
-      <Button type="submit" disabled={loading}>{loading ? "Saving..." : "Save Changes"}</Button>
-    </form>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label>Type</Label>
+              <Select {...register("course_type")}>
+                <option value="prerecorded">Pre-recorded</option>
+                <option value="live">Live</option>
+              </Select>
+            </div>
+            <div>
+              <Label>Category</Label>
+              <Select {...register("category")}>
+                <option value="design">Design</option>
+                <option value="coding">Coding</option>
+                <option value="business">Business</option>
+              </Select>
+            </div>
+            <div>
+              <Label>Price ($)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                {...register("price", { valueAsNumber: true })}
+              />
+            </div>
+            <div>
+              <Label>Status</Label>
+              <Select {...register("status")}>
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
+              </Select>
+            </div>
+          </div>
+          <div>
+            <Label>Instructor</Label>
+            <Select
+              {...register("instructor_id")}
+              defaultValue={course.instructor_id ?? ""}
+            >
+              <option value="">No instructor</option>
+              {instructors.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.full_name || p.email}
+                </option>
+              ))}
+            </Select>
+          </div>
+          {courseType === "live" && (
+            <div className="grid gap-4 rounded-xl border border-gray-100 bg-surface-muted/50 p-4 sm:grid-cols-2">
+              <div>
+                <Label>Registration Deadline</Label>
+                <Input type="datetime-local" {...register("registration_deadline")} />
+                <p className="mt-1 text-xs text-gray-500">
+                  Last date students can register
+                </p>
+              </div>
+              <div>
+                <Label>Course Start Date</Label>
+                <Input type="datetime-local" {...register("course_start_date")} />
+                <p className="mt-1 text-xs text-gray-500">When the live course begins</p>
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/60 p-4">
+            <div className="mb-2 flex items-center gap-2">
+              <ImageIcon className="h-4 w-4 text-brand" />
+              <Label className="mb-0">Thumbnail</Label>
+            </div>
+            {thumbnailUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={thumbnailUrl}
+                alt="Thumbnail"
+                className="mb-3 h-36 w-full max-w-sm rounded-lg object-cover shadow-sm"
+              />
+            )}
+            <Input
+              type="file"
+              accept="image/*"
+              disabled={uploading}
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setUploading(true);
+                try {
+                  const url = await uploadFile(
+                    "course-thumbnails",
+                    `${course.id}/${file.name}`,
+                    file
+                  );
+                  setValue("thumbnail_url", url);
+                  toast.success("Thumbnail uploaded");
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : "Upload failed");
+                } finally {
+                  setUploading(false);
+                }
+              }}
+            />
+          </div>
+
+          <div className="flex justify-end border-t border-gray-100 pt-5">
+            <Button type="submit" disabled={loading}>
+              <Save className="h-4 w-4" />
+              {loading ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

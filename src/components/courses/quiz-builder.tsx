@@ -14,12 +14,13 @@ import {
   updateQuizQuestionAction,
   deleteQuizQuestionAction,
 } from "@/app/actions";
+import { Card, CardContent } from "@/components/ui/card";
+import { SectionHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const quizSchema = z.object({
   title: z.string().min(1),
@@ -57,11 +58,12 @@ export function QuizBuilder({
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Quiz Settings</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Card className="overflow-hidden border-brand/10 shadow-sm">
+        <SectionHeader
+          title="Quiz settings"
+          description="Set the title, type, and scoring for this quiz."
+        />
+        <CardContent className="p-5 sm:p-6">
           <form
             onSubmit={handleSubmit(async (values) => {
               setLoading(true);
@@ -168,20 +170,23 @@ function QuestionManager({
   const router = useRouter();
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Questions ({questions.length})</CardTitle>
-        <Button
-          size="sm"
-          onClick={() => {
-            setEditingId(null);
-            setShowAdd(true);
-          }}
-        >
-          <Plus className="h-4 w-4" /> Add
-        </Button>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Card className="overflow-hidden border-brand/10 shadow-sm">
+      <SectionHeader
+        title={`Questions (${questions.length})`}
+        description="Add multiple-choice questions for this quiz."
+        actions={
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditingId(null);
+              setShowAdd(true);
+            }}
+          >
+            <Plus className="h-4 w-4" /> Add
+          </Button>
+        }
+      />
+      <CardContent className="space-y-4 p-5 sm:p-6">
         {questions.map((q, i) =>
           editingId === q.id ? (
             <QuestionForm
@@ -199,9 +204,12 @@ function QuestionManager({
               }}
             />
           ) : (
-            <div key={q.id} className="rounded-lg border border-gray-200 p-4">
+            <div
+              key={q.id}
+              className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+            >
               <div className="flex justify-between gap-2">
-                <p className="font-medium">
+                <p className="font-medium text-gray-900">
                   {i + 1}. {q.question}
                 </p>
                 <div className="flex shrink-0">
@@ -218,6 +226,7 @@ function QuestionManager({
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="text-danger hover:bg-danger/10 hover:text-danger"
                     onClick={async () => {
                       onQuestionDeleted(q.id);
                       try {
@@ -235,7 +244,7 @@ function QuestionManager({
                       }
                     }}
                   >
-                    <Trash2 className="h-4 w-4 text-danger" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -315,16 +324,37 @@ function QuestionForm({
           onChange={(e) => setQuestionText(e.target.value)}
         />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        {(["a", "b", "c", "d"] as const).map((k) => (
-          <div key={k}>
-            <Label>Option {k.toUpperCase()}</Label>
-            <Input
-              value={options[k]}
-              onChange={(e) => setOptions({ ...options, [k]: e.target.value })}
-            />
-          </div>
-        ))}
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">
+          Fill 2–4 options. Leave unused ones empty.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          {(["a", "b", "c", "d"] as const).map((k) => (
+            <div key={k}>
+              <Label>
+                Option {k.toUpperCase()}
+                {k === "c" || k === "d" ? (
+                  <span className="ml-1 font-normal text-muted-foreground">
+                    (optional)
+                  </span>
+                ) : null}
+              </Label>
+              <Input
+                value={options[k]}
+                onChange={(e) => {
+                  const next = { ...options, [k]: e.target.value };
+                  setOptions(next);
+                  const filled = (["a", "b", "c", "d"] as const).filter((key) =>
+                    next[key].trim()
+                  );
+                  if (!next[correct].trim() && filled.length > 0) {
+                    setCorrect(filled[0]);
+                  }
+                }}
+              />
+            </div>
+          ))}
+        </div>
       </div>
       <div>
         <Label>Correct</Label>
@@ -332,10 +362,15 @@ function QuestionForm({
           value={correct}
           onChange={(e) => setCorrect(e.target.value as QuizOption)}
         >
-          <option value="a">A</option>
-          <option value="b">B</option>
-          <option value="c">C</option>
-          <option value="d">D</option>
+          {((["a", "b", "c", "d"] as const).filter((k) => options[k].trim())
+            .length > 0
+            ? (["a", "b", "c", "d"] as const).filter((k) => options[k].trim())
+            : (["a", "b", "c", "d"] as const)
+          ).map((k) => (
+            <option key={k} value={k}>
+              {k.toUpperCase()}
+            </option>
+          ))}
         </Select>
       </div>
       <div>
@@ -350,6 +385,22 @@ function QuestionForm({
         <Button
           disabled={loading}
           onClick={async () => {
+            if (!questionText.trim()) {
+              toast.error("Question is required");
+              return;
+            }
+            const filled = (["a", "b", "c", "d"] as const).filter((k) =>
+              options[k].trim()
+            );
+            if (filled.length < 2) {
+              toast.error("Fill at least 2 options");
+              return;
+            }
+            if (!options[correct].trim()) {
+              toast.error("Correct option must be one of the filled options");
+              return;
+            }
+
             setLoading(true);
             try {
               const payload = {
