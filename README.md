@@ -80,8 +80,8 @@ scripts/seed.ts       # Sample data seeder
 
 1. Push the repo to GitHub.
 2. Import project in Vercel.
-3. Set environment variables:
-   - `NEXT_PUBLIC_SUPABASE_URL`
+3. In Vercel → Project → Settings → Environment Variables, set the **same** values as `.env.local` (Vercel does **not** read `.env.local`):
+   - `NEXT_PUBLIC_SUPABASE_URL` = `https://YOUR_PROJECT_REF.supabase.co` (full URL, not just the project ref)
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 4. Deploy. Do **not** add the service role key to Vercel.
 

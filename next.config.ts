@@ -1,9 +1,5 @@
 import type { NextConfig } from "next";
 
-const supabaseHostname = new URL(
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://placeholder.supabase.co"
-).hostname;
-
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@supabase/supabase-js", "@supabase/ssr"],
   experimental: {
@@ -13,7 +9,9 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: supabaseHostname,
+        // Fixed hostname — do not parse NEXT_PUBLIC_SUPABASE_URL here
+        // (Vercel env typos crash the build with ERR_INVALID_URL).
+        hostname: "rayzcfjxkugzwetfxkkl.supabase.co",
         pathname: "/storage/v1/object/public/**",
       },
     ],
