@@ -119,3 +119,5 @@ export function AddReviewDialog({ courseId }: { courseId: string }) {
     </>
   );
 }
+
+
