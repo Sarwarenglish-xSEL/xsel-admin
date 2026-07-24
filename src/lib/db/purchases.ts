@@ -110,48 +110,59 @@ export async function approvePurchase(purchaseId: string): Promise<void> {
     .eq("id", purchaseId)
     .single();
   if (fetchError) throw fetchError;
-  if (purchase.status !== "pending") {
-    throw new Error("Only pending purchases can be approved");
+  if (purchase.status !== "pending" && purchase.status !== "approved") {
+    throw new Error("Only pending or approved purchases can be enrolled");
   }
-
-  const existingEnrollment = purchase.batch_id
-    ? await getActiveEnrollmentForBatch(purchase.user_id, purchase.batch_id)
-    : await getActiveEnrollment(purchase.user_id, purchase.course_id);
-  if (existingEnrollment) {
+  if (!purchase.batch_id) {
     throw new Error(
-      purchase.batch_id
-        ? "User is already enrolled in this batch"
-        : "User is already enrolled in this course"
+      "This purchase has no batch. Ask the user to pay again with a batch link."
     );
   }
 
-  const { error: updateError } = await supabase
-    .from("purchases")
-    .update({ status: "approved", approved_at: new Date().toISOString() })
-    .eq("id", purchaseId)
-    .eq("status", "pending");
-  if (updateError) throw updateError;
-
-  const enrollmentPayload: {
-    user_id: string;
-    course_id: string;
-    purchase_id: string;
-    status: string;
-    batch_id?: string;
-  } = {
-    user_id: purchase.user_id,
-    course_id: purchase.course_id,
-    purchase_id: purchaseId,
-    status: "active",
-  };
-  if (purchase.batch_id) {
-    enrollmentPayload.batch_id = purchase.batch_id;
+  const existingEnrollment = await getActiveEnrollmentForBatch(
+    purchase.user_id,
+    purchase.batch_id
+  );
+  if (existingEnrollment) {
+    if (purchase.status === "pending") {
+      const { error: updateError } = await supabase
+        .from("purchases")
+        .update({ status: "approved", approved_at: new Date().toISOString() })
+        .eq("id", purchaseId)
+        .eq("status", "pending");
+      if (updateError) {
+        throw new Error(updateError.message || "Failed to approve purchase");
+      }
+    }
+    return;
   }
 
-  const { error: enrollError } = await supabase
-    .from("course_enrollments")
-    .insert(enrollmentPayload);
-  if (enrollError) throw enrollError;
+  // Enroll first so a failed insert cannot leave the purchase approved without enrollment.
+  const { error: enrollError } = await supabase.from("course_enrollments").insert({
+    user_id: purchase.user_id,
+    course_id: purchase.course_id,
+    batch_id: purchase.batch_id,
+    purchase_id: purchaseId,
+    status: "active",
+  });
+  if (enrollError) {
+    throw new Error(enrollError.message || "Failed to create enrollment");
+  }
+
+  if (purchase.status === "pending") {
+    const { error: updateError } = await supabase
+      .from("purchases")
+      .update({ status: "approved", approved_at: new Date().toISOString() })
+      .eq("id", purchaseId)
+      .eq("status", "pending");
+    if (updateError) {
+      await supabase
+        .from("course_enrollments")
+        .delete()
+        .eq("purchase_id", purchaseId);
+      throw new Error(updateError.message || "Failed to approve purchase");
+    }
+  }
 }
 
 export async function rejectPurchase(

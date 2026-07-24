@@ -306,18 +306,37 @@ export async function createUserAction(
   return { ok: true, needsEmailConfirmation: result.needsEmailConfirmation };
 }
 
-export async function approvePurchaseAction(id: string) {
-  await approvePurchase(id);
-  revalidatePath("/purchases");
-  revalidatePath("/dashboard");
-  revalidatePath("/enrollments");
+export async function approvePurchaseAction(
+  id: string
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  try {
+    await approvePurchase(id);
+    revalidatePath("/purchases");
+    revalidatePath("/dashboard");
+    revalidatePath("/enrollments");
+    return { ok: true };
+  } catch (e) {
+    const message =
+      e instanceof Error ? e.message : "Failed to approve purchase.";
+    return { ok: false, message };
+  }
 }
 
-export async function rejectPurchaseAction(id: string, adminNote: string) {
-  await rejectPurchase(id, adminNote);
-  revalidatePath("/purchases");
-  revalidatePath("/dashboard");
-  revalidatePath("/enrollments");
+export async function rejectPurchaseAction(
+  id: string,
+  adminNote: string
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  try {
+    await rejectPurchase(id, adminNote);
+    revalidatePath("/purchases");
+    revalidatePath("/dashboard");
+    revalidatePath("/enrollments");
+    return { ok: true };
+  } catch (e) {
+    const message =
+      e instanceof Error ? e.message : "Failed to reject purchase.";
+    return { ok: false, message };
+  }
 }
 
 export async function submitPurchaseReceiptAction(

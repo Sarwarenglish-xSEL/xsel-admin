@@ -48,8 +48,10 @@ function PurchaseActions({ purchase }: { purchase: Purchase }) {
 
   const canReview =
     purchase.status === "pending" && purchase.is_enrolled === false;
+  const needsEnrollment =
+    purchase.status === "approved" && purchase.is_enrolled === false;
 
-  if (!canReview) {
+  if (!canReview && !needsEnrollment) {
     if (purchase.status === "pending" && purchase.is_enrolled) {
       return (
         <span className="text-xs text-muted-foreground">Already enrolled</span>
@@ -69,8 +71,16 @@ function PurchaseActions({ purchase }: { purchase: Purchase }) {
         onClick={async () => {
           setLoading(true);
           try {
-            await approvePurchaseAction(purchase.id);
-            toast.success("Purchase approved and user enrolled");
+            const result = await approvePurchaseAction(purchase.id);
+            if (!result.ok) {
+              toast.error(result.message);
+              return;
+            }
+            toast.success(
+              needsEnrollment
+                ? "User enrolled successfully"
+                : "Purchase approved and user enrolled"
+            );
             router.refresh();
           } catch (e) {
             toast.error(e instanceof Error ? e.message : "Failed to approve");
@@ -79,47 +89,57 @@ function PurchaseActions({ purchase }: { purchase: Purchase }) {
           }
         }}
       >
-        Approve
+        {needsEnrollment ? "Enroll" : "Approve"}
       </Button>
-      <Button
-        size="sm"
-        variant="danger"
-        disabled={loading}
-        onClick={() => setRejectOpen(true)}
-      >
-        Reject
-      </Button>
-      <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
-        <DialogContent onClose={() => setRejectOpen(false)}>
-          <DialogHeader>
-            <DialogTitle>Reject Purchase</DialogTitle>
-          </DialogHeader>
-          <Textarea
-            placeholder="Reason for rejection..."
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
+      {canReview ? (
+        <>
           <Button
+            size="sm"
             variant="danger"
-            disabled={loading || !note.trim()}
-            onClick={async () => {
-              setLoading(true);
-              try {
-                await rejectPurchaseAction(purchase.id, note);
-                toast.success("Purchase rejected");
-                setRejectOpen(false);
-                router.refresh();
-              } catch (e) {
-                toast.error(e instanceof Error ? e.message : "Failed to reject");
-              } finally {
-                setLoading(false);
-              }
-            }}
+            disabled={loading}
+            onClick={() => setRejectOpen(true)}
           >
-            Confirm Reject
+            Reject
           </Button>
-        </DialogContent>
-      </Dialog>
+          <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+            <DialogContent onClose={() => setRejectOpen(false)}>
+              <DialogHeader>
+                <DialogTitle>Reject Purchase</DialogTitle>
+              </DialogHeader>
+              <Textarea
+                placeholder="Reason for rejection..."
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+              <Button
+                variant="danger"
+                disabled={loading || !note.trim()}
+                onClick={async () => {
+                  setLoading(true);
+                  try {
+                    const result = await rejectPurchaseAction(purchase.id, note);
+                    if (!result.ok) {
+                      toast.error(result.message);
+                      return;
+                    }
+                    toast.success("Purchase rejected");
+                    setRejectOpen(false);
+                    router.refresh();
+                  } catch (e) {
+                    toast.error(
+                      e instanceof Error ? e.message : "Failed to reject"
+                    );
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              >
+                Confirm Reject
+              </Button>
+            </DialogContent>
+          </Dialog>
+        </>
+      ) : null}
     </div>
   );
 }
