@@ -275,7 +275,11 @@ function ReceiptUploadForm({
       formData.set("courseId", courseId);
       formData.set("userId", userId);
       formData.set("file", file);
-      await submitPurchaseReceiptAction(formData);
+      const result = await submitPurchaseReceiptAction(formData);
+      if (!result.ok) {
+        toast.error(result.message);
+        return;
+      }
       setSubmitted(true);
       toast.success("Receipt submitted for verification");
       router.refresh();

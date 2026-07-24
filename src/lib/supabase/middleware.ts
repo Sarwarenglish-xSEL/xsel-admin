@@ -4,10 +4,21 @@ import { createServerClient } from "@supabase/ssr";
 export async function updateSession(request: NextRequest) {
   const response = NextResponse.next({ request });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // Missing/invalid env on Vercel throws inside createServerClient and surfaces as
+  // MIDDLEWARE_INVOCATION_FAILED — fail open so the page can still load.
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY"
+    );
+    return response;
+  }
+
+  let user = null;
+  try {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         getAll: () => request.cookies.getAll(),
         setAll: (cookiesToSet) => {
@@ -16,15 +27,12 @@ export async function updateSession(request: NextRequest) {
           );
         },
       },
-    }
-  );
+    });
 
-  let user = null;
-  try {
     const { data } = await supabase.auth.getUser();
     user = data.user;
   } catch {
-    // Transient network/DNS failures should not block the request entirely.
+    // Transient network/DNS failures or client init errors should not 500 the site.
     return response;
   }
 

@@ -3,6 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@supabase/supabase-js", "@supabase/ssr"],
   experimental: {
+    // Default is 1MB — payment receipts allow up to 5MB (plus multipart overhead).
+    serverActions: {
+      bodySizeLimit: "6mb",
+    },
     optimizePackageImports: ["lucide-react", "date-fns", "@tanstack/react-table"],
   },
   images: {

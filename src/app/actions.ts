@@ -319,37 +319,51 @@ export async function rejectPurchaseAction(id: string, adminNote: string) {
   revalidatePath("/enrollments");
 }
 
-export async function submitPurchaseReceiptAction(formData: FormData) {
-  const courseId = String(formData.get("courseId") ?? "").trim();
-  const userId = String(formData.get("userId") ?? "").trim();
-  const file = formData.get("file");
+export async function submitPurchaseReceiptAction(
+  formData: FormData
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  try {
+    const courseId = String(formData.get("courseId") ?? "").trim();
+    const userId = String(formData.get("userId") ?? "").trim();
+    const file = formData.get("file");
 
-  if (!userId) throw new Error("User ID is required.");
-  if (!courseId) throw new Error("Course ID is required.");
-  if (!(file instanceof File) || file.size === 0) {
-    throw new Error("Please select a receipt to upload.");
+    if (!userId) return { ok: false, message: "User ID is required." };
+    if (!courseId) return { ok: false, message: "Course ID is required." };
+    if (!(file instanceof File) || file.size === 0) {
+      return { ok: false, message: "Please select a receipt to upload." };
+    }
+
+    const acceptedTypes = Object.keys(RECEIPT_ACCEPT);
+    if (!acceptedTypes.includes(file.type)) {
+      return { ok: false, message: "Please upload a JPG, PNG, or PDF file." };
+    }
+    if (file.size > RECEIPT_MAX_BYTES) {
+      return { ok: false, message: "File must be 5MB or smaller." };
+    }
+
+    const course = await getPublishedCourseById(courseId);
+    if (!course) {
+      return {
+        ok: false,
+        message: "Course not found or not available for purchase.",
+      };
+    }
+
+    const receiptUrl = await uploadPurchaseReceipt(userId, courseId, file);
+    await createPurchaseRequest(
+      userId,
+      courseId,
+      Number(course.price),
+      receiptUrl
+    );
+    revalidatePath(`/payment/${courseId}`);
+    revalidatePath("/purchases");
+    return { ok: true };
+  } catch (e) {
+    const message =
+      e instanceof Error ? e.message : "Failed to submit payment receipt.";
+    return { ok: false, message };
   }
-
-  const acceptedTypes = Object.keys(RECEIPT_ACCEPT);
-  if (!acceptedTypes.includes(file.type)) {
-    throw new Error("Please upload a JPG, PNG, or PDF file.");
-  }
-  if (file.size > RECEIPT_MAX_BYTES) {
-    throw new Error("File must be 5MB or smaller.");
-  }
-
-  const course = await getPublishedCourseById(courseId);
-  if (!course) throw new Error("Course not found or not available for purchase.");
-
-  const receiptUrl = await uploadPurchaseReceipt(userId, courseId, file);
-  await createPurchaseRequest(
-    userId,
-    courseId,
-    Number(course.price),
-    receiptUrl
-  );
-  revalidatePath(`/payment/${courseId}`);
-  revalidatePath("/purchases");
 }
 
 export async function createEnrollmentAction(
