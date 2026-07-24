@@ -40,6 +40,7 @@ import {
   createBatch,
   updateBatch,
   deleteBatch,
+  getBatchForCourse,
   type BatchInput,
 } from "@/lib/db/batches";
 import {
@@ -325,10 +326,12 @@ export async function submitPurchaseReceiptAction(
   try {
     const courseId = String(formData.get("courseId") ?? "").trim();
     const userId = String(formData.get("userId") ?? "").trim();
+    const batchId = String(formData.get("batchId") ?? "").trim();
     const file = formData.get("file");
 
     if (!userId) return { ok: false, message: "User ID is required." };
     if (!courseId) return { ok: false, message: "Course ID is required." };
+    if (!batchId) return { ok: false, message: "Batch ID is required." };
     if (!(file instanceof File) || file.size === 0) {
       return { ok: false, message: "Please select a receipt to upload." };
     }
@@ -349,12 +352,21 @@ export async function submitPurchaseReceiptAction(
       };
     }
 
+    const batch = await getBatchForCourse(batchId, courseId);
+    if (!batch) {
+      return {
+        ok: false,
+        message: "Batch not found for this course.",
+      };
+    }
+
     const receiptUrl = await uploadPurchaseReceipt(userId, courseId, file);
     await createPurchaseRequest(
       userId,
       courseId,
       Number(course.price),
-      receiptUrl
+      receiptUrl,
+      batchId
     );
     revalidatePath(`/payment/${courseId}`);
     revalidatePath("/purchases");

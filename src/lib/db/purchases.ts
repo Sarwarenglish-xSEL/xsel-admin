@@ -187,18 +187,24 @@ export async function rejectPurchase(
 
 export async function getUserPurchaseForCourse(
   userId: string,
-  courseId: string
+  courseId: string,
+  batchId?: string | null
 ): Promise<Purchase | null> {
   const supabase = await getPaymentDbClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("purchases")
     .select("*")
     .eq("user_id", userId)
     .eq("course_id", courseId)
     .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(1);
+
+  if (batchId) {
+    query = query.eq("batch_id", batchId);
+  }
+
+  const { data, error } = await query.maybeSingle();
 
   if (error) {
     if (error.code === "PGRST116" || error.code === "42501") return null;
@@ -212,13 +218,16 @@ export async function createPurchaseRequest(
   courseId: string,
   amount: number,
   receiptUrl: string,
-  batchId?: string | null
+  batchId: string
 ): Promise<Purchase> {
   if (!userId?.trim()) {
     throw new Error("User ID is required to save a purchase.");
   }
   if (!courseId?.trim()) {
     throw new Error("Course ID is required to save a purchase.");
+  }
+  if (!batchId?.trim()) {
+    throw new Error("Batch ID is required to save a purchase.");
   }
   if (!receiptUrl?.trim()) {
     throw new Error("Receipt is required to save a purchase.");
@@ -232,21 +241,17 @@ export async function createPurchaseRequest(
   }
   const supabase = service;
 
-  const existing = await getUserPurchaseForCourse(userId, courseId);
+  const existing = await getUserPurchaseForCourse(userId, courseId, batchId);
   if (existing?.status === "pending") {
-    throw new Error("You already have a payment pending review for this course.");
+    throw new Error("You already have a payment pending review for this batch.");
   }
   if (existing?.status === "approved") {
-    throw new Error("You have already purchased this course.");
+    throw new Error("You have already purchased this batch.");
   }
 
-  const enrollment = batchId
-    ? await getActiveEnrollmentForBatch(userId, batchId, supabase)
-    : await getActiveEnrollment(userId, courseId, supabase);
+  const enrollment = await getActiveEnrollmentForBatch(userId, batchId, supabase);
   if (enrollment) {
-    throw new Error(
-      batchId ? "You are already enrolled in this batch." : "You are already enrolled in this course."
-    );
+    throw new Error("You are already enrolled in this batch.");
   }
 
   const { data: profile, error: profileError } = await supabase
@@ -264,7 +269,7 @@ export async function createPurchaseRequest(
     .insert({
       user_id: userId,
       course_id: courseId,
-      batch_id: batchId ?? null,
+      batch_id: batchId,
       amount,
       receipt_url: receiptUrl,
       status: "pending",

@@ -140,7 +140,13 @@ function PaymentMethodsPanel() {
   );
 }
 
-function CourseSummaryBar({ course }: { course: Course }) {
+function CourseSummaryBar({
+  course,
+  batchName,
+}: {
+  course: Course;
+  batchName?: string;
+}) {
   return (
     <div className="flex items-center gap-4 rounded-2xl border border-gray-200/80 bg-white p-4 shadow-sm sm:p-5">
       <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-100 ring-1 ring-gray-200/80 sm:h-16 sm:w-16">
@@ -165,6 +171,9 @@ function CourseSummaryBar({ course }: { course: Course }) {
         <h2 className="mt-0.5 truncate text-base font-semibold text-gray-900 sm:text-lg">
           {course.title}
         </h2>
+        {batchName ? (
+          <p className="mt-0.5 truncate text-sm text-gray-500">{batchName}</p>
+        ) : null}
       </div>
       <div className="shrink-0 text-right">
         <p className="text-xs text-gray-400">Total due</p>
@@ -220,10 +229,12 @@ function ReceiptUploadForm({
   course,
   courseId,
   userId,
+  batchId,
 }: {
   course: Course;
   courseId: string;
   userId: string;
+  batchId: string;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -274,6 +285,7 @@ function ReceiptUploadForm({
       const formData = new FormData();
       formData.set("courseId", courseId);
       formData.set("userId", userId);
+      formData.set("batchId", batchId);
       formData.set("file", file);
       const result = await submitPurchaseReceiptAction(formData);
       if (!result.ok) {
@@ -297,7 +309,7 @@ function ReceiptUploadForm({
           id: "",
           user_id: userId,
           course_id: courseId,
-          batch_id: null,
+          batch_id: batchId,
           amount: Number(course.price),
           status: "pending",
           receipt_url: null,
@@ -435,11 +447,11 @@ export function InvalidPaymentLink({ courseId }: { courseId: string }) {
       <div className="max-w-md rounded-2xl border border-accent/30 bg-white p-6 text-center shadow-sm">
         <h1 className="text-lg font-semibold text-gray-900">Invalid payment link</h1>
         <p className="mt-2 text-sm leading-relaxed text-gray-500">
-          A valid <strong>userId</strong> is required together with the course ID.
-          Open this page from the app using:
+          A valid <strong>userId</strong> and <strong>batchId</strong> are required
+          together with the course ID. Open this page from the app using:
         </p>
         <code className="mt-4 block break-all rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-700">
-          /payment/{courseId}?userId=YOUR_USER_ID
+          /payment/{courseId}?userId=YOUR_USER_ID&batchId=YOUR_BATCH_ID
         </code>
       </div>
     </div>
@@ -471,11 +483,15 @@ export function PaymentVerificationView({
   course,
   courseId,
   userId,
+  batchId,
+  batchName,
   existingPurchase,
 }: {
   course: Course;
   courseId: string;
   userId: string;
+  batchId: string;
+  batchName?: string;
   existingPurchase: Purchase | null;
 }) {
   const showUpload =
@@ -500,7 +516,7 @@ export function PaymentVerificationView({
       </div>
 
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-        <CourseSummaryBar course={course} />
+        <CourseSummaryBar course={course} batchName={batchName} />
 
         <div className="mt-6 grid gap-6 lg:grid-cols-5 lg:gap-8">
           <div className="lg:col-span-3">
@@ -521,6 +537,7 @@ export function PaymentVerificationView({
                 course={course}
                 courseId={courseId}
                 userId={userId}
+                batchId={batchId}
               />
             ) : null}
           </div>

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getPublishedCourseById } from "@/lib/db/courses";
+import { getBatchForCourse } from "@/lib/db/batches";
 import { getUserPurchaseForCourse } from "@/lib/db/purchases";
 import {
   InvalidPaymentLink,
@@ -15,14 +16,15 @@ export default async function PaymentPage({
   searchParams,
 }: {
   params: Promise<{ courseId: string }>;
-  searchParams: Promise<{ userId?: string }>;
+  searchParams: Promise<{ userId?: string; batchId?: string }>;
 }) {
   const { courseId } = await params;
-  const { userId: userIdParam } = await searchParams;
+  const { userId: userIdParam, batchId: batchIdParam } = await searchParams;
   const userId = userIdParam?.trim() ?? "";
+  const batchId = batchIdParam?.trim() ?? "";
 
   if (!courseId?.trim() || !UUID_RE.test(courseId)) notFound();
-  if (!userId || !UUID_RE.test(userId)) {
+  if (!userId || !UUID_RE.test(userId) || !batchId || !UUID_RE.test(batchId)) {
     return <InvalidPaymentLink courseId={courseId} />;
   }
 
@@ -41,13 +43,22 @@ export default async function PaymentPage({
   }
   if (!course) notFound();
 
-  const existingPurchase = await getUserPurchaseForCourse(userId, courseId);
+  const batch = await getBatchForCourse(batchId, courseId);
+  if (!batch) notFound();
+
+  const existingPurchase = await getUserPurchaseForCourse(
+    userId,
+    courseId,
+    batchId
+  );
 
   return (
     <PaymentVerificationView
       course={course}
       courseId={courseId}
       userId={userId}
+      batchId={batchId}
+      batchName={batch.name}
       existingPurchase={existingPurchase}
     />
   );

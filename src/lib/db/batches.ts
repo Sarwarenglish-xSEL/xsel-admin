@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/admin";
 import type { BatchStatus, CourseBatch } from "@/types/database";
 
 export type BatchInput = {
@@ -102,6 +103,23 @@ export async function getBatchById(batchId: string): Promise<CourseBatch | null>
     .from("course_batches")
     .select("*, course:courses(*)")
     .eq("id", batchId)
+    .maybeSingle();
+  if (error) throw error;
+  return data as CourseBatch | null;
+}
+
+/** Public payment page: batch must belong to the given course. */
+export async function getBatchForCourse(
+  batchId: string,
+  courseId: string
+): Promise<CourseBatch | null> {
+  const service = createServiceClient();
+  const supabase = service ?? (await createClient());
+  const { data, error } = await supabase
+    .from("course_batches")
+    .select("*")
+    .eq("id", batchId)
+    .eq("course_id", courseId)
     .maybeSingle();
   if (error) throw error;
   return data as CourseBatch | null;
