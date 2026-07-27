@@ -10,7 +10,7 @@ export default async function AdminLayout({
 }) {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
-  if (profile.role !== "admin" && profile.role !== "manager") {
+  if (profile.role !== "admin") {
     redirect("/login?error=unauthorized");
   }
 

@@ -83,10 +83,25 @@ export async function signInAction(
   password: string
 ): Promise<AuthActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
   if (error) {
     return { ok: false, message: formatAuthError(error.message) };
   }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", data.user.id)
+    .single();
+
+  if (!profile || profile.role !== "admin") {
+    await supabase.auth.signOut();
+    return { ok: false, message: "You are not admin" };
+  }
+
   return { ok: true };
 }
 
