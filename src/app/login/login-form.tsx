@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,12 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 const loginSchema = z.object({
@@ -35,13 +29,24 @@ const fieldClassName = cn(
   "[&:-webkit-autofill]:[-webkit-text-fill-color:#111827]"
 );
 
+const notAdminToast = () =>
+  toast.error("You are not admin", {
+    description: "Only admin accounts can sign in to this portal.",
+    duration: 5000,
+  });
+
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
-  const [notAdminOpen, setNotAdminOpen] = useState(false);
   const unauthorized = searchParams.get("error") === "unauthorized";
   const registered = searchParams.get("registered") === "1";
+
+  useEffect(() => {
+    if (unauthorized) {
+      notAdminToast();
+    }
+  }, [unauthorized]);
 
   const {
     register,
@@ -58,7 +63,7 @@ export default function LoginForm() {
       const result = await signInAction(values.email, values.password);
       if (!result.ok) {
         if (result.message === "You are not admin") {
-          setNotAdminOpen(true);
+          notAdminToast();
           return;
         }
         toast.error(result.message || "Login failed");
@@ -99,13 +104,6 @@ export default function LoginForm() {
                   <AlertDescription className="text-xs leading-relaxed text-gray-600 sm:text-sm">
                     Account created. Sign in to continue. Only admin accounts can access
                     this portal.
-                  </AlertDescription>
-                </Alert>
-              )}
-              {unauthorized && (
-                <Alert variant="destructive" className="mb-4 py-2.5">
-                  <AlertDescription className="text-xs sm:text-sm">
-                    You are not admin.
                   </AlertDescription>
                 </Alert>
               )}
@@ -166,23 +164,6 @@ export default function LoginForm() {
             </div>
           </div>
       </AuthFormPanel>
-
-      <Dialog open={notAdminOpen} onOpenChange={setNotAdminOpen}>
-        <DialogContent onClose={() => setNotAdminOpen(false)}>
-          <DialogHeader>
-            <DialogTitle>You are not admin</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-gray-600">
-            Only admin accounts can sign in to this portal.
-          </p>
-          <Button
-            className="mt-4 w-full"
-            onClick={() => setNotAdminOpen(false)}
-          >
-            OK
-          </Button>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
