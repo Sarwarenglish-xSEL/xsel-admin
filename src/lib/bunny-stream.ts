@@ -1,20 +1,40 @@
+import { getAppSettings } from "@/lib/db/app-settings";
+
 const BUNNY_API_BASE = "https://video.bunnycdn.com";
 
-function getBunnyConfig() {
+async function getBunnyConfig() {
+  // Prefer Stream API key for video.bunnycdn.com AccessKey auth.
+  // Fall back to CDN token only if Stream API key is absent.
+  const settings = await getAppSettings([
+    "BUNNY_STREAM_LIBRARY_ID",
+    "BUNNY_STREAM_API_KEY",
+    "BUNNY_CDN_TOKEN_KEY",
+  ]);
+
   const libraryId =
-    process.env.BUNNY_STREAM_LIBRARY_ID ??
-    process.env.EXPO_PUBLIC_BUNNY_STREAM_LIBRARY_ID;
+    settings.BUNNY_STREAM_LIBRARY_ID ??
+    process.env.BUNNY_STREAM_LIBRARY_ID?.trim() ??
+    process.env.EXPO_PUBLIC_BUNNY_STREAM_LIBRARY_ID?.trim() ??
+    null;
+
   const apiKey =
-    process.env.BUNNY_STREAM_API_KEY ??
-    process.env.EXPO_PUBLIC_BUNNY_CDN_TOKEN_KEY;
+    settings.BUNNY_STREAM_API_KEY ??
+    process.env.BUNNY_STREAM_API_KEY?.trim() ??
+    settings.BUNNY_CDN_TOKEN_KEY ??
+    process.env.EXPO_PUBLIC_BUNNY_CDN_TOKEN_KEY?.trim() ??
+    null;
 
   if (!libraryId || !apiKey) {
+    const missing = [
+      !libraryId ? "BUNNY_STREAM_LIBRARY_ID" : null,
+      !apiKey ? "BUNNY_STREAM_API_KEY" : null,
+    ].filter(Boolean);
     throw new Error(
-      "Bunny Stream is not configured. Set BUNNY_STREAM_LIBRARY_ID and BUNNY_STREAM_API_KEY."
+      `Bunny Stream is not configured. Missing in app_settings: ${missing.join(", ")}.`
     );
   }
 
-  return { libraryId: libraryId.trim(), apiKey: apiKey.trim() };
+  return { libraryId, apiKey };
 }
 
 export function extractBunnyVideoId(input: string): string {
@@ -33,7 +53,7 @@ type BunnyVideoResponse = {
 export async function getBunnyVideoDuration(
   videoIdOrUrl: string
 ): Promise<number> {
-  const { libraryId, apiKey } = getBunnyConfig();
+  const { libraryId, apiKey } = await getBunnyConfig();
   const videoId = extractBunnyVideoId(videoIdOrUrl);
 
   const response = await fetch(
@@ -53,7 +73,7 @@ export async function getBunnyVideoDuration(
     }
     if (response.status === 401) {
       throw new Error(
-        "Bunny Stream authentication failed. Check BUNNY_STREAM_API_KEY."
+        "Bunny Stream authentication failed. Check BUNNY_STREAM_API_KEY in app_settings (must be the Stream Library API key, not the CDN token)."
       );
     }
     throw new Error(`Failed to fetch Bunny video (${response.status})`);

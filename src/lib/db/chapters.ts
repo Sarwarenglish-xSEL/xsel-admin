@@ -102,6 +102,7 @@ export type LessonInput = {
   live_meeting_url?: string | null;
   live_start_time?: string | null;
   live_end_time?: string | null;
+  live_class_status?: string | null;
   duration_seconds?: number | null;
   sort_order: number;
   status: CourseLesson["status"];
@@ -158,10 +159,21 @@ export async function getUpcomingLiveLessons() {
       "*, chapter:course_chapters(id, title, course:courses(id, title))"
     )
     .eq("lesson_type", "live")
-    .gte("live_start_time", new Date().toISOString())
     .order("live_start_time");
   if (error) throw error;
-  return data ?? [];
+
+  const now = new Date();
+  return (data ?? []).filter((lesson) => {
+    const startTime = lesson.live_start_time
+      ? new Date(lesson.live_start_time)
+      : null;
+
+    return (
+      (startTime ? startTime >= now : false) ||
+      lesson.status === "completed" ||
+      lesson.live_class_status === "completed"
+    );
+  });
 }
 
 export async function reorderLessons(

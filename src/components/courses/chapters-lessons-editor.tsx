@@ -663,11 +663,16 @@ function LessonDialog({
   const [liveEnd, setLiveEnd] = useState(
     lesson?.live_end_time?.slice(0, 16) ?? ""
   );
+  const [liveClassStatus, setLiveClassStatus] = useState(
+    lesson?.live_class_status ?? "pending"
+  );
   const [status, setStatus] = useState<CourseLesson["status"]>(
     lesson?.status ?? "draft"
   );
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const isLiveCompleted =
+    lessonType === "live" && liveClassStatus.toLowerCase() === "completed";
 
   async function save() {
     if (!title.trim()) {
@@ -679,8 +684,14 @@ function LessonDialog({
       chapter_id: chapterId,
       title,
       lesson_type: lessonType,
-      video_url: lessonType === "video" ? videoUrl || null : null,
-      live_meeting_url: lessonType === "live" ? liveMeetingUrl || null : null,
+      video_url:
+        lessonType === "video" || isLiveCompleted ? videoUrl || null : null,
+      live_meeting_url:
+        lessonType === "live" && !isLiveCompleted
+          ? liveMeetingUrl || null
+          : lessonType === "live"
+            ? lesson?.live_meeting_url ?? null
+            : null,
       live_start_time:
         lessonType === "live" && liveStart
           ? new Date(liveStart).toISOString()
@@ -688,6 +699,12 @@ function LessonDialog({
       live_end_time:
         lessonType === "live" && liveEnd
           ? new Date(liveEnd).toISOString()
+          : null,
+      live_class_status:
+        lessonType === "live"
+          ? liveClassStatus.trim()
+            ? liveClassStatus.trim().toLowerCase()
+            : "pending"
           : null,
       sort_order: lesson?.sort_order ?? sortOrder,
       status,
@@ -732,7 +749,21 @@ function LessonDialog({
               <option value="live">Live</option>
             </Select>
           </div>
-          {lessonType === "video" && (
+          {lessonType === "live" && (
+            <div>
+              <Label>Live class status</Label>
+              <Select
+                value={liveClassStatus}
+                onChange={(e) => setLiveClassStatus(e.target.value)}
+              >
+                <option value="pending">pending</option>
+                <option value="live">live</option>
+                <option value="completed">completed</option>
+              </Select>
+            </div>
+          )}
+
+          {lessonType === "video" ? (
             <div>
               <Label>Bunny Video ID</Label>
               <Input
@@ -747,36 +778,56 @@ function LessonDialog({
                 </p>
               )}
             </div>
+          ) : null}
+
+          {isLiveCompleted ? (
+            <div>
+              <Label>Video URL</Label>
+              <Input
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="Bunny video ID or URL"
+              />
+              {lesson?.duration_seconds != null && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Current duration: {Math.floor(lesson.duration_seconds / 60)}m{" "}
+                  {lesson.duration_seconds % 60}s
+                </p>
+              )}
+            </div>
+          ) : null}
+
+          {lessonType === "live" && !isLiveCompleted && (
+            <div>
+              <Label>Meeting URL</Label>
+              <Input
+                value={liveMeetingUrl}
+                onChange={(e) => setLiveMeetingUrl(e.target.value)}
+              />
+            </div>
           )}
+
           {lessonType === "live" && (
-            <>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Meeting URL</Label>
+                <Label>Start Time</Label>
                 <Input
-                  value={liveMeetingUrl}
-                  onChange={(e) => setLiveMeetingUrl(e.target.value)}
+                  type="datetime-local"
+                  value={liveStart}
+                  onChange={(e) => setLiveStart(e.target.value)}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Start Time</Label>
-                  <Input
-                    type="datetime-local"
-                    value={liveStart}
-                    onChange={(e) => setLiveStart(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label>End Time</Label>
-                  <Input
-                    type="datetime-local"
-                    value={liveEnd}
-                    onChange={(e) => setLiveEnd(e.target.value)}
-                  />
-                </div>
+              <div>
+                <Label>End Time</Label>
+                <Input
+                  type="datetime-local"
+                  value={liveEnd}
+                  onChange={(e) => setLiveEnd(e.target.value)}
+                />
               </div>
-            </>
+            </div>
           )}
+
           <div>
             <Label>Status</Label>
             <Select

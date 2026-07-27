@@ -3,7 +3,7 @@ export type CourseType = "prerecorded" | "live";
 export type CourseCategory = "design" | "coding" | "business";
 export type CourseStatus = "draft" | "published" | "archived";
 export type LessonType = "video" | "live" | "quiz" | "assignment";
-export type LessonStatus = "draft" | "published";
+export type LessonStatus = "draft" | "published" | "completed";
 export type EnrollmentStatus = "active" | "blocked" | "completed";
 export type BatchStatus = "upcoming" | "active" | "completed" | "cancelled";
 export type PurchaseStatus = "pending" | "approved" | "rejected";
@@ -60,6 +60,7 @@ export interface CourseLesson {
   duration_seconds: number | null;
   sort_order: number;
   status: LessonStatus;
+  live_class_status?: string | null;
   created_at: string;
   updated_at: string;
   chapter?: CourseChapter & { course?: Course };

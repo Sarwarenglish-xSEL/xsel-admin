@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { SectionHeader } from "@/components/layout/page-header";
 import { PageEmpty } from "@/components/page-states";
@@ -20,6 +21,8 @@ type LiveLesson = {
   live_meeting_url: string | null;
   live_start_time: string | null;
   live_end_time: string | null;
+  video_url?: string | null;
+  live_class_status?: string | null;
   status: string;
   chapter?: {
     title: string;
@@ -67,6 +70,10 @@ function LiveSessionCard({
   const [endTime, setEndTime] = useState(
     lesson.live_end_time?.slice(0, 16) ?? ""
   );
+  const [liveClassStatus, setLiveClassStatus] = useState(
+    lesson.live_class_status ?? "pending"
+  );
+  const [videoUrl, setVideoUrl] = useState(lesson.video_url ?? "");
   const [loading, setLoading] = useState(false);
 
   const courseId = lesson.chapter?.course?.id;
@@ -75,10 +82,24 @@ function LiveSessionCard({
     if (!courseId) return;
     setLoading(true);
     try {
+      const trimmed = liveClassStatus.trim();
+      const normalizedLiveClassStatus = trimmed ? trimmed.toLowerCase() : null;
+      const lessonStatusCompleted = lesson.status?.toLowerCase() === "completed";
+      const isCompleted =
+        normalizedLiveClassStatus === "completed" ||
+        lessonStatusCompleted;
+      const liveClassStatusForSave =
+        normalizedLiveClassStatus ?? (lessonStatusCompleted ? "completed" : null);
+
       await updateLessonAction(courseId, lesson.id, {
-        live_meeting_url: meetingUrl || null,
-        live_start_time: startTime ? new Date(startTime).toISOString() : null,
-        live_end_time: endTime ? new Date(endTime).toISOString() : null,
+        live_class_status: liveClassStatusForSave,
+        ...(isCompleted
+          ? { video_url: videoUrl || null }
+          : {
+              live_meeting_url: meetingUrl || null,
+              live_start_time: startTime ? new Date(startTime).toISOString() : null,
+              live_end_time: endTime ? new Date(endTime).toISOString() : null,
+            }),
       });
       toast.success("Live session updated");
       setEditing(false);
@@ -96,6 +117,10 @@ function LiveSessionCard({
     new Date(lesson.live_start_time) <= new Date() &&
     new Date(lesson.live_end_time) >= new Date();
 
+  const isCompleted =
+    (liveClassStatus || "").trim().toLowerCase() === "completed" ||
+    lesson.status?.toLowerCase() === "completed";
+
   return (
     <Card className="overflow-hidden border-brand/10 shadow-sm">
       <SectionHeader
@@ -109,6 +134,16 @@ function LiveSessionCard({
             <Badge variant="outline" className="capitalize">
               {lesson.status}
             </Badge>
+            <Badge
+              variant={
+                (lesson.live_class_status ?? "pending").toLowerCase() === "completed"
+                  ? "default"
+                  : "outline"
+              }
+              className="capitalize"
+            >
+              {lesson.live_class_status ?? "pending"}
+            </Badge>
           </div>
         }
       />
@@ -116,31 +151,62 @@ function LiveSessionCard({
         {editing ? (
           <div className="space-y-4">
             <div>
-              <Label>Meeting URL</Label>
-              <Input
-                value={meetingUrl}
-                onChange={(e) => setMeetingUrl(e.target.value)}
-                placeholder="https://..."
-              />
+              <Label>Live class status</Label>
+              <Select
+                value={liveClassStatus}
+                onChange={(e) => setLiveClassStatus(e.target.value)}
+                className="max-w-md"
+              >
+                <option value="pending">pending</option>
+                <option value="live">live</option>
+                <option value="completed">completed</option>
+              </Select>
+              <p className="mt-1 text-xs text-muted-foreground">
+                When set to <span className="font-medium">completed</span>, the form
+                will switch to upload <span className="font-medium">video_url</span>.
+              </p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+
+            {isCompleted ? (
               <div>
-                <Label>Start</Label>
+                <Label>Video URL</Label>
                 <Input
-                  type="datetime-local"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  placeholder="Bunny video ID or URL"
                 />
               </div>
-              <div>
-                <Label>End</Label>
-                <Input
-                  type="datetime-local"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                />
-              </div>
-            </div>
+            ) : (
+              <>
+                <div>
+                  <Label>Meeting URL</Label>
+                  <Input
+                    value={meetingUrl}
+                    onChange={(e) => setMeetingUrl(e.target.value)}
+                    placeholder="https://..."
+                  />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <Label>Start</Label>
+                    <Input
+                      type="datetime-local"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>End</Label>
+                    <Input
+                      type="datetime-local"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
             <div className="flex gap-2">
               <Button onClick={save} disabled={loading} size="sm">
                 {loading ? "Saving..." : "Save"}
@@ -169,16 +235,23 @@ function LiveSessionCard({
                   <span>No schedule set</span>
                 )}
               </p>
-              {lesson.live_meeting_url && (
-                <a
-                  href={lesson.live_meeting_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 font-medium text-brand hover:underline"
-                >
+              {isCompleted ? (
+                <div className="inline-flex items-center gap-2 font-medium text-brand">
                   <Radio className="h-4 w-4" />
-                  Join meeting
-                </a>
+                  {lesson.video_url ? "Video uploaded" : "Video pending"}
+                </div>
+              ) : (
+                lesson.live_meeting_url && (
+                  <a
+                    href={lesson.live_meeting_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 font-medium text-brand hover:underline"
+                  >
+                    <Radio className="h-4 w-4" />
+                    Join meeting
+                  </a>
+                )
               )}
             </div>
             <Button variant="outline" size="sm" onClick={() => setEditing(true)}>

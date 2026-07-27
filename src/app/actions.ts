@@ -184,16 +184,16 @@ async function resolveVideoLessonFields(
 ): Promise<Partial<LessonInput>> {
   const lessonType = input.lesson_type ?? existing?.lesson_type;
 
-  if (lessonType !== "video") {
+  // Keep existing behavior for switching away from video lessons,
+  // but still allow resolving `video_url` for live lessons when provided.
+  if (lessonType !== "video" && !("video_url" in input)) {
     if (input.lesson_type && input.lesson_type !== "video") {
       return { ...input, duration_seconds: null };
     }
     return input;
   }
 
-  if (!("video_url" in input)) {
-    return input;
-  }
+  if (!("video_url" in input)) return input;
 
   const rawVideoUrl = input.video_url?.trim() ?? "";
   if (!rawVideoUrl) {
@@ -215,12 +215,25 @@ async function resolveVideoLessonFields(
     };
   }
 
-  const duration_seconds = await getBunnyVideoDuration(videoId);
-  return {
-    ...input,
-    video_url: videoId,
-    duration_seconds,
-  };
+  try {
+    const duration_seconds = await getBunnyVideoDuration(videoId);
+    return {
+      ...input,
+      video_url: videoId,
+      duration_seconds,
+    };
+  } catch (error) {
+    // For completed live lessons, still allow saving the recording URL
+    // even if Bunny duration lookup fails.
+    if (lessonType === "live") {
+      return {
+        ...input,
+        video_url: videoId,
+        duration_seconds: existing?.duration_seconds ?? null,
+      };
+    }
+    throw error;
+  }
 }
 
 export async function createLessonAction(
