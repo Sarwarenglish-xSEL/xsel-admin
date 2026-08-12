@@ -15,6 +15,7 @@ export const config = {
     "/batches/:path*",
     "/courses/:path*",
     "/users/:path*",
+    "/sessions/:path*",
     "/purchases/:path*",
     "/enrollments/:path*",
     "/certificates/:path*",

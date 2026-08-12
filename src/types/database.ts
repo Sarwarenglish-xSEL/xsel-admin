@@ -11,6 +11,20 @@ export type QuizOption = "a" | "b" | "c" | "d";
 export type QuizType = "lesson" | "video";
 export type AssignmentType = "written" | "file";
 
+export interface DeviceTransferRecord {
+  device_token?: string | null;
+  device_model?: string | null;
+  os?: string | null;
+  app_version?: string | null;
+  transferred_at?: string | null;
+  created_at?: string | null;
+  from_device_model?: string | null;
+  to_device_model?: string | null;
+  from_os?: string | null;
+  to_os?: string | null;
+  [key: string]: unknown;
+}
+
 export interface Profile {
   id: string;
   email: string;
@@ -19,6 +33,30 @@ export interface Profile {
   role: UserRole;
   created_at: string;
   updated_at: string;
+  registered_device_token: string | null;
+  registered_device_model: string | null;
+  registered_os: string | null;
+  registered_app_version: string | null;
+  device_transfer_count: number;
+  device_transfer_history: DeviceTransferRecord[];
+}
+
+export interface UserSession {
+  user_id: string;
+  session_id: string;
+  device_model: string | null;
+  os: string | null;
+  app_version: string | null;
+  is_online: boolean;
+  last_seen_at: string;
+  created_at: string;
+  updated_at: string;
+  user?: Profile | null;
+}
+
+export interface LearningOutcome {
+  title: string;
+  description: string;
 }
 
 export interface Course {
@@ -33,6 +71,8 @@ export interface Course {
   status: CourseStatus;
   registration_deadline: string | null;
   course_start_date: string | null;
+  fake_enrollments: number;
+  learning_outcomes: LearningOutcome[];
   created_at: string;
   updated_at: string;
   instructor?: Profile | null;

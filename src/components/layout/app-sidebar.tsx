@@ -13,6 +13,7 @@ import {
   Layers,
   LayoutDashboard,
   LogOut,
+  MonitorSmartphone,
   Radio,
   Receipt,
   Users,
@@ -28,6 +29,7 @@ const STORAGE_KEY = "xsel-admin-sidebar-collapsed";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/users", label: "Users", icon: Users },
+  { href: "/sessions", label: "Sessions", icon: MonitorSmartphone },
   { href: "/courses", label: "Courses", icon: BookOpen },
   { href: "/batches", label: "Batches", icon: Layers },
   { href: "/purchases", label: "Purchases", icon: Receipt },

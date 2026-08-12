@@ -6,7 +6,9 @@ import type {
   CourseStatus,
   CourseType,
   DashboardStats,
+  LearningOutcome,
 } from "@/types/database";
+import { DEFAULT_LEARNING_OUTCOMES } from "@/lib/course-defaults";
 
 export interface CourseFilters {
   course_type?: CourseType;
@@ -73,13 +75,17 @@ export type CourseInput = {
   status: CourseStatus;
   registration_deadline?: string | null;
   course_start_date?: string | null;
+  learning_outcomes?: LearningOutcome[];
 };
 
 export async function createCourse(input: CourseInput): Promise<Course> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("courses")
-    .insert(input)
+    .insert({
+      ...input,
+      learning_outcomes: input.learning_outcomes ?? DEFAULT_LEARNING_OUTCOMES,
+    })
     .select()
     .single();
   if (error) throw error;

@@ -9,10 +9,12 @@ export function Dialog({
   open,
   onOpenChange,
   children,
+  className,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
+  className?: string;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -35,7 +37,7 @@ export function Dialog({
         className="fixed inset-0 bg-black/40 backdrop-blur-sm"
         onClick={() => onOpenChange(false)}
       />
-      <div className="relative z-10 w-full max-w-lg">{children}</div>
+      <div className={cn("relative z-10 w-full max-w-lg", className)}>{children}</div>
     </div>
   );
 }

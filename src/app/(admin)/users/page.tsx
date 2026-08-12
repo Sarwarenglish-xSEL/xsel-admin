@@ -35,7 +35,7 @@ export default async function UsersPage({
     <div className="space-y-6">
       <PageHeader
         title="Users"
-        description={`Create, edit, and manage platform users${
+        description={`View users, registered devices, and transfer history${
           !isAdmin ? " (management requires admin)" : ""
         }`}
         actions={isAdmin ? <CreateUserDialog /> : undefined}
