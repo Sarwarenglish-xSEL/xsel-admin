@@ -15,6 +15,11 @@ import type { DeviceTransferRecord, Profile } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  formatAppVersion,
+  summarizeOs,
+  truncateMiddle,
+} from "@/lib/device-utils";
 
 function formatMaybeDate(value?: string | null) {
   if (!value) return null;
@@ -55,32 +60,6 @@ function getTransferOs(record: DeviceTransferRecord) {
 
 function getTransferAppVersion(record: DeviceTransferRecord) {
   return (record.app_version as string | null | undefined) || null;
-}
-
-/** Turn Android build fingerprints into a short readable label. */
-function summarizeOs(os?: string | null) {
-  if (!os?.trim()) return null;
-  const value = os.trim();
-
-  const androidVersion = value.match(/:(\d+(?:\.\d+)*)\//)?.[1];
-  if (androidVersion) {
-    const brand = value.split("/")[0];
-    return brand ? `${brand} · Android ${androidVersion}` : `Android ${androidVersion}`;
-  }
-
-  if (/iphone|ipad|ios/i.test(value)) return value;
-
-  return value.length > 48 ? `${value.slice(0, 48)}…` : value;
-}
-
-function formatAppVersion(version?: string | null) {
-  if (!version?.trim()) return null;
-  return `v${version.replace(/^v/i, "")}`;
-}
-
-function truncateMiddle(value: string, start = 10, end = 8) {
-  if (value.length <= start + end + 1) return value;
-  return `${value.slice(0, start)}…${value.slice(-end)}`;
 }
 
 function getInitials(user: Profile) {

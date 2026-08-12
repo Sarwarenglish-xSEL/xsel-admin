@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 import type { Profile } from "@/types/database";
 import { deleteUserAction } from "@/app/actions";
+import { formatAppVersion, summarizeOs } from "@/lib/device-utils";
 import { DataTable } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -91,18 +92,23 @@ function UserActions({
 
 function DeviceCell({ user }: { user: Profile }) {
   const model = user.registered_device_model?.trim();
-  const os = user.registered_os?.trim();
+  const osRaw = user.registered_os?.trim();
+  const platform = summarizeOs(osRaw);
 
-  if (!model && !os) {
+  if (!model && !platform) {
     return <span className="text-sm text-gray-400">No device</span>;
   }
 
   return (
-    <div className="min-w-0">
-      <p className="truncate text-sm font-medium text-gray-900">
+    <div className="min-w-0 max-w-full">
+      <p className="truncate text-sm font-medium text-gray-900" title={model ?? undefined}>
         {model || "Unknown device"}
       </p>
-      <p className="truncate text-xs text-gray-500">{os || "Unknown OS"}</p>
+      {platform ? (
+        <p className="truncate text-xs text-gray-500" title={osRaw ?? undefined}>
+          {platform}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -114,11 +120,15 @@ const columns = (
   {
     accessorKey: "email",
     header: "User",
+    meta: {
+      headerClassName: "w-[26%] max-w-0",
+      cellClassName: "max-w-0",
+    },
     cell: ({ row }) => {
       const user = row.original;
       const name = user.full_name?.trim();
       return (
-        <div className="min-w-0">
+        <div className="min-w-0 max-w-full">
           <p className="truncate text-sm font-medium text-gray-900">
             {name || user.email}
           </p>
@@ -132,28 +142,44 @@ const columns = (
   {
     accessorKey: "role",
     header: "Role",
+    meta: {
+      headerClassName: "w-[10%]",
+      cellClassName: "whitespace-nowrap",
+    },
     cell: ({ row }) => <Badge variant="outline">{row.original.role}</Badge>,
   },
   {
     id: "device",
     header: "Device",
+    meta: {
+      headerClassName: "w-[28%] max-w-0",
+      cellClassName: "max-w-0",
+    },
     cell: ({ row }) => <DeviceCell user={row.original} />,
   },
   {
     accessorKey: "registered_app_version",
     header: "App",
-    cell: ({ row }) =>
-      row.original.registered_app_version ? (
-        <span className="font-mono text-xs text-gray-700">
-          v{row.original.registered_app_version.replace(/^v/i, "")}
-        </span>
+    meta: {
+      headerClassName: "w-[9%]",
+      cellClassName: "whitespace-nowrap",
+    },
+    cell: ({ row }) => {
+      const version = formatAppVersion(row.original.registered_app_version);
+      return version ? (
+        <span className="font-mono text-xs text-gray-700">{version}</span>
       ) : (
         <span className="text-sm text-gray-400">—</span>
-      ),
+      );
+    },
   },
   {
     accessorKey: "device_transfer_count",
     header: "Transfers",
+    meta: {
+      headerClassName: "w-[10%]",
+      cellClassName: "whitespace-nowrap",
+    },
     cell: ({ row }) => {
       const count = row.original.device_transfer_count ?? 0;
       return (
@@ -169,10 +195,18 @@ const columns = (
   {
     accessorKey: "created_at",
     header: "Joined",
+    meta: {
+      headerClassName: "w-[12%]",
+      cellClassName: "whitespace-nowrap text-gray-600",
+    },
     cell: ({ row }) => format(new Date(row.original.created_at), "MMM d, yyyy"),
   },
   {
     id: "actions",
+    meta: {
+      headerClassName: "w-12",
+      cellClassName: "w-12",
+    },
     cell: ({ row }) => (
       <UserActions
         user={row.original}
@@ -198,6 +232,7 @@ export function UsersTable({
       data={users}
       searchKey="email"
       searchPlaceholder="Search by email..."
+      fixedLayout
     />
   );
 }
