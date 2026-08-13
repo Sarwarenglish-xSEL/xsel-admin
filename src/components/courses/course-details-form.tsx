@@ -257,7 +257,7 @@ export function CourseDetailsForm({
             </div>
 
             <div className="divide-y divide-gray-100 rounded-xl border border-gray-200">
-              {[0, 1, 2].map((index) => (
+              {([0, 1, 2] as const).map((index) => (
                 <div key={index} className="space-y-3 p-4 sm:p-5">
                   <span className="text-sm font-medium text-gray-900">
                     Outcome {index + 1}
