@@ -10,6 +10,7 @@ function isHttpUrl(value: string | undefined): value is string {
   }
 }
 
+
 /** Server-only client that bypasses RLS. Never import from client components. */
 export function createServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
