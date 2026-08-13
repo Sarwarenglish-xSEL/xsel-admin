@@ -6,12 +6,14 @@ import { createClient } from "@/lib/supabase/server";
 import {
   createCourse,
   updateCourse,
+  getCourseById,
   archiveCourse,
   deleteCourse,
   createCourseReview,
   type CourseInput,
   type CourseReviewInput,
 } from "@/lib/db/courses";
+import { notifyUsersCoursePublished } from "@/lib/email";
 import {
   createChapter,
   updateChapter,
@@ -141,7 +143,29 @@ export async function createCourseAction(input: CourseInput) {
 }
 
 export async function updateCourseAction(id: string, input: Partial<CourseInput>) {
-  await updateCourse(id, input);
+  const existing = await getCourseById(id);
+  const course = await updateCourse(id, input);
+
+  const becamePublished =
+    input.status === "published" && existing?.status !== "published";
+
+  if (becamePublished) {
+    // Fire-and-forget: do not block save if Gmail SMTP fails
+    void notifyUsersCoursePublished({
+      title: course.title,
+      description: course.description,
+      price: course.price,
+      category: course.category,
+      course_type: course.course_type,
+    }).then((result) => {
+      if (result.error) {
+        console.error("[updateCourseAction] publish email:", result.error);
+      } else if (!result.skipped) {
+        console.log(`[updateCourseAction] notified ${result.sent} users`);
+      }
+    });
+  }
+
   revalidatePath("/courses");
   revalidatePath(`/courses/${id}/edit`);
 }
