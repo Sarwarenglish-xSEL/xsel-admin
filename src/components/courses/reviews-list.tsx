@@ -29,7 +29,7 @@ export function ReviewsList({
   courseId: string;
 }) {
   return (
-    <Card className="overflow-hidden border-brand/10 shadow-sm">
+    <Card className="overflow-hidden border-brand/20 shadow-sm">
       <SectionHeader
         title="Course reviews"
         description={`${reviews.length} review${reviews.length === 1 ? "" : "s"}`}

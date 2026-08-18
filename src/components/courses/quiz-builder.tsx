@@ -58,7 +58,7 @@ export function QuizBuilder({
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden border-brand/10 shadow-sm">
+      <Card className="overflow-hidden border-brand/20 shadow-sm">
         <SectionHeader
           title="Quiz settings"
           description="Set the title, type, and scoring for this quiz."
@@ -170,7 +170,7 @@ function QuestionManager({
   const router = useRouter();
 
   return (
-    <Card className="overflow-hidden border-brand/10 shadow-sm">
+    <Card className="overflow-hidden border-brand/20 shadow-sm">
       <SectionHeader
         title={`Questions (${questions.length})`}
         description="Add multiple-choice questions for this quiz."

@@ -420,13 +420,15 @@ export async function updateUserAction(
   fullName: string,
   email: string,
   role: UserRole,
-  allowedModules?: AdminModule[]
+  allowedModules?: AdminModule[],
+  deviceTransferCount?: number
 ): Promise<UserActionResult> {
   const result = await updateUser(userId, {
     full_name: fullName,
     email,
     role,
     allowed_modules: allowedModules,
+    device_transfer_count: deviceTransferCount,
   });
   if (!result.ok) {
     return { ok: false, message: formatAuthError(result.message) };

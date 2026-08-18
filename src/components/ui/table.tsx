@@ -9,7 +9,7 @@ export function Table({ className, ...props }: React.HTMLAttributes<HTMLTableEle
 }
 
 export function TableHeader({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead className={cn("bg-surface-muted/80", className)} {...props} />;
+  return <thead className={cn("bg-brand/[0.06]", className)} {...props} />;
 }
 
 export function TableBody({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
@@ -19,7 +19,7 @@ export function TableBody({ className, ...props }: React.HTMLAttributes<HTMLTabl
 export function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
   return (
     <tr
-      className={cn("border-b border-gray-100 transition-colors hover:bg-gray-50/50", className)}
+      className={cn("border-b border-brand/10 transition-colors hover:bg-brand/[0.04]", className)}
       {...props}
     />
   );
@@ -29,7 +29,7 @@ export function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTa
   return (
     <th
       className={cn(
-        "h-10 px-4 text-left align-middle text-xs font-semibold uppercase tracking-wide text-gray-500",
+        "h-10 px-4 text-left align-middle text-xs font-semibold uppercase tracking-wide text-brand/70",
         className
       )}
       {...props}

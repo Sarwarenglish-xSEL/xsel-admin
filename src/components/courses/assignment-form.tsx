@@ -64,7 +64,7 @@ export function AssignmentForm({
   }, [initialAssignment, reset]);
 
   return (
-    <Card className="overflow-hidden border-brand/10 shadow-sm">
+    <Card className="overflow-hidden border-brand/20 shadow-sm">
       <SectionHeader
         title="Assignment details"
         description="Configure the question, submission type, marks, and due date."

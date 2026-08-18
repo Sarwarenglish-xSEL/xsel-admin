@@ -141,7 +141,7 @@ export function CourseDetailsForm({
   }
 
   return (
-    <Card className="overflow-hidden border-brand/10 shadow-sm">
+    <Card className="overflow-hidden border-brand/20 shadow-sm">
       <SectionHeader
         title="Course details"
         description="Edit the public course information, pricing, and media."

@@ -100,7 +100,7 @@ export default function SignupForm() {
       <AuthFormPanel scrollable>
         <div className="overflow-hidden rounded-2xl bg-white shadow-2xl shadow-gray-300/20 ring-1 ring-gray-200/70">
             <div className="border-b border-gray-100 px-7 pb-6 pt-7 sm:px-8 sm:pt-8">
-              <span className="inline-flex items-center rounded-full bg-brand/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-brand">
+              <span className="inline-flex items-center rounded-full bg-brand/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-brand">
                 Admin Portal
               </span>
               <h1 className="mt-4 text-2xl font-semibold tracking-tight text-gray-900">

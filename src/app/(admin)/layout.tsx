@@ -25,7 +25,7 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-surface">
+    <div className="flex min-h-screen bg-white">
       <AppSidebar profile={profile} accessibleModules={accessibleModules} />
       <main className="flex-1 overflow-auto">
         <div className="w-full px-5 py-6 lg:px-8 lg:py-8">

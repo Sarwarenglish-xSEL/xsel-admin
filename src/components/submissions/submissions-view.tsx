@@ -24,7 +24,7 @@ export function SubmissionsView({
   }
 
   return (
-    <Card className="overflow-hidden border-brand/10 shadow-sm">
+    <Card className="overflow-hidden border-brand/20 shadow-sm">
       <CardContent className="p-5 sm:p-6">
         <Tabs defaultValue="assignments">
           <TabsList>

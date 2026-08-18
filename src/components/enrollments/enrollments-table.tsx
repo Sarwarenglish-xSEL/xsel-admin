@@ -130,15 +130,28 @@ function EnrollDialog({
       <Button onClick={() => setOpen(true)}>
         <Plus className="h-4 w-4" /> Manual Enroll
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent onClose={() => setOpen(false)}>
-          <DialogHeader>
-            <DialogTitle>Enroll User in Batch</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+      <Dialog open={open} onOpenChange={setOpen} className="max-w-2xl">
+        <DialogContent
+          className="flex w-full max-h-[min(40rem,85vh)] flex-col overflow-hidden p-0"
+          onClose={() => setOpen(false)}
+        >
+          <div className="shrink-0 border-b border-brand/15 brand-gradient px-6 py-5 pr-12 sm:px-7">
+            <DialogHeader className="mb-0">
+              <div className="flex items-start gap-3">
+                <div className="mt-1 h-8 w-1 shrink-0 rounded-full brand-accent-bar" />
+                <div>
+                  <DialogTitle className="text-xl">Enroll User in Batch</DialogTitle>
+                  <p className="mt-1 text-sm text-brand/70">
+                    Add a student to a course batch
+                  </p>
+                </div>
+              </div>
+            </DialogHeader>
+          </div>
+          <div className="brand-scrollbar min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5 sm:px-7">
             <div>
               <Label>User</Label>
-              <Select value={userId} onChange={(e) => setUserId(e.target.value)}>
+              <Select className="w-full" value={userId} onChange={(e) => setUserId(e.target.value)}>
                 <option value="">Select user</option>
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
@@ -147,47 +160,53 @@ function EnrollDialog({
                 ))}
               </Select>
             </div>
-            <div>
-              <Label>Course</Label>
-              <Select
-                value={courseId}
-                onChange={(e) => {
-                  setCourseId(e.target.value);
-                  setBatchId("");
-                }}
-              >
-                <option value="">Select course</option>
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.title}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label>Course</Label>
+                <Select
+                  className="w-full"
+                  value={courseId}
+                  onChange={(e) => {
+                    setCourseId(e.target.value);
+                    setBatchId("");
+                  }}
+                >
+                  <option value="">Select course</option>
+                  {courses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <Label>Batch</Label>
+                <Select
+                  className="w-full"
+                  value={batchId}
+                  onChange={(e) => setBatchId(e.target.value)}
+                  disabled={!courseId}
+                >
+                  <option value="">
+                    {courseId
+                      ? courseBatches.length
+                        ? "Select batch"
+                        : "No batches — create one on the Batches page"
+                      : "Select a course first"}
                   </option>
-                ))}
-              </Select>
+                  {courseBatches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                      {b.enrollment_count != null ? ` (${b.enrollment_count} enrolled)` : ""}
+                    </option>
+                  ))}
+                </Select>
+              </div>
             </div>
-            <div>
-              <Label>Batch</Label>
-              <Select
-                value={batchId}
-                onChange={(e) => setBatchId(e.target.value)}
-                disabled={!courseId}
-              >
-                <option value="">
-                  {courseId
-                    ? courseBatches.length
-                      ? "Select batch"
-                      : "No batches — create one on the Batches page"
-                    : "Select a course first"}
-                </option>
-                {courseBatches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                    {b.enrollment_count != null ? ` (${b.enrollment_count} enrolled)` : ""}
-                  </option>
-                ))}
-              </Select>
-            </div>
+          </div>
+          <div className="flex shrink-0 justify-end border-t border-brand/15 bg-white px-6 py-4 sm:px-7">
             <Button
-              className="w-full"
+              className="min-w-40"
               disabled={loading || !userId || !courseId || !batchId}
               onClick={async () => {
                 setLoading(true);
@@ -244,60 +263,64 @@ function EnrollmentFilters({
   const hasFilters = Boolean(courseId || batchId);
 
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-xl border border-brand/10 bg-white p-4 shadow-sm">
-      <div className="min-w-[180px] flex-1">
-        <Label>Course</Label>
-        <Select
-          value={courseId}
-          onChange={(e) => {
-            const next = e.target.value;
-            setCourseId(next);
-            setBatchId("");
-            applyFilters(next, "");
-          }}
-        >
-          <option value="">All courses</option>
-          {courses.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.title}
-            </option>
-          ))}
-        </Select>
+    <div className="w-full overflow-hidden rounded-xl border border-brand/25 bg-white p-4 shadow-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="min-w-0">
+            <Label>Course</Label>
+            <Select
+              value={courseId}
+              onChange={(e) => {
+                const next = e.target.value;
+                setCourseId(next);
+                setBatchId("");
+                applyFilters(next, "");
+              }}
+            >
+              <option value="">All courses</option>
+              {courses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="min-w-0">
+            <Label>Batch</Label>
+            <Select
+              value={batchId}
+              onChange={(e) => {
+                const next = e.target.value;
+                setBatchId(next);
+                const batch = batches.find((b) => b.id === next);
+                const nextCourse = batch?.course_id ?? courseId;
+                if (batch) setCourseId(batch.course_id);
+                applyFilters(nextCourse, next);
+              }}
+            >
+              <option value="">All batches</option>
+              {courseBatches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.course?.title ? `${b.course.title} — ` : ""}
+                  {b.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+        </div>
+        {hasFilters && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              setCourseId("");
+              setBatchId("");
+              applyFilters("", "");
+            }}
+          >
+            <X className="h-4 w-4" /> Clear
+          </Button>
+        )}
       </div>
-      <div className="min-w-[180px] flex-1">
-        <Label>Batch</Label>
-        <Select
-          value={batchId}
-          onChange={(e) => {
-            const next = e.target.value;
-            setBatchId(next);
-            const batch = batches.find((b) => b.id === next);
-            const nextCourse = batch?.course_id ?? courseId;
-            if (batch) setCourseId(batch.course_id);
-            applyFilters(nextCourse, next);
-          }}
-        >
-          <option value="">All batches</option>
-          {courseBatches.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.course?.title ? `${b.course.title} — ` : ""}
-              {b.name}
-            </option>
-          ))}
-        </Select>
-      </div>
-      {hasFilters && (
-        <Button
-          variant="outline"
-          onClick={() => {
-            setCourseId("");
-            setBatchId("");
-            applyFilters("", "");
-          }}
-        >
-          <X className="h-4 w-4" /> Clear
-        </Button>
-      )}
     </div>
   );
 }

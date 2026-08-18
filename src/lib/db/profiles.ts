@@ -107,6 +107,7 @@ export async function updateUser(
     email: string;
     role: Profile["role"];
     allowed_modules?: AdminModule[];
+    device_transfer_count?: number;
   }
 ): Promise<UserMutationResult> {
   const manager = await getUserManagerProfile();
@@ -145,6 +146,13 @@ export async function updateUser(
     email: input.email,
     role: input.role,
   };
+
+  if (typeof input.device_transfer_count === "number") {
+    profileUpdate.device_transfer_count = Math.min(
+      2,
+      Math.max(0, Math.trunc(input.device_transfer_count))
+    );
+  }
 
   if (input.role === "manager") {
     profileUpdate.allowed_modules = input.allowed_modules ?? [];

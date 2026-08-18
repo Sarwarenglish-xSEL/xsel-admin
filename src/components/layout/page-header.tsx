@@ -55,7 +55,7 @@ export function PageHeader({
       )}
       <div
         className={cn(
-          "min-w-0 flex-1 rounded-xl border border-brand/15 brand-gradient px-6 py-5 shadow-sm",
+          "min-w-0 flex-1 rounded-xl border border-brand/25 brand-gradient px-6 py-5 shadow-sm shadow-brand/10",
           actions && "sm:pr-4"
         )}
       >
@@ -87,7 +87,7 @@ export function SectionHeader({
   return (
     <div
       className={cn(
-        "border-b border-brand/10 brand-gradient px-5 py-4",
+        "border-b border-brand/20 brand-gradient px-5 py-4",
         className
       )}
     >

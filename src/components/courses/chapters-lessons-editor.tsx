@@ -150,10 +150,10 @@ export function ChaptersLessonsEditor({
 
   return (
     <div className="space-y-5">
-      <Card className="overflow-hidden border-brand/10">
-        <div className="border-b border-brand/10 brand-gradient px-5 py-4">
+      <Card className="overflow-hidden border-brand/20">
+        <div className="border-b border-brand/20 brand-gradient px-5 py-4">
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
+            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand/20 text-brand">
               <Layers className="h-4 w-4" />
             </div>
             <div className="min-w-0 flex-1">
@@ -190,7 +190,7 @@ export function ChaptersLessonsEditor({
       {chapters.length === 0 ? (
         <Card className="border-dashed border-gray-300 bg-white/70">
           <CardContent className="flex flex-col items-center px-6 py-14 text-center">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand/10 text-brand">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand/20 text-brand">
               <BookOpen className="h-5 w-5" />
             </div>
             <p className="text-sm font-semibold text-gray-900">No chapters yet</p>
@@ -209,12 +209,12 @@ export function ChaptersLessonsEditor({
               key={chapter.id}
               className="overflow-hidden border-gray-200/80 shadow-sm"
             >
-              <div className="flex items-center gap-3 border-b border-gray-100 bg-white px-4 py-3">
+              <div className="flex items-center gap-3 border-b border-brand/20 brand-gradient px-4 py-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand text-xs font-bold text-white shadow-sm shadow-brand/25">
                   {String(chapterIndex + 1).padStart(2, "0")}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400">
+                  <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-brand/70">
                     Chapter
                   </p>
                   <Input
@@ -231,7 +231,7 @@ export function ChaptersLessonsEditor({
                         }
                       }
                     }}
-                    className="h-9 border-transparent bg-transparent px-0 text-base font-semibold text-gray-900 shadow-none hover:border-gray-200 hover:bg-gray-50 focus:border-brand/20 focus:bg-white"
+                    className="h-9 border-transparent bg-transparent px-0 font-sans text-base font-semibold text-brand-dark shadow-none hover:border-brand/20 hover:bg-white/70 focus:border-brand/20 focus:bg-white"
                   />
                 </div>
                 <div className="flex shrink-0 items-center gap-0.5">
@@ -303,14 +303,14 @@ export function ChaptersLessonsEditor({
                         key={lesson.id}
                         className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
                       >
-                        <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-col gap-3 border-b border-brand/15 brand-gradient px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                           <div className="min-w-0 space-y-2">
                             <div className="flex items-start gap-2.5">
-                              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/15 text-accent-dark">
+                              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/25 text-accent-dark">
                                 <LessonTypeIcon type={lesson.lesson_type} />
                               </div>
                               <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-gray-900">
+                                <p className="truncate font-sans text-sm font-semibold text-brand-dark">
                                   {lesson.title}
                                 </p>
                                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -432,7 +432,7 @@ export function ChaptersLessonsEditor({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-7 px-2 text-brand hover:bg-brand/5 hover:text-brand-dark"
+                                className="h-7 px-2 text-brand hover:bg-brand/10 hover:text-brand-dark"
                                 onClick={() =>
                                   setQuizDialog({
                                     lessonId: lesson.id,
@@ -457,7 +457,7 @@ export function ChaptersLessonsEditor({
                                     href={`/batches/${batchId}/lessons/${lesson.id}/quiz/${quiz.id}`}
                                     className={cn(
                                       "group flex items-center gap-2 rounded-md border border-gray-200 px-2.5 py-2",
-                                      "text-sm text-gray-700 transition-colors hover:border-brand/30 hover:bg-brand/5 hover:text-brand"
+                                      "text-sm text-gray-700 transition-colors hover:border-brand/30 hover:bg-brand/10 hover:text-brand"
                                     )}
                                   >
                                     <FileQuestion className="h-3.5 w-3.5 shrink-0 text-gray-400 group-hover:text-brand" />
@@ -487,7 +487,7 @@ export function ChaptersLessonsEditor({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-7 px-2 text-brand hover:bg-brand/5 hover:text-brand-dark"
+                                className="h-7 px-2 text-brand hover:bg-brand/10 hover:text-brand-dark"
                                 onClick={() =>
                                   setAssignmentDialog({
                                     lessonId: lesson.id,
@@ -537,7 +537,7 @@ export function ChaptersLessonsEditor({
 
                 <Button
                   variant="outline"
-                  className="w-full border-dashed border-gray-300 bg-white/80 text-gray-700 hover:border-brand/40 hover:bg-brand/5 hover:text-brand"
+                  className="w-full border-dashed border-gray-300 bg-white/80 text-gray-700 hover:border-brand/40 hover:bg-brand/10 hover:text-brand"
                   onClick={() => setLessonDialog({ chapterId: chapter.id })}
                 >
                   <Plus className="h-4 w-4" />

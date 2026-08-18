@@ -3,7 +3,7 @@ import LoginPage from "./login-form";
 
 function LoginFallback() {
   return (
-    <div className="flex h-dvh items-center justify-center bg-surface-muted">
+    <div className="flex h-dvh items-center justify-center bg-white">
       <p className="text-sm text-gray-500">Loading...</p>
     </div>
   );

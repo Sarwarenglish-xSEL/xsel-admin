@@ -24,9 +24,9 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 const fieldClassName = cn(
-  "h-11 border-gray-200 bg-gray-50/80 transition-colors focus:bg-white",
-  "[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_#f9fafb]",
-  "[&:-webkit-autofill]:[-webkit-text-fill-color:#111827]"
+  "h-11 border-brand/25 bg-white",
+  "[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_#ffffff]",
+  "[&:-webkit-autofill]:[-webkit-text-fill-color:#02143d]"
 );
 
 const portalAccessToast = (description?: string) =>
@@ -100,23 +100,28 @@ export default function LoginForm() {
       <AuthHeroPanel />
 
       <AuthFormPanel>
-        <div className="overflow-hidden rounded-2xl bg-white shadow-2xl shadow-gray-300/20 ring-1 ring-gray-200/70">
-            <div className="border-b border-gray-100 px-7 pb-6 pt-7 sm:px-8 sm:pt-8">
-              <span className="inline-flex items-center rounded-full bg-brand/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-brand">
+        <div className="overflow-hidden rounded-2xl border border-brand/20 bg-white shadow-xl shadow-brand/10">
+            <div className="border-b border-brand/15 brand-gradient px-7 py-6 sm:px-8">
+              <span className="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 font-sans text-[11px] font-semibold uppercase tracking-wider text-brand">
                 Admin Portal
               </span>
-              <h1 className="mt-4 text-2xl font-semibold tracking-tight text-gray-900">
-                Welcome back
-              </h1>
-              <p className="mt-1.5 text-sm leading-relaxed text-gray-500">
-                Sign in to manage your learning platform
-              </p>
+              <div className="mt-4 flex items-start gap-3">
+                <div className="mt-1 h-8 w-1 shrink-0 rounded-full brand-accent-bar" />
+                <div>
+                  <h1 className="font-sans text-2xl font-bold tracking-tight text-brand-dark">
+                    Welcome back
+                  </h1>
+                  <p className="mt-1.5 font-sans text-sm leading-relaxed text-brand/70">
+                    Sign in to manage your learning platform
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="px-7 pb-7 pt-5 sm:px-8 sm:pb-8">
+            <div className="bg-white px-7 pb-7 pt-5 sm:px-8 sm:pb-8">
               {registered && (
-                <Alert className="mb-4 border-brand/20 bg-brand/5 py-2.5">
-                  <AlertDescription className="text-xs leading-relaxed text-gray-600 sm:text-sm">
+                <Alert className="mb-4 border-brand/30 bg-brand/10 py-2.5">
+                  <AlertDescription className="text-xs leading-relaxed text-brand/70 sm:text-sm">
                     Account created. Sign in to continue. Only admin accounts can access
                     this portal.
                   </AlertDescription>
@@ -124,10 +129,8 @@ export default function LoginForm() {
               )}
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-xs font-medium text-gray-600">
-                    Email address
-                  </Label>
+                <div>
+                  <Label htmlFor="email">Email address</Label>
                   <Input
                     id="email"
                     type="email"
@@ -137,19 +140,19 @@ export default function LoginForm() {
                     {...register("email")}
                   />
                   {errors.email && (
-                    <p className="text-xs text-danger">{errors.email.message}</p>
+                    <p className="mt-1 text-xs text-danger">{errors.email.message}</p>
                   )}
                 </div>
 
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <Label htmlFor="password" className="text-xs font-medium text-gray-600">
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between gap-2">
+                    <Label htmlFor="password" className="mb-0">
                       Password
                     </Label>
                     <button
                       type="button"
                       onClick={() => setResetOpen(true)}
-                      className="text-xs font-medium text-brand transition-colors hover:text-brand-dark hover:underline"
+                      className="font-sans text-xs font-medium text-brand transition-colors hover:text-brand-dark hover:underline"
                     >
                       Forgot password?
                     </button>
@@ -163,7 +166,7 @@ export default function LoginForm() {
                     {...register("password")}
                   />
                   {errors.password && (
-                    <p className="text-xs text-danger">{errors.password.message}</p>
+                    <p className="mt-1 text-xs text-danger">{errors.password.message}</p>
                   )}
                 </div>
 

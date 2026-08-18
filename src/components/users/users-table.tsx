@@ -108,7 +108,7 @@ function DeviceCell({ user }: { user: Profile }) {
 
   return (
     <div className="min-w-0 max-w-full">
-      <p className="truncate text-sm font-medium text-gray-900" title={model ?? undefined}>
+      <p className="truncate text-sm font-medium text-brand-dark" title={model ?? undefined}>
         {model || "Unknown device"}
       </p>
       {platform ? (
@@ -119,6 +119,33 @@ function DeviceCell({ user }: { user: Profile }) {
     </div>
   );
 }
+
+function getInitials(user: Profile) {
+  const name = user.full_name?.trim();
+  if (name) {
+    return name
+      .split(/\s+/)
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+  }
+  return user.email.slice(0, 2).toUpperCase();
+}
+
+const ROLE_LABELS: Record<Profile["role"], string> = {
+  superadmin: "Super Admin",
+  admin: "Admin",
+  manager: "Manager",
+  user: "User",
+};
+
+const ROLE_BADGE_CLASS: Record<Profile["role"], string> = {
+  superadmin: "border-transparent bg-brand text-white",
+  admin: "border-transparent bg-brand/15 text-brand",
+  manager: "border-transparent bg-accent/20 text-accent-dark",
+  user: "border-brand/20 bg-white text-brand",
+};
 
 const columns = (
   canManage: boolean,
@@ -136,15 +163,27 @@ const columns = (
       const user = row.original;
       const name = user.full_name?.trim();
       return (
-        <div className="min-w-0 max-w-full">
-          <p className="truncate text-sm font-medium text-gray-900">
-            {name || user.email}
-          </p>
-          {name ? (
-            <p className="truncate text-xs text-gray-500">{user.email}</p>
-          ) : null}
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand/15 text-xs font-semibold text-brand">
+            {getInitials(user)}
+          </div>
+          <div className="min-w-0 max-w-full">
+            <p className="truncate text-sm font-semibold text-brand-dark">
+              {name || user.email}
+            </p>
+            {name ? (
+              <p className="truncate text-xs text-brand/60">{user.email}</p>
+            ) : null}
+          </div>
         </div>
       );
+    },
+    filterFn: (row, _id, value) => {
+      const q = String(value).toLowerCase().trim();
+      if (!q) return true;
+      const email = row.original.email.toLowerCase();
+      const name = (row.original.full_name ?? "").toLowerCase();
+      return email.includes(q) || name.includes(q);
     },
   },
   {
@@ -154,7 +193,14 @@ const columns = (
       headerClassName: "w-[10%]",
       cellClassName: "whitespace-nowrap",
     },
-    cell: ({ row }) => <Badge variant="outline">{row.original.role}</Badge>,
+    cell: ({ row }) => {
+      const role = row.original.role;
+      return (
+        <Badge variant="outline" className={ROLE_BADGE_CLASS[role]}>
+          {ROLE_LABELS[role]}
+        </Badge>
+      );
+    },
   },
   {
     id: "device",
@@ -191,12 +237,9 @@ const columns = (
     cell: ({ row }) => {
       const count = row.original.device_transfer_count ?? 0;
       return (
-        <Badge
-          variant={count > 0 ? "warning" : "outline"}
-          className="normal-case tabular-nums"
-        >
-          {count}
-        </Badge>
+        <span className="inline-flex min-w-[2.75rem] items-center justify-center rounded-full bg-brand/15 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-brand">
+          {count}/2
+        </span>
       );
     },
   },
@@ -242,7 +285,7 @@ export function UsersTable({
       columns={columns(canManage, currentUserId, currentUserRole)}
       data={users}
       searchKey="email"
-      searchPlaceholder="Search by email..."
+      searchPlaceholder="Search by name or email..."
       fixedLayout
     />
   );

@@ -90,42 +90,59 @@ function IssueCertificateDialog({
         if (!next) reset();
         onOpenChange(next);
       }}
+      className="max-w-2xl"
     >
       <DialogContent
+        className="flex w-full max-h-[min(40rem,85vh)] flex-col overflow-hidden p-0"
         onClose={() => {
           reset();
           onOpenChange(false);
         }}
       >
-        <DialogHeader>
-          <DialogTitle>Issue Certificate</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label>User</Label>
-            <p className="mt-1 text-sm font-medium text-gray-900">
-              {userLabel?.email ?? target?.userId}
-            </p>
-            {userLabel?.full_name && (
-              <p className="text-xs text-gray-500">{userLabel.full_name}</p>
-            )}
-          </div>
-          <div>
-            <Label>Course</Label>
-            <p className="mt-1 text-sm font-medium text-gray-900">
-              {courseLabel?.title ?? target?.courseId}
-            </p>
+        <div className="shrink-0 border-b border-brand/15 brand-gradient px-6 py-5 pr-12 sm:px-7">
+          <DialogHeader className="mb-0">
+            <div className="flex items-start gap-3">
+              <div className="mt-1 h-8 w-1 shrink-0 rounded-full brand-accent-bar" />
+              <div>
+                <DialogTitle className="text-xl">Issue Certificate</DialogTitle>
+                <p className="mt-1 text-sm text-brand/70">
+                  Attach a certificate URL for this completed enrollment
+                </p>
+              </div>
+            </div>
+          </DialogHeader>
+        </div>
+        <div className="space-y-5 px-6 py-5 sm:px-7">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-xl border border-brand/20 bg-brand/[0.03] px-4 py-3">
+              <Label>User</Label>
+              <p className="mt-1 truncate font-sans text-sm font-semibold text-brand-dark">
+                {userLabel?.full_name?.trim() || userLabel?.email || target?.userId}
+              </p>
+              {userLabel?.full_name?.trim() ? (
+                <p className="mt-0.5 truncate text-xs text-brand/60">{userLabel.email}</p>
+              ) : null}
+            </div>
+            <div className="rounded-xl border border-brand/20 bg-brand/[0.03] px-4 py-3">
+              <Label>Course</Label>
+              <p className="mt-1 font-sans text-sm font-semibold text-brand-dark">
+                {courseLabel?.title ?? target?.courseId}
+              </p>
+            </div>
           </div>
           <div>
             <Label>Certificate URL</Label>
             <Input
+              type="url"
               placeholder="https://..."
               value={url}
               onChange={(e) => setUrl(e.target.value)}
             />
           </div>
+        </div>
+        <div className="flex shrink-0 justify-end border-t border-brand/15 bg-white px-6 py-4 sm:px-7">
           <Button
-            className="w-full"
+            className="min-w-40"
             disabled={loading || !target?.userId || !target?.courseId || !url}
             onClick={async () => {
               if (!target) return;
@@ -223,7 +240,7 @@ export function CertificatesTable({
   );
 
   return (
-    <Card className="overflow-hidden border-brand/10 shadow-sm">
+    <Card className="overflow-hidden border-brand/20 shadow-sm">
       <CardContent className="p-5 sm:p-6">
         <Tabs defaultValue={eligible.length > 0 ? "eligible" : "issued"}>
           <TabsList>

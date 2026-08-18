@@ -1,14 +1,14 @@
 /** Brand palette — single source of truth for JS/TS consumers (charts, etc.) */
 export const colors = {
   brand: "#04267C",
-  brandDark: "#031952",
-  accent: "#30BFDC",
+  brandDark: "#02143d",
+  accent: "#1498c4",
   success: "#228212",
   successLight: "#248112",
   danger: "#C70104",
   dangerDark: "#9e0103",
-  surface: "#f4f8fc",
-  surfaceMuted: "#eef4fb",
+  surface: "#ffffff",
+  surfaceMuted: "#f4f4f5",
 } as const;
 
 export const chartColors = {

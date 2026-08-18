@@ -24,23 +24,25 @@ export function ManagerModulePicker({
   return (
     <div className={cn("space-y-2", className)}>
       <Label>Module access</Label>
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-brand/60">
         Choose which admin pages this manager can access.
       </p>
-      <div className="grid gap-2 rounded-lg border border-gray-200 bg-gray-50/50 p-3 sm:grid-cols-2">
+      <div className="grid gap-1.5 rounded-lg border border-brand/20 bg-brand/[0.03] p-2 sm:grid-cols-2">
         {ADMIN_MODULES.map((module) => {
           const checked = value.includes(module);
           return (
             <label
               key={module}
               className={cn(
-                "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-                checked ? "bg-brand/5 text-gray-900" : "text-gray-600 hover:bg-gray-100/80"
+                "flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
+                checked
+                  ? "bg-brand text-white shadow-sm"
+                  : "text-brand/70 hover:bg-brand/10 hover:text-brand"
               )}
             >
               <input
                 type="checkbox"
-                className="h-4 w-4 rounded border-gray-300 text-brand focus:ring-brand"
+                className="h-4 w-4 rounded border-brand/30 text-brand accent-brand focus:ring-brand"
                 checked={checked}
                 onChange={() => toggle(module)}
               />

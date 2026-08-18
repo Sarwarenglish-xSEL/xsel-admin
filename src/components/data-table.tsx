@@ -56,7 +56,7 @@ export function DataTable<TData, TValue>({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           {searchKey ? (
             <div className="relative max-w-sm flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand/45" />
               <Input
                 placeholder={searchPlaceholder}
                 value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
@@ -73,7 +73,7 @@ export function DataTable<TData, TValue>({
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-brand/10 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-brand/20 bg-white shadow-sm">
         <Table className={fixedLayout ? "table-fixed" : undefined}>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

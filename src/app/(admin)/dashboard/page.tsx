@@ -57,25 +57,29 @@ export default async function DashboardPage() {
       label: "Total Users",
       value: stats!.totalUsers,
       icon: Users,
-      tone: "bg-brand/10 text-brand",
+      tone: "bg-brand/20 text-brand",
+      cardBg: "border-brand/25 bg-gradient-to-br from-brand/20 via-white to-brand/5",
     },
     {
       label: "Total Courses",
       value: stats!.totalCourses,
       icon: BookOpen,
-      tone: "bg-accent/15 text-accent-dark",
+      tone: "bg-teal-500/20 text-teal-700",
+      cardBg: "border-teal-400/40 bg-gradient-to-br from-teal-500/22 via-white to-teal-400/8",
     },
     {
       label: "Pending Purchases",
       value: stats!.pendingPurchases,
       icon: ShoppingCart,
-      tone: "bg-warning/15 text-accent-dark",
+      tone: "bg-danger/15 text-danger",
+      cardBg: "border-danger/25 bg-gradient-to-br from-danger/16 via-white to-danger/5",
     },
     {
       label: "Upcoming Live Lessons",
       value: stats!.upcomingLiveLessons,
       icon: CalendarClock,
-      tone: "bg-success/10 text-success",
+      tone: "bg-success/15 text-success",
+      cardBg: "border-success/25 bg-gradient-to-br from-success/16 via-white to-success/5",
     },
   ];
 
@@ -92,11 +96,11 @@ export default async function DashboardPage() {
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((card) => (
-          <Card key={card.label} className="overflow-hidden border-brand/10 shadow-sm">
+          <Card key={card.label} className={`overflow-hidden shadow-sm shadow-brand/10 ${card.cardBg}`}>
             <CardContent className="flex items-start justify-between gap-3 p-5">
               <div>
-                <p className="text-sm font-medium text-gray-500">{card.label}</p>
-                <p className="mt-2 text-3xl font-bold tracking-tight text-brand-dark">
+                <p className="font-sans text-sm font-medium text-brand/65">{card.label}</p>
+                <p className="mt-2 font-sans text-3xl font-bold tracking-tight text-brand-dark">
                   {card.value}
                 </p>
               </div>
@@ -110,14 +114,14 @@ export default async function DashboardPage() {
         ))}
       </div>
       <DashboardCharts data={chartData!} />
-      <Card className="overflow-hidden border-brand/10 shadow-sm">
+      <Card className="overflow-hidden border-brand/20 shadow-sm">
         <SectionHeader
           title="Recent pending purchases"
           description="Purchase requests waiting for review"
           actions={
             <Link
               href="/purchases"
-              className="inline-flex h-8 items-center rounded-lg border border-brand/15 bg-white px-3 text-xs font-medium text-brand hover:bg-brand/5"
+              className="inline-flex h-8 items-center rounded-lg border border-brand/25 bg-white px-3 text-xs font-medium text-brand hover:bg-brand/10"
             >
               View all
             </Link>

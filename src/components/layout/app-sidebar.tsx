@@ -53,6 +53,20 @@ function getInitials(profile: Profile) {
   return profile.email.slice(0, 2).toUpperCase();
 }
 
+const ROLE_LABELS: Record<Profile["role"], string> = {
+  superadmin: "Super Admin",
+  admin: "Admin",
+  manager: "Manager",
+  user: "User",
+};
+
+const ROLE_BADGE_CLASS: Record<Profile["role"], string> = {
+  superadmin: "border-transparent bg-brand text-white",
+  admin: "border-transparent bg-brand/15 text-brand",
+  manager: "border-transparent bg-accent/20 text-accent-dark",
+  user: "border-brand/20 bg-white text-brand",
+};
+
 function SidebarUserMenu({ profile }: { profile: Profile }) {
   const hasName = Boolean(profile.full_name?.trim());
   const displayName = profile.full_name?.trim() || profile.email;
@@ -61,41 +75,48 @@ function SidebarUserMenu({ profile }: { profile: Profile }) {
   return (
     <DropdownMenu
       align="start"
-      className="min-w-[17rem] overflow-hidden rounded-xl border-gray-200/80 p-0 shadow-xl ring-1 ring-black/5"
+      className="min-w-[18rem] overflow-hidden rounded-xl border-brand/20 p-0 font-sans shadow-xl"
       trigger={
         <button
           type="button"
           aria-label="Open user menu"
-          className="flex shrink-0 rounded-full p-0.5 transition-colors hover:bg-gray-100/80"
+          className="flex shrink-0 rounded-full p-0.5 transition-colors hover:bg-brand/5"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand/10 text-xs font-semibold text-brand ring-2 ring-white">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand/15 font-sans text-xs font-semibold text-brand ring-2 ring-white">
             {initials}
           </div>
         </button>
       }
     >
-      <div className="flex items-start gap-3 px-4 py-4">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand/10 text-sm font-semibold text-brand">
-          {initials}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-gray-900">
-            {displayName}
-          </p>
-          {hasName && (
-            <p className="mt-0.5 truncate text-xs text-gray-500">
-              {profile.email}
+      <div className="border-b border-brand/15 brand-gradient px-4 py-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand/15 font-sans text-sm font-semibold text-brand">
+            {initials}
+          </div>
+          <div className="min-w-0 flex-1 pt-0.5">
+            <p className="truncate font-sans text-sm font-semibold text-brand-dark">
+              {displayName}
             </p>
-          )}
-          <Badge className="mt-2">{profile.role}</Badge>
+            {hasName && (
+              <p className="mt-0.5 truncate font-sans text-xs text-brand/60">
+                {profile.email}
+              </p>
+            )}
+            <Badge
+              variant="outline"
+              className={cn("mt-2.5 font-sans normal-case", ROLE_BADGE_CLASS[profile.role])}
+            >
+              {ROLE_LABELS[profile.role]}
+            </Badge>
+          </div>
         </div>
       </div>
 
-      <div className="border-t border-gray-100 p-1.5">
+      <div className="p-1.5">
         <form action={signOutAction}>
           <button
             type="submit"
-            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-gray-600 transition-colors hover:bg-danger/5 hover:text-danger"
+            className="flex w-full items-center gap-2.5 rounded-lg bg-danger/10 px-3 py-2.5 text-left font-sans text-sm font-semibold text-danger transition-colors hover:bg-danger/15"
           >
             <LogOut className="h-4 w-4 shrink-0" />
             Logout
@@ -174,7 +195,7 @@ export function AppSidebar({
 
       <div
         className={cn(
-          "flex shrink-0 border-b border-gray-100",
+          "flex shrink-0 border-b border-brand/20 brand-gradient",
           collapsed
             ? "flex-col items-center gap-2 px-3 py-3"
             : "flex h-16 items-center gap-3 px-4"
@@ -186,15 +207,15 @@ export function AppSidebar({
             collapsed ? "justify-center" : "min-w-0 flex-1 gap-3"
           )}
         >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand text-sm font-bold text-white shadow-sm ring-4 ring-brand/10">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand text-sm font-bold text-white shadow-sm ring-4 ring-brand/20">
             X
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold tracking-tight text-gray-900">
+              <p className="truncate font-sans text-sm font-semibold tracking-tight text-brand-dark">
                 XSEL Admin
               </p>
-              <p className="truncate text-xs text-gray-400">Learning Platform</p>
+              <p className="truncate font-sans text-xs text-brand/50">Learning Platform</p>
             </div>
           )}
         </div>
@@ -203,7 +224,7 @@ export function AppSidebar({
 
       <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden px-3 py-4">
         {!collapsed && (
-          <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+          <p className="mb-2 px-3 font-sans text-[11px] font-semibold uppercase tracking-wider text-brand/50">
             Menu
           </p>
         )}

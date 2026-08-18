@@ -13,7 +13,7 @@ const cards = [
     key: "online" as const,
     label: "Online now",
     icon: Signal,
-    tone: "bg-success/10 text-success",
+    tone: "bg-success/15 text-success",
   },
   {
     key: "offline" as const,
@@ -25,13 +25,13 @@ const cards = [
     key: "activeLast24h" as const,
     label: "Active last 24h",
     icon: Activity,
-    tone: "bg-accent/15 text-accent-dark",
+    tone: "bg-accent/25 text-accent-dark",
   },
   {
     key: "total" as const,
     label: "Tracked users",
     icon: Users,
-    tone: "bg-brand/10 text-brand",
+    tone: "bg-brand/20 text-brand",
   },
 ];
 
@@ -39,7 +39,7 @@ export function SessionStats(stats: SessionStatsProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {cards.map((card) => (
-        <Card key={card.key} className="overflow-hidden border-brand/10 shadow-sm">
+        <Card key={card.key} className="overflow-hidden border-brand/20 shadow-sm">
           <CardContent className="flex items-start justify-between gap-3 p-5">
             <div>
               <p className="text-sm font-medium text-gray-500">{card.label}</p>

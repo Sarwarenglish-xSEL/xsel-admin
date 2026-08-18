@@ -15,7 +15,7 @@ export function AuthFormPanel({
   return (
     <div
       className={cn(
-        "relative flex h-full min-h-0 flex-1 bg-surface-muted",
+        "relative flex h-full min-h-0 flex-1 bg-white",
         /* Grid colors — or change once in globals.css under --color-auth-grid-* */
         "[--cell-border-color:var(--color-auth-grid-border)]",
         "[--cell-fill-color:var(--color-auth-grid-fill)]",

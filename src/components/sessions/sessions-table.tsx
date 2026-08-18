@@ -11,8 +11,8 @@ import { Select } from "@/components/ui/select";
 
 function StatusFilter({ status }: { status: SessionStatusFilter }) {
   return (
-    <div className="inline-flex items-center gap-3 rounded-xl border border-brand/10 bg-white px-4 py-3 shadow-sm">
-      <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+    <div className="inline-flex items-center gap-3 rounded-xl border border-brand/25 bg-white px-4 py-3 shadow-sm">
+      <span className="text-xs font-semibold uppercase tracking-wide text-brand">
         Presence
       </span>
       <Select
@@ -45,7 +45,7 @@ function UserCell({ session }: { session: UserSession }) {
 
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand/10 text-xs font-semibold text-brand">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand/20 text-xs font-semibold text-brand">
         {initials}
       </div>
       <div className="min-w-0">

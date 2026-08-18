@@ -20,8 +20,8 @@ export function CourseFilters({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-brand/10 bg-white px-4 py-3 shadow-sm">
-      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-brand/25 bg-white px-4 py-3 shadow-sm">
+      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-brand">
         <Filter className="h-3.5 w-3.5 text-brand" />
         Filters
       </div>

@@ -37,7 +37,7 @@ export function Dialog({
         className="fixed inset-0 bg-black/40 backdrop-blur-sm"
         onClick={() => onOpenChange(false)}
       />
-      <div className={cn("relative z-10 w-full max-w-lg", className)}>{children}</div>
+      <div className={cn("relative z-10 flex max-h-[90vh] w-full max-w-lg", className)}>{children}</div>
     </div>
   );
 }
@@ -54,7 +54,7 @@ export function DialogContent({
   return (
     <div
       className={cn(
-        "max-h-[90vh] overflow-y-auto rounded-xl border border-gray-200 bg-white p-6 shadow-xl",
+        "relative max-h-[90vh] overflow-y-auto rounded-xl border border-brand/25 bg-white p-6 shadow-xl",
         className
       )}
     >
@@ -62,7 +62,7 @@ export function DialogContent({
         <Button
           variant="ghost"
           size="icon"
-          className="absolute right-3 top-3"
+          className="absolute right-3 top-3 z-10 text-brand/50 hover:bg-brand/5 hover:text-brand"
           onClick={onClose}
         >
           <X className="h-4 w-4" />
@@ -78,5 +78,5 @@ export function DialogHeader({ className, ...props }: React.HTMLAttributes<HTMLD
 }
 
 export function DialogTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={cn("text-lg font-semibold text-gray-900", className)} {...props} />;
+  return <h2 className={cn("font-sans text-lg font-semibold tracking-tight text-brand-dark", className)} {...props} />;
 }

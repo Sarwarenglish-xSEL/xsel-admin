@@ -17,6 +17,7 @@ export default async function UsersPage({
 
   try {
     [currentProfile, users] = await Promise.all([getCurrentProfile(), getProfiles(q)]);
+    users = users.filter((user) => user.role !== "superadmin");
   } catch (e) {
     error = e instanceof Error ? e.message : "Failed to load users";
   }
@@ -36,9 +37,7 @@ export default async function UsersPage({
     <div className="space-y-6">
       <PageHeader
         title="Users"
-        description={`View users, registered devices, and transfer history${
-          !canManage ? " (management requires admin)" : ""
-        }`}
+        description="Manage accounts, devices, and transfer allowances"
         actions={
           canManage ? (
             <CreateUserDialog currentUserRole={currentProfile!.role} />

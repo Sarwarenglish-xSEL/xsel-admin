@@ -107,54 +107,74 @@ export function CreateUserDialog({ currentUserRole }: { currentUserRole: UserRol
         <Plus className="h-4 w-4" />
         Create User
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent onClose={() => setOpen(false)}>
-          <DialogHeader>
-            <DialogTitle>Create User</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <Label>Full name</Label>
-              <Input placeholder="Jane Doe" {...register("full_name")} />
-              {errors.full_name && (
-                <p className="mt-1 text-xs text-danger">{errors.full_name.message}</p>
+      <Dialog open={open} onOpenChange={setOpen} className="max-w-2xl">
+        <DialogContent
+          className="flex w-full max-h-[min(40rem,85vh)] flex-col overflow-hidden p-0"
+          onClose={() => setOpen(false)}
+        >
+          <div className="shrink-0 border-b border-brand/15 brand-gradient px-6 py-5 pr-12 sm:px-7">
+            <DialogHeader className="mb-0">
+              <div className="flex items-start gap-3">
+                <div className="mt-1 h-8 w-1 shrink-0 rounded-full brand-accent-bar" />
+                <div>
+                  <DialogTitle className="text-xl">Create User</DialogTitle>
+                  <p className="mt-1 text-sm text-brand/70">
+                    Add a staff or student account to the platform
+                  </p>
+                </div>
+              </div>
+            </DialogHeader>
+          </div>
+          <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
+            <div className="brand-scrollbar min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5 sm:px-7">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label>Full name</Label>
+                  <Input placeholder="Jane Doe" {...register("full_name")} />
+                  {errors.full_name && (
+                    <p className="mt-1 text-xs text-danger">{errors.full_name.message}</p>
+                  )}
+                </div>
+                <div>
+                  <Label>Email address</Label>
+                  <Input
+                    type="email"
+                    autoComplete="email"
+                    placeholder="user@example.com"
+                    {...register("email")}
+                  />
+                  {errors.email && (
+                    <p className="mt-1 text-xs text-danger">{errors.email.message}</p>
+                  )}
+                </div>
+              </div>
+              <div>
+                <Label>Role</Label>
+                <Select className="w-full" {...register("role")}>
+                  {roles.map((role) => (
+                    <option key={role} value={role}>
+                      {ROLE_LABELS[role]}
+                    </option>
+                  ))}
+                </Select>
+                {errors.role && (
+                  <p className="mt-1 text-xs text-danger">{errors.role.message}</p>
+                )}
+              </div>
+              {selectedRole === "manager" && (
+                <ManagerModulePicker value={allowedModules} onChange={setAllowedModules} />
               )}
+              <p className="text-xs leading-relaxed text-brand/65">
+                The default password is{" "}
+                <span className="font-semibold text-brand">{DEFAULT_USER_PASSWORD}</span>.
+                The user can sign in and change it after their first login.
+              </p>
             </div>
-            <div>
-              <Label>Email address</Label>
-              <Input
-                type="email"
-                autoComplete="email"
-                placeholder="user@example.com"
-                {...register("email")}
-              />
-              {errors.email && (
-                <p className="mt-1 text-xs text-danger">{errors.email.message}</p>
-              )}
+            <div className="flex shrink-0 justify-end border-t border-brand/15 bg-white px-6 py-4 sm:px-7">
+              <Button type="submit" disabled={loading} className="min-w-40">
+                {loading ? "Creating..." : "Create User"}
+              </Button>
             </div>
-            <div>
-              <Label>Role</Label>
-              <Select className="w-full" {...register("role")}>
-                {roles.map((role) => (
-                  <option key={role} value={role}>
-                    {ROLE_LABELS[role]}
-                  </option>
-                ))}
-              </Select>
-              {errors.role && (
-                <p className="mt-1 text-xs text-danger">{errors.role.message}</p>
-              )}
-            </div>
-            {selectedRole === "manager" && (
-              <ManagerModulePicker value={allowedModules} onChange={setAllowedModules} />
-            )}
-            <p className="text-xs leading-relaxed text-gray-500">
-              The default password is <span className="font-medium">{DEFAULT_USER_PASSWORD}</span>.
-              The user can sign in and change it after their first login.
-            </p>
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? "Creating..." : "Create User"}
-            </Button>
           </form>
         </DialogContent>
       </Dialog>

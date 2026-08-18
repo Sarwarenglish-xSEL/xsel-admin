@@ -122,7 +122,7 @@ function LiveSessionCard({
     lesson.status?.toLowerCase() === "completed";
 
   return (
-    <Card className="overflow-hidden border-brand/10 shadow-sm">
+    <Card className="overflow-hidden border-brand/20 shadow-sm">
       <SectionHeader
         title={lesson.title}
         description={`${lesson.chapter?.course?.title ?? "Course"} · ${lesson.chapter?.title ?? "Chapter"}`}

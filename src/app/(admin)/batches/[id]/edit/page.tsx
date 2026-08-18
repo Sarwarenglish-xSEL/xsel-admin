@@ -59,10 +59,10 @@ export default async function EditBatchPage({
       />
 
       {course && (
-        <Card className="border-brand/10 shadow-sm">
+        <Card className="border-brand/20 shadow-sm">
           <CardContent className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-brand/70">
                 Parent course
               </p>
               <Link

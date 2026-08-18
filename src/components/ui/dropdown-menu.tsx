@@ -79,7 +79,7 @@ export function DropdownMenu({
             <div
               ref={menuRef}
               className={cn(
-                "fixed z-50 min-w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg",
+                "fixed z-50 min-w-40 rounded-lg border border-brand/20 bg-white py-1 shadow-lg",
                 align === "end" && "-translate-x-full",
                 className
               )}
@@ -104,7 +104,7 @@ export function DropdownMenuItem({
   return (
     <button
       className={cn(
-        "flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50",
+        "flex w-full items-center gap-2 px-3 py-2 text-sm text-brand-dark hover:bg-brand/5",
         className
       )}
       onClick={(event) => {

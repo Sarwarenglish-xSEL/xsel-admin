@@ -83,8 +83,8 @@ export function ForgotPasswordDialog({
         className="relative overflow-hidden p-0"
         onClose={() => onOpenChange(false)}
       >
-        <div className="border-b border-gray-100 bg-gradient-to-br from-brand/5 via-white to-white px-6 pb-5 pt-6 sm:px-7">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand/10 text-brand ring-4 ring-brand/5">
+        <div className="border-b border-brand/15 bg-gradient-to-br from-brand/18 via-white to-accent/10 px-6 pb-5 pt-6 sm:px-7">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand/20 text-brand ring-4 ring-brand/10">
             <KeyRound className="h-5 w-5" strokeWidth={2} />
           </div>
           <h2 className="mt-4 text-xl font-semibold tracking-tight text-gray-900">
