@@ -149,6 +149,7 @@ export interface CourseEnrollment {
   batch_id: string | null;
   purchase_id: string | null;
   status: EnrollmentStatus;
+  progress: number;
   created_at: string;
   user?: Profile;
   course?: Course;

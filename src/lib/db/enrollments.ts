@@ -15,6 +15,7 @@ function mapEnrollmentRow(row: CourseEnrollment): CourseEnrollment {
   return {
     ...row,
     status: normalizeEnrollmentStatus(row.status),
+    progress: row.progress ?? 0,
   };
 }
 
