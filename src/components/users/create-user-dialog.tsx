@@ -9,6 +9,11 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { createUserAction } from "@/app/actions";
 import { DEFAULT_USER_PASSWORD } from "@/lib/user-defaults";
+import {
+  assignableRoles,
+  type AdminModule,
+} from "@/lib/permissions";
+import { ManagerModulePicker } from "@/components/users/manager-module-picker";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -19,37 +24,57 @@ import type { UserRole } from "@/types/database";
 const schema = z.object({
   full_name: z.string().min(1, "Name is required"),
   email: z.string().email("Enter a valid email"),
-  role: z.enum(["admin", "manager", "user"]),
+  role: z.enum(["superadmin", "admin", "manager", "user"]),
 });
 
 type FormValues = z.infer<typeof schema>;
 
-export function CreateUserDialog() {
+const ROLE_LABELS: Record<UserRole, string> = {
+  superadmin: "Super Admin",
+  admin: "Admin",
+  manager: "Manager",
+  user: "User",
+};
+
+export function CreateUserDialog({ currentUserRole }: { currentUserRole: UserRole }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [allowedModules, setAllowedModules] = useState<AdminModule[]>(["dashboard"]);
   const router = useRouter();
+
+  const roles = assignableRoles(currentUserRole);
+  const defaultRole = roles.includes("user") ? "user" : roles[0];
 
   const {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       full_name: "",
       email: "",
-      role: "user",
+      role: defaultRole as FormValues["role"],
     },
   });
 
+  const selectedRole = watch("role");
+
   async function onSubmit(values: FormValues) {
+    if (values.role === "manager" && allowedModules.length === 0) {
+      toast.error("Select at least one module for the manager");
+      return;
+    }
+
     setLoading(true);
     try {
       const result = await createUserAction(
         values.email,
         values.full_name,
-        values.role as UserRole
+        values.role as UserRole,
+        values.role === "manager" ? allowedModules : undefined
       );
 
       if (!result.ok) {
@@ -67,6 +92,7 @@ export function CreateUserDialog() {
 
       setOpen(false);
       reset();
+      setAllowedModules(["dashboard"]);
       router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to create user");
@@ -109,14 +135,19 @@ export function CreateUserDialog() {
             <div>
               <Label>Role</Label>
               <Select className="w-full" {...register("role")}>
-                <option value="admin">Admin</option>
-                <option value="manager">Manager</option>
-                <option value="user">User</option>
+                {roles.map((role) => (
+                  <option key={role} value={role}>
+                    {ROLE_LABELS[role]}
+                  </option>
+                ))}
               </Select>
               {errors.role && (
                 <p className="mt-1 text-xs text-danger">{errors.role.message}</p>
               )}
             </div>
+            {selectedRole === "manager" && (
+              <ManagerModulePicker value={allowedModules} onChange={setAllowedModules} />
+            )}
             <p className="text-xs leading-relaxed text-gray-500">
               The default password is <span className="font-medium">{DEFAULT_USER_PASSWORD}</span>.
               The user can sign in and change it after their first login.

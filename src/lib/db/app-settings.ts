@@ -46,3 +46,14 @@ export async function getAppSettings(
   }
   return result;
 }
+
+export async function upsertAppSetting(
+  key: string,
+  value: string
+): Promise<void> {
+  const supabase = requireServiceClient();
+  const { error } = await supabase
+    .from("app_settings")
+    .upsert({ key, value }, { onConflict: "key" });
+  if (error) throw error;
+}

@@ -37,6 +37,7 @@ const schema = z.object({
   course_type: z.enum(["prerecorded", "live"]),
   category: z.enum(["design", "coding", "business"]),
   price: z.number().min(0),
+  fake_enrollments: z.number().int().min(0),
   instructor_id: z.string().nullable(),
   status: z.enum(["draft", "published", "archived"]),
   registration_deadline: z.string().nullable(),
@@ -103,6 +104,7 @@ export function CourseDetailsForm({
       course_type: course.course_type,
       category: course.category,
       price: Number(course.price),
+      fake_enrollments: course.fake_enrollments ?? 0,
       instructor_id: course.instructor_id,
       status: course.status,
       registration_deadline: course.registration_deadline?.slice(0, 16) ?? null,
@@ -186,7 +188,7 @@ export function CourseDetailsForm({
           {/* Publishing */}
           <section className="space-y-4 border-t border-gray-100 pt-8">
             <SectionLabel icon={Settings2}>Publishing</SectionLabel>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <Label>Price ($)</Label>
                 <Input
@@ -195,6 +197,17 @@ export function CourseDetailsForm({
                   min={0}
                   {...register("price", { valueAsNumber: true })}
                 />
+              </div>
+              <div>
+                <Label>Fake Enrollments</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  {...register("fake_enrollments", { valueAsNumber: true })}
+                />
+                <p className="mt-1.5 text-xs text-gray-500">
+                  Shown as enrollment count on the app
+                </p>
               </div>
               <div>
                 <Label>Status</Label>

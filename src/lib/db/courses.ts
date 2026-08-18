@@ -76,6 +76,7 @@ export type CourseInput = {
   registration_deadline?: string | null;
   course_start_date?: string | null;
   learning_outcomes?: LearningOutcome[];
+  fake_enrollments?: number;
 };
 
 export async function createCourse(input: CourseInput): Promise<Course> {

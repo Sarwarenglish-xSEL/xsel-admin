@@ -24,11 +24,13 @@ import { UserDeviceDialog } from "@/components/users/user-device-dialog";
 function UserActions({
   user,
   currentUserId,
-  isAdmin,
+  canManage,
+  currentUserRole,
 }: {
   user: Profile;
   currentUserId: string;
-  isAdmin: boolean;
+  canManage: boolean;
+  currentUserRole: Profile["role"];
 }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deviceOpen, setDeviceOpen] = useState(false);
@@ -47,12 +49,12 @@ function UserActions({
         <DropdownMenuItem onClick={() => setDeviceOpen(true)}>
           <MonitorSmartphone className="h-4 w-4" /> Device details
         </DropdownMenuItem>
-        {isAdmin && (
+        {canManage && (
           <DropdownMenuItem onClick={() => setEditOpen(true)}>
             <Pencil className="h-4 w-4" /> Edit
           </DropdownMenuItem>
         )}
-        {isAdmin && (
+        {canManage && (
           <DropdownMenuItem
             className="text-danger hover:bg-danger/5"
             disabled={isSelf}
@@ -83,8 +85,13 @@ function UserActions({
         )}
       </DropdownMenu>
       <UserDeviceDialog user={user} open={deviceOpen} onOpenChange={setDeviceOpen} />
-      {isAdmin && (
-        <EditUserDialog user={user} open={editOpen} onOpenChange={setEditOpen} />
+      {canManage && (
+        <EditUserDialog
+          user={user}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          currentUserRole={currentUserRole}
+        />
       )}
     </>
   );
@@ -114,8 +121,9 @@ function DeviceCell({ user }: { user: Profile }) {
 }
 
 const columns = (
-  isAdmin: boolean,
-  currentUserId: string
+  canManage: boolean,
+  currentUserId: string,
+  currentUserRole: Profile["role"]
 ): ColumnDef<Profile>[] => [
   {
     accessorKey: "email",
@@ -211,7 +219,8 @@ const columns = (
       <UserActions
         user={row.original}
         currentUserId={currentUserId}
-        isAdmin={isAdmin}
+        canManage={canManage}
+        currentUserRole={currentUserRole}
       />
     ),
   },
@@ -219,16 +228,18 @@ const columns = (
 
 export function UsersTable({
   users,
-  isAdmin,
+  canManage,
   currentUserId,
+  currentUserRole,
 }: {
   users: Profile[];
-  isAdmin: boolean;
+  canManage: boolean;
   currentUserId: string;
+  currentUserRole: Profile["role"];
 }) {
   return (
     <DataTable
-      columns={columns(isAdmin, currentUserId)}
+      columns={columns(canManage, currentUserId, currentUserRole)}
       data={users}
       searchKey="email"
       searchPlaceholder="Search by email..."

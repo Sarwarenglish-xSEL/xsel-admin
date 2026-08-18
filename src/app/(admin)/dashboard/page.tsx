@@ -9,7 +9,10 @@ import {
 import { getDashboardStats } from "@/lib/db/courses";
 import { getDashboardChartData } from "@/lib/db/dashboard";
 import { getRecentPendingPurchases } from "@/lib/db/purchases";
+import { getCurrentProfile } from "@/lib/db/profiles";
+import { getAppSetting } from "@/lib/db/app-settings";
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
+import { AppStatusToggle } from "@/components/dashboard/app-status-toggle";
 import { PageHeader, SectionHeader } from "@/components/layout/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,16 +27,21 @@ import {
 import { PageEmpty } from "@/components/page-states";
 
 export default async function DashboardPage() {
-  let stats, chartData, purchases, error: string | null = null;
+  let stats, chartData, purchases, currentProfile, appEnabled;
+  let error: string | null = null;
   try {
-    [stats, chartData, purchases] = await Promise.all([
+    [stats, chartData, purchases, currentProfile, appEnabled] = await Promise.all([
       getDashboardStats(),
       getDashboardChartData(),
       getRecentPendingPurchases(),
+      getCurrentProfile(),
+      getAppSetting("is_course_published").then((v) => v !== "true"),
     ]);
   } catch (e) {
     error = e instanceof Error ? e.message : "Failed to load dashboard";
   }
+
+  const isSuperadmin = currentProfile?.role === "superadmin";
 
   if (error) {
     return (
@@ -76,6 +84,11 @@ export default async function DashboardPage() {
       <PageHeader
         title="Dashboard"
         description="Overview of your learning platform"
+        actions={
+          isSuperadmin ? (
+            <AppStatusToggle initialEnabled={appEnabled ?? false} />
+          ) : undefined
+        }
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((card) => (

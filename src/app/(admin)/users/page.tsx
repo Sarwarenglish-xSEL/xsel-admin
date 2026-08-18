@@ -1,4 +1,5 @@
 import { getProfiles, getCurrentProfile } from "@/lib/db/profiles";
+import { canManageUsers } from "@/lib/permissions";
 import { PageHeader } from "@/components/layout/page-header";
 import { CreateUserDialog } from "@/components/users/create-user-dialog";
 import { UsersTable } from "@/components/users/users-table";
@@ -29,22 +30,26 @@ export default async function UsersPage({
     );
   }
 
-  const isAdmin = currentProfile?.role === "admin";
+  const canManage = canManageUsers(currentProfile!.role);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Users"
         description={`View users, registered devices, and transfer history${
-          !isAdmin ? " (management requires admin)" : ""
+          !canManage ? " (management requires admin)" : ""
         }`}
-        actions={isAdmin ? <CreateUserDialog /> : undefined}
+        actions={
+          canManage ? (
+            <CreateUserDialog currentUserRole={currentProfile!.role} />
+          ) : undefined
+        }
       />
       {users!.length === 0 ? (
         <PageEmpty
           title="No users found"
           description={
-            isAdmin
+            canManage
               ? "Create a user or try a different search term."
               : "Try a different search term."
           }
@@ -52,8 +57,9 @@ export default async function UsersPage({
       ) : (
         <UsersTable
           users={users!}
-          isAdmin={isAdmin}
+          canManage={canManage}
           currentUserId={currentProfile!.id}
+          currentUserRole={currentProfile!.role}
         />
       )}
     </div>

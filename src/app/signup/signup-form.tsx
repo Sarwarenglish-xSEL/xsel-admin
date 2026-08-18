@@ -23,7 +23,7 @@ const signupSchema = z
     email: z.string().email("Enter a valid email"),
     password: z.string().min(6, "Password must be at least 6 characters"),
     confirmPassword: z.string(),
-    role: z.enum(["admin", "manager", "user"]),
+    role: z.enum(["superadmin", "admin", "manager", "user"]),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
@@ -80,7 +80,7 @@ export default function SignupForm() {
 
       toast.success("Account created successfully");
 
-      if (values.role === "admin" || values.role === "manager") {
+      if (values.role === "superadmin" || values.role === "admin" || values.role === "manager") {
         router.push("/dashboard");
       } else {
         router.push("/login?registered=1");
@@ -158,7 +158,8 @@ export default function SignupForm() {
                     <p className="text-xs text-danger">{errors.role.message}</p>
                   )}
                   <p className="text-xs leading-relaxed text-gray-500">
-                    Only admin and manager roles can access this portal.
+                    Superadmin, admin, and manager roles can access this portal (managers need
+                    assigned modules).
                   </p>
                 </div>
 

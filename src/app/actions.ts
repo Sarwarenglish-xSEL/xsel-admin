@@ -58,6 +58,8 @@ import {
   getAssignmentSubmissionSignedUrl,
 } from "@/lib/db/submissions";
 import { issueCertificate } from "@/lib/db/certificates";
+import { getAppSetting, upsertAppSetting } from "@/lib/db/app-settings";
+import { getCurrentProfile } from "@/lib/db/profiles";
 import type {
   AssignmentType,
   BatchStatus,
@@ -67,6 +69,8 @@ import type {
   QuizType,
   UserRole,
 } from "@/types/database";
+import { canAccessPortal } from "@/lib/permissions";
+import type { AdminModule } from "@/lib/permissions";
 
 type AuthActionResult =
   | { ok: true; needsEmailConfirmation?: boolean }
@@ -99,9 +103,9 @@ export async function signInAction(
     .eq("id", data.user.id)
     .single();
 
-  if (!profile || profile.role !== "admin") {
+  if (!profile || !canAccessPortal(profile.role)) {
     await supabase.auth.signOut();
-    return { ok: false, message: "You are not admin" };
+    return { ok: false, message: "You do not have access to this portal" };
   }
 
   return { ok: true };
@@ -322,12 +326,14 @@ export async function updateUserAction(
   userId: string,
   fullName: string,
   email: string,
-  role: UserRole
+  role: UserRole,
+  allowedModules?: AdminModule[]
 ): Promise<UserActionResult> {
   const result = await updateUser(userId, {
     full_name: fullName,
     email,
     role,
+    allowed_modules: allowedModules,
   });
   if (!result.ok) {
     return { ok: false, message: formatAuthError(result.message) };
@@ -348,9 +354,10 @@ export async function deleteUserAction(userId: string): Promise<UserActionResult
 export async function createUserAction(
   email: string,
   fullName: string,
-  role: UserRole
+  role: UserRole,
+  allowedModules?: AdminModule[]
 ): Promise<AuthActionResult> {
-  const result = await createUser(email, fullName, role);
+  const result = await createUser(email, fullName, role, allowedModules);
   if (!result.ok) {
     return { ok: false, message: formatAuthError(result.message) };
   }
@@ -676,4 +683,27 @@ export async function issueCertificateAction(
 export async function createCourseReviewAction(input: CourseReviewInput) {
   await createCourseReview(input);
   revalidatePath(`/courses/${input.course_id}/edit`);
+}
+
+export async function toggleAppStatusAction(): Promise<{
+  ok: boolean;
+  enabled?: boolean;
+  message?: string;
+}> {
+  const profile = await getCurrentProfile();
+  if (!profile || profile.role !== "superadmin") {
+    return { ok: false, message: "Only superadmin can toggle application status" };
+  }
+
+  const current = await getAppSetting("is_course_published");
+  const isCurrentlyOnline = current !== "true";
+  const newValue = isCurrentlyOnline ? "true" : "false";
+  await upsertAppSetting("is_course_published", newValue);
+  revalidatePath("/dashboard");
+  return { ok: true, enabled: newValue !== "true" };
+}
+
+export async function getAppStatusAction(): Promise<boolean> {
+  const value = await getAppSetting("is_course_published");
+  return value !== "true";
 }

@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "manager" | "user";
+export type UserRole = "superadmin" | "admin" | "manager" | "user";
 export type CourseType = "prerecorded" | "live";
 export type CourseCategory = "design" | "coding" | "business";
 export type CourseStatus = "draft" | "published" | "archived";
@@ -31,6 +31,7 @@ export interface Profile {
   full_name: string;
   avatar_url: string | null;
   role: UserRole;
+  allowed_modules: string[];
   created_at: string;
   updated_at: string;
   registered_device_token: string | null;

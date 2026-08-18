@@ -2,6 +2,11 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient, createStandaloneAnonClient } from "@/lib/supabase/admin";
 import { DEFAULT_USER_PASSWORD } from "@/lib/user-defaults";
+import {
+  canAssignRole,
+  canManageUsers,
+  type AdminModule,
+} from "@/lib/permissions";
 import type { Profile } from "@/types/database";
 
 export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
@@ -51,34 +56,77 @@ export async function updateUserRole(
 
 type UserMutationResult = { ok: true } | { ok: false; message: string };
 
-async function getAdminProfile(): Promise<UserMutationResult | Profile> {
+async function getUserManagerProfile(): Promise<UserMutationResult | Profile> {
   const current = await getCurrentProfile();
-  if (!current || current.role !== "admin") {
+  if (!current || !canManageUsers(current.role)) {
     return { ok: false, message: "Only admins can manage users" };
   }
   return current;
 }
 
+function validateRoleChange(
+  manager: Profile,
+  userId: string,
+  targetRole: Profile["role"]
+): UserMutationResult | null {
+  if (!canAssignRole(manager.role, targetRole)) {
+    return { ok: false, message: "You cannot assign this role" };
+  }
+
+  if (userId === manager.id) {
+    if (manager.role === "superadmin" && targetRole !== "superadmin") {
+      return { ok: false, message: "You cannot remove your own superadmin access" };
+    }
+    if (manager.role === "admin" && targetRole !== "admin") {
+      return { ok: false, message: "You cannot remove your own admin access" };
+    }
+  }
+
+  return null;
+}
+
+export async function updateManagerModules(
+  userId: string,
+  modules: AdminModule[]
+): Promise<UserMutationResult> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ allowed_modules: modules })
+    .eq("id", userId);
+
+  if (error) return { ok: false, message: error.message };
+  return { ok: true };
+}
+
 export async function updateUser(
   userId: string,
-  input: { full_name: string; email: string; role: Profile["role"] }
-): Promise<UserMutationResult> {
-  const admin = await getAdminProfile();
-  if ("ok" in admin) return admin;
-
-  if (userId === admin.id && input.role !== "admin") {
-    return { ok: false, message: "You cannot remove your own admin access" };
+  input: {
+    full_name: string;
+    email: string;
+    role: Profile["role"];
+    allowed_modules?: AdminModule[];
   }
+): Promise<UserMutationResult> {
+  const manager = await getUserManagerProfile();
+  if ("ok" in manager) return manager;
+
+  const roleError = validateRoleChange(manager, userId, input.role);
+  if (roleError) return roleError;
 
   const supabase = await createClient();
   const { data: existing, error: fetchError } = await supabase
     .from("profiles")
-    .select("email")
+    .select("email, role")
     .eq("id", userId)
     .single();
 
   if (fetchError || !existing) {
     return { ok: false, message: fetchError?.message ?? "User not found" };
+  }
+
+  if (!canAssignRole(manager.role, existing.role as Profile["role"])) {
+    return { ok: false, message: "You cannot modify this user" };
   }
 
   const emailChanged = existing.email !== input.email;
@@ -91,13 +139,21 @@ export async function updateUser(
     };
   }
 
+  const profileUpdate: Record<string, unknown> = {
+    full_name: input.full_name,
+    email: input.email,
+    role: input.role,
+  };
+
+  if (input.role === "manager") {
+    profileUpdate.allowed_modules = input.allowed_modules ?? [];
+  } else {
+    profileUpdate.allowed_modules = [];
+  }
+
   const { error: profileError } = await supabase
     .from("profiles")
-    .update({
-      full_name: input.full_name,
-      email: input.email,
-      role: input.role,
-    })
+    .update(profileUpdate)
     .eq("id", userId);
 
   if (profileError) return { ok: false, message: profileError.message };
@@ -118,11 +174,26 @@ export async function updateUser(
 }
 
 export async function deleteUser(userId: string): Promise<UserMutationResult> {
-  const admin = await getAdminProfile();
-  if ("ok" in admin) return admin;
+  const manager = await getUserManagerProfile();
+  if ("ok" in manager) return manager;
 
-  if (userId === admin.id) {
+  if (userId === manager.id) {
     return { ok: false, message: "You cannot delete your own account" };
+  }
+
+  const supabase = await createClient();
+  const { data: target, error: fetchError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .single();
+
+  if (fetchError || !target) {
+    return { ok: false, message: fetchError?.message ?? "User not found" };
+  }
+
+  if (!canAssignRole(manager.role, target.role as Profile["role"])) {
+    return { ok: false, message: "You cannot delete this user" };
   }
 
   const service = createServiceClient();
@@ -151,16 +222,21 @@ export async function getStaffProfiles(): Promise<Profile[]> {
 export async function createUser(
   email: string,
   fullName: string,
-  role: Profile["role"]
+  role: Profile["role"],
+  allowedModules?: AdminModule[]
 ): Promise<{ ok: true; needsEmailConfirmation?: boolean } | { ok: false; message: string }> {
   const current = await getCurrentProfile();
-  if (!current || current.role !== "admin") {
+  if (!current || !canManageUsers(current.role)) {
     return { ok: false, message: "Only admins can create users" };
+  }
+
+  if (!canAssignRole(current.role, role)) {
+    return { ok: false, message: "You cannot assign this role" };
   }
 
   const service = createServiceClient();
   if (service) {
-    const { error } = await service.auth.admin.createUser({
+    const { data, error } = await service.auth.admin.createUser({
       email,
       password: DEFAULT_USER_PASSWORD,
       email_confirm: true,
@@ -171,6 +247,12 @@ export async function createUser(
     });
 
     if (error) return { ok: false, message: error.message };
+
+    if (role === "manager" && data.user && allowedModules) {
+      const modulesResult = await updateManagerModules(data.user.id, allowedModules);
+      if (!modulesResult.ok) return modulesResult;
+    }
+
     return { ok: true };
   }
 
@@ -191,5 +273,11 @@ export async function createUser(
   });
 
   if (error) return { ok: false, message: error.message };
+
+  if (role === "manager" && data.user && allowedModules) {
+    const modulesResult = await updateManagerModules(data.user.id, allowedModules);
+    if (!modulesResult.ok) return modulesResult;
+  }
+
   return { ok: true, needsEmailConfirmation: !data.session };
 }

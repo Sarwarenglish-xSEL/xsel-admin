@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { signOutAction } from "@/app/actions";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu } from "@/components/ui/dropdown-menu";
+import type { AdminModule } from "@/lib/permissions";
 import type { Profile } from "@/types/database";
 
 const STORAGE_KEY = "xsel-admin-sidebar-collapsed";
@@ -129,7 +130,13 @@ function NavTooltip({
   );
 }
 
-export function AppSidebar({ profile }: { profile: Profile }) {
+export function AppSidebar({
+  profile,
+  accessibleModules,
+}: {
+  profile: Profile;
+  accessibleModules: AdminModule[];
+}) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -200,7 +207,12 @@ export function AppSidebar({ profile }: { profile: Profile }) {
             Menu
           </p>
         )}
-        {navItems.map((item) => {
+        {navItems
+          .filter((item) => {
+            const module = item.href.replace(/^\//, "");
+            return accessibleModules.includes(module as AdminModule);
+          })
+          .map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(item.href + "/");
           return (

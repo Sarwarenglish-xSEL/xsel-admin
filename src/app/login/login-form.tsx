@@ -29,9 +29,10 @@ const fieldClassName = cn(
   "[&:-webkit-autofill]:[-webkit-text-fill-color:#111827]"
 );
 
-const notAdminToast = () =>
-  toast.error("You are not admin", {
-    description: "Only admin accounts can sign in to this portal.",
+const portalAccessToast = (description?: string) =>
+  toast.error("Access denied", {
+    description:
+      description ?? "Only staff accounts (superadmin, admin, or manager) can sign in.",
     duration: 5000,
   });
 
@@ -40,13 +41,17 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const unauthorized = searchParams.get("error") === "unauthorized";
+  const noModules = searchParams.get("error") === "no_modules";
   const registered = searchParams.get("registered") === "1";
 
   useEffect(() => {
     if (unauthorized) {
-      notAdminToast();
+      portalAccessToast();
     }
-  }, [unauthorized]);
+    if (noModules) {
+      portalAccessToast("Your manager account has no assigned modules. Contact an admin.");
+    }
+  }, [unauthorized, noModules]);
 
   const {
     register,
@@ -62,8 +67,8 @@ export default function LoginForm() {
     try {
       const result = await signInAction(values.email, values.password);
       if (!result.ok) {
-        if (result.message === "You are not admin") {
-          notAdminToast();
+        if (result.message === "You do not have access to this portal") {
+          portalAccessToast();
           return;
         }
         toast.error(result.message || "Login failed");
