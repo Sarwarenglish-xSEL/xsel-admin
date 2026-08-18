@@ -143,7 +143,8 @@ export async function signOutAction() {
 }
 
 export async function requestPasswordResetAction(
-  email: string
+  email: string,
+  requestOrigin?: string
 ): Promise<AuthActionResult> {
   const trimmed = email.trim();
   if (!trimmed) {
@@ -172,7 +173,7 @@ export async function requestPasswordResetAction(
     };
   }
 
-  const redirectTo = `${getAdminSiteUrl()}/auth/callback`;
+  const redirectTo = `${getAdminSiteUrl(requestOrigin)}/auth/callback`;
   const { data, error } = await service.auth.admin.generateLink({
     type: "recovery",
     email: trimmed,

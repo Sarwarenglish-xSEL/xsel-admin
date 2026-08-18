@@ -56,7 +56,10 @@ export function ForgotPasswordDialog({
   async function onSubmit(values: ResetForm) {
     setLoading(true);
     try {
-      const result = await requestPasswordResetAction(values.email);
+      const result = await requestPasswordResetAction(
+        values.email,
+        window.location.origin
+      );
       if (!result.ok) {
         toast.error(result.message);
         return;
