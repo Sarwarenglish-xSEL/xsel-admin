@@ -26,7 +26,7 @@ const schema = z.object({
   full_name: z.string().min(1, "Name is required"),
   email: z.string().email("Enter a valid email"),
   role: z.enum(["superadmin", "admin", "manager", "user"]),
-  device_transfer_count: z.coerce
+  device_transfer_count: z
     .number()
     .int()
     .min(0, "Transfers cannot be negative")
@@ -188,7 +188,7 @@ export function EditUserDialog({
                   max={MAX_TRANSFERS}
                   step={1}
                   inputMode="numeric"
-                  {...register("device_transfer_count")}
+                  {...register("device_transfer_count", { valueAsNumber: true })}
                 />
                 <p className="mt-1.5 text-xs text-brand/60">Maximum {MAX_TRANSFERS}</p>
                 {errors.device_transfer_count && (
