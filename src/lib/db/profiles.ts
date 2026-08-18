@@ -7,6 +7,7 @@ import {
   canManageUsers,
   type AdminModule,
 } from "@/lib/permissions";
+import { getAdminDataClient } from "@/lib/db/admin-client";
 import type { Profile } from "@/types/database";
 
 export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
@@ -26,7 +27,7 @@ export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
 });
 
 export async function getProfiles(search?: string): Promise<Profile[]> {
-  const supabase = await createClient();
+  const supabase = await getAdminDataClient();
   let query = supabase
     .from("profiles")
     .select("*")
@@ -210,7 +211,7 @@ export async function deleteUser(userId: string): Promise<UserMutationResult> {
 }
 
 export async function getStaffProfiles(): Promise<Profile[]> {
-  const supabase = await createClient();
+  const supabase = await getAdminDataClient();
   const { data, error } = await supabase
     .from("profiles")
     .select("*")

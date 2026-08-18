@@ -1,5 +1,5 @@
 import { format, parseISO, startOfMonth, subMonths } from "date-fns";
-import { createClient } from "@/lib/supabase/server";
+import { getAdminDataClient } from "@/lib/db/admin-client";
 import type { DashboardChartData } from "@/types/database";
 
 const MONTHS = 6;
@@ -36,7 +36,7 @@ function normalizeEnrollmentStatus(status: string): string {
 }
 
 export async function getDashboardChartData(): Promise<DashboardChartData> {
-  const supabase = await createClient();
+  const supabase = await getAdminDataClient();
   const months = buildMonthLabels();
   const since = subMonths(startOfMonth(new Date()), MONTHS - 1).toISOString();
 

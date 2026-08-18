@@ -43,7 +43,15 @@ export async function updateSession(request: NextRequest) {
     return response;
   }
 
-  const isAuthPage = path === "/login" || path === "/signup";
+  // Auth callback routes must not be redirected away while session is established.
+  if (path.startsWith("/auth/callback")) {
+    return response;
+  }
+
+  const isAuthPage =
+    path === "/login" ||
+    path === "/signup" ||
+    path === "/login/update-password";
 
   if (!user && !isAuthPage && path.startsWith("/dashboard")) {
     const url = request.nextUrl.clone();
@@ -51,7 +59,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && isAuthPage) {
+  if (user && isAuthPage && path !== "/login/update-password") {
     const next = request.nextUrl.searchParams.get("next");
     const url = request.nextUrl.clone();
     url.pathname = next?.startsWith("/payment/") ? next : "/dashboard";

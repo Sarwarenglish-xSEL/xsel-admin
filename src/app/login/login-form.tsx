@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -10,6 +9,7 @@ import { toast } from "sonner";
 import { signInAction } from "@/app/actions";
 import { AuthHeroPanel } from "@/components/auth/auth-hero-panel";
 import { AuthFormPanel } from "@/components/auth/auth-form-panel";
+import { ForgotPasswordDialog } from "@/components/auth/forgot-password-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,8 +40,10 @@ export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
   const unauthorized = searchParams.get("error") === "unauthorized";
   const noModules = searchParams.get("error") === "no_modules";
+  const authError = searchParams.get("error") === "auth";
   const registered = searchParams.get("registered") === "1";
 
   useEffect(() => {
@@ -51,16 +53,24 @@ export default function LoginForm() {
     if (noModules) {
       portalAccessToast("Your manager account has no assigned modules. Contact an admin.");
     }
-  }, [unauthorized, noModules]);
+    if (authError) {
+      toast.error("Reset link expired or invalid", {
+        description: "Request a new password reset email from the login page.",
+      });
+    }
+  }, [unauthorized, noModules, authError]);
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
+
+  const loginEmail = watch("email");
 
   async function onSubmit(values: LoginForm) {
     setLoading(true);
@@ -132,9 +142,18 @@ export default function LoginForm() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="password" className="text-xs font-medium text-gray-600">
-                    Password
-                  </Label>
+                  <div className="flex items-center justify-between gap-2">
+                    <Label htmlFor="password" className="text-xs font-medium text-gray-600">
+                      Password
+                    </Label>
+                    <button
+                      type="button"
+                      onClick={() => setResetOpen(true)}
+                      className="text-xs font-medium text-brand transition-colors hover:text-brand-dark hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
                   <Input
                     id="password"
                     type="password"
@@ -156,19 +175,15 @@ export default function LoginForm() {
                   {loading ? "Signing in..." : "Sign in"}
                 </Button>
               </form>
-
-              <p className="mt-6 text-center text-sm text-gray-500">
-                Don&apos;t have an account?{" "}
-                <Link
-                  href="/signup"
-                  className="font-semibold text-brand transition-colors hover:text-brand-dark"
-                >
-                  Create account
-                </Link>
-              </p>
             </div>
           </div>
       </AuthFormPanel>
+
+      <ForgotPasswordDialog
+        open={resetOpen}
+        onOpenChange={setResetOpen}
+        defaultEmail={loginEmail}
+      />
     </div>
   );
 }

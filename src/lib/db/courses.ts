@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
+import { getAdminDataClient } from "@/lib/db/admin-client";
 import type {
   Course,
   CourseCategory,
@@ -124,7 +125,7 @@ export async function deleteCourse(id: string): Promise<void> {
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-  const supabase = await createClient();
+  const supabase = await getAdminDataClient();
 
   const [users, courses, purchases, liveLessons] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }),

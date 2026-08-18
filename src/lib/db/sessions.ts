@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getAdminDataClient } from "@/lib/db/admin-client";
 import type { Profile, UserSession } from "@/types/database";
 
 export type SessionStatusFilter = "all" | "online" | "offline";
@@ -10,7 +11,7 @@ export type UserSessionWithProfile = UserSession & {
 export async function getUserSessions(
   status: SessionStatusFilter = "all"
 ): Promise<UserSessionWithProfile[]> {
-  const supabase = await createClient();
+  const supabase = await getAdminDataClient();
 
   let query = supabase
     .from("user_sessions")

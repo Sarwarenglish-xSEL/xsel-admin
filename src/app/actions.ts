@@ -68,8 +68,11 @@ import type {
   QuizType,
   UserRole,
 } from "@/types/database";
+import { sendPasswordResetEmail } from "@/lib/email";
 import { canAccessPortal } from "@/lib/permissions";
 import type { AdminModule } from "@/lib/permissions";
+import { createServiceClient } from "@/lib/supabase/admin";
+import { getAdminSiteUrl } from "@/lib/site-url";
 
 type AuthActionResult =
   | { ok: true; needsEmailConfirmation?: boolean }
@@ -137,6 +140,96 @@ export async function signOutAction() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+export async function requestPasswordResetAction(
+  email: string
+): Promise<AuthActionResult> {
+  const trimmed = email.trim();
+  if (!trimmed) {
+    return { ok: false, message: "Enter your email address" };
+  }
+
+  const service = createServiceClient();
+  if (!service) {
+    return { ok: false, message: "Server configuration error" };
+  }
+
+  const { data: profile, error: profileError } = await service
+    .from("profiles")
+    .select("role")
+    .eq("email", trimmed)
+    .maybeSingle();
+
+  if (profileError) {
+    return { ok: false, message: profileError.message };
+  }
+
+  if (!profile || !canAccessPortal(profile.role)) {
+    return {
+      ok: false,
+      message: "No staff account found for this email. Contact your administrator.",
+    };
+  }
+
+  const redirectTo = `${getAdminSiteUrl()}/auth/callback`;
+  const { data, error } = await service.auth.admin.generateLink({
+    type: "recovery",
+    email: trimmed,
+    options: { redirectTo },
+  });
+
+  if (error) {
+    return { ok: false, message: formatAuthError(error.message) };
+  }
+
+  const tokenHash = data.properties?.hashed_token;
+  if (!tokenHash) {
+    return { ok: false, message: "Failed to generate reset link" };
+  }
+
+  const resetUrl = `${redirectTo}?token_hash=${encodeURIComponent(tokenHash)}&type=recovery`;
+  const sent = await sendPasswordResetEmail(trimmed, resetUrl);
+  if (!sent.ok) {
+    return { ok: false, message: sent.message };
+  }
+
+  return { ok: true };
+}
+
+export async function updatePasswordAction(password: string): Promise<AuthActionResult> {
+  if (password.length < 6) {
+    return { ok: false, message: "Password must be at least 6 characters" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      ok: false,
+      message: "Session expired. Request a new password reset link from the login page.",
+    };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile || !canAccessPortal(profile.role)) {
+    return { ok: false, message: "You do not have access to this portal" };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    return { ok: false, message: formatAuthError(error.message) };
+  }
+
+  return { ok: true };
 }
 
 export async function createCourseAction(input: CourseInput) {
