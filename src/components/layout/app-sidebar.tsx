@@ -209,8 +209,8 @@ export function AppSidebar({
         )}
         {navItems
           .filter((item) => {
-            const module = item.href.replace(/^\//, "");
-            return accessibleModules.includes(module as AdminModule);
+            const key = item.href.replace(/^\//, "");
+            return accessibleModules.includes(key as AdminModule);
           })
           .map((item) => {
           const active =

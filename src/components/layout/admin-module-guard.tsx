@@ -20,16 +20,16 @@ export function AdminModuleGuard({
   const router = useRouter();
 
   useEffect(() => {
-    const module = getModuleForPath(pathname);
-    if (!module) return;
+    const mod = getModuleForPath(pathname);
+    if (!mod) return;
 
     if (!pathnameAllowed(profile, pathname)) {
       router.replace(getDefaultPortalPath(profile));
     }
   }, [pathname, profile, router]);
 
-  const module = getModuleForPath(pathname);
-  if (module && !pathnameAllowed(profile, pathname)) {
+  const mod = getModuleForPath(pathname);
+  if (mod && !pathnameAllowed(profile, pathname)) {
     return null;
   }
 

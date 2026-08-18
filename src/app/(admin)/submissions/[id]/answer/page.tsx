@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { format } from "date-fns";
 import { notFound } from "next/navigation";
 import { getAssignmentSubmissionById } from "@/lib/db/submissions";

@@ -62,7 +62,6 @@ import { getAppSetting, upsertAppSetting } from "@/lib/db/app-settings";
 import { getCurrentProfile } from "@/lib/db/profiles";
 import type {
   AssignmentType,
-  BatchStatus,
   EnrollmentStatus,
   Profile,
   QuizOption,

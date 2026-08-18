@@ -69,8 +69,8 @@ export function getAccessibleModules(profile: Profile): AdminModule[] {
   return ADMIN_MODULES.filter((module) => allowed.includes(module));
 }
 
-export function canAccessModule(profile: Profile, module: AdminModule): boolean {
-  return getAccessibleModules(profile).includes(module);
+export function canAccessModule(profile: Profile, mod: AdminModule): boolean {
+  return getAccessibleModules(profile).includes(mod);
 }
 
 export function getModuleForPath(pathname: string): AdminModule | null {
@@ -88,7 +88,7 @@ export function getDefaultPortalPath(profile: Profile): string {
 }
 
 export function pathnameAllowed(profile: Profile, pathname: string): boolean {
-  const module = getModuleForPath(pathname);
-  if (!module) return true;
-  return canAccessModule(profile, module);
+  const mod = getModuleForPath(pathname);
+  if (!mod) return true;
+  return canAccessModule(profile, mod);
 }
