@@ -182,7 +182,7 @@ export function CreateBatchDialog({ courses }: { courses: Course[] }) {
                 </div>
               </div>
             </div>
-            <div className="flex shrink-0 justify-end border-t border-brand/15 bg-white px-6 py-4 sm:px-7">
+            <div className="flex shrink-0 justify-end border-t border-brand/15 bg-surface px-6 py-4 sm:px-7">
               <Button
                 type="submit"
                 className="min-w-40"

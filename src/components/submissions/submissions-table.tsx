@@ -73,7 +73,7 @@ function SubmissionContent({ submission }: { submission: AssignmentSubmission })
             <div className="flex flex-wrap gap-2">
               <Link
                 href={`/submissions/${submission.id}/answer`}
-                className="inline-flex h-8 items-center justify-center rounded-lg border border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 transition-colors hover:bg-surface-muted"
+                className="inline-flex h-8 items-center justify-center rounded-lg border border-gray-200 bg-surface px-3 text-xs font-medium text-gray-700 transition-colors hover:bg-surface-muted"
               >
                 Open full answer
               </Link>

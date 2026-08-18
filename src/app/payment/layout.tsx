@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Toaster } from "sonner";
+import { ThemedToaster } from "@/components/theme/themed-toaster";
 
 export const metadata: Metadata = {
   title: "Payment Verification | XSEL",
@@ -14,7 +14,7 @@ export default function PaymentLayout({
   return (
     <>
       {children}
-      <Toaster richColors position="top-center" />
+      <ThemedToaster />
     </>
   );
 }

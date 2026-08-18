@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 
 function StatusFilter({ status }: { status?: string }) {
   return (
-    <div className="inline-flex items-center gap-3 rounded-xl border border-brand/25 bg-white px-4 py-3 shadow-sm">
+    <div className="inline-flex items-center gap-3 rounded-xl border border-brand/25 bg-surface px-4 py-3 shadow-sm">
       <span className="text-xs font-semibold uppercase tracking-wide text-brand">
         Status
       </span>

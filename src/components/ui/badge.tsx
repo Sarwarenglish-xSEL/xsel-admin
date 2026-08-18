@@ -10,7 +10,7 @@ export function Badge({
       className={cn(
         "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize",
         variant === "default" && "bg-brand/20 text-brand",
-        variant === "outline" && "border border-gray-200 text-gray-600",
+        variant === "outline" && "border border-brand/20 text-brand",
         variant === "success" && "bg-success/15 text-success",
         variant === "warning" && "bg-accent/25 text-accent-dark",
         className

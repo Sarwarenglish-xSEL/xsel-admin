@@ -69,20 +69,20 @@ const SECTION_THEME: Record<
     iconWrap: "bg-accent/25 text-accent-dark",
     accentBar: "from-accent to-brand",
     headerBg: "brand-gradient",
-    bodyBg: "bg-white",
+    bodyBg: "bg-surface",
     filterActive: "bg-accent-dark text-white shadow-sm shadow-accent/30",
     cardAccent: "from-accent to-brand",
-    emptyBg: "bg-white border-brand/20",
+    emptyBg: "bg-surface border-brand/20",
   },
   prerecorded: {
     icon: Video,
     iconWrap: "bg-brand/20 text-brand",
     accentBar: "from-brand to-accent",
     headerBg: "brand-gradient",
-    bodyBg: "bg-white",
+    bodyBg: "bg-surface",
     filterActive: "bg-brand text-white shadow-sm shadow-brand/25",
     cardAccent: "from-brand to-accent",
-    emptyBg: "bg-white border-brand/20",
+    emptyBg: "bg-surface border-brand/20",
   },
 };
 
@@ -100,7 +100,7 @@ function StatusFilterBar({
   const theme = SECTION_THEME[tone];
 
   return (
-    <div className="flex flex-wrap gap-1 rounded-lg border border-white/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm">
+    <div className="flex flex-wrap gap-1 rounded-lg border border-brand/20 bg-surface/80 p-1 shadow-sm backdrop-blur-sm">
       {STATUS_FILTERS.map((option) => (
         <button
           key={option.value}
@@ -142,7 +142,7 @@ function BatchCard({
       : String(batch.enrollment_count ?? 0);
 
   return (
-    <div className="group overflow-hidden rounded-xl border border-brand/20 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md hover:shadow-brand/15">
+    <div className="group overflow-hidden rounded-xl border border-brand/20 bg-surface shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md hover:shadow-brand/15">
       <div className={cn("h-1 bg-gradient-to-r", theme.cardAccent)} />
       <div className="space-y-3 p-4">
         <div className="flex items-start justify-between gap-2">
@@ -155,7 +155,7 @@ function BatchCard({
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="rounded-lg border border-brand/20 bg-white px-3 py-2">
+          <div className="rounded-lg border border-brand/20 bg-surface px-3 py-2">
             <p className="text-[11px] font-medium uppercase tracking-wide text-brand/60">
               Students
             </p>
@@ -164,7 +164,7 @@ function BatchCard({
               {seatLabel}
             </p>
           </div>
-          <div className="rounded-lg border border-brand/20 bg-white px-3 py-2">
+          <div className="rounded-lg border border-brand/20 bg-surface px-3 py-2">
             <p className="text-[11px] font-medium uppercase tracking-wide text-accent-dark/70">
               Active
             </p>
@@ -174,7 +174,7 @@ function BatchCard({
           </div>
         </div>
 
-        <div className="space-y-1.5 rounded-lg border border-brand/15 bg-white px-3 py-2 text-xs text-gray-600">
+        <div className="space-y-1.5 rounded-lg border border-brand/15 bg-surface px-3 py-2 text-xs text-gray-600">
           <p className="inline-flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5 text-brand" />
             Start: {formatDate(batch.start_date)}
@@ -195,7 +195,7 @@ function BatchCard({
           </Link>
           <Link
             href={`/enrollments?batch=${batch.id}`}
-            className="inline-flex items-center gap-1 rounded-lg border border-brand/25 bg-white px-2.5 py-1.5 text-xs font-medium text-brand transition-colors hover:bg-brand/10"
+            className="inline-flex items-center gap-1 rounded-lg border border-brand/25 bg-surface px-2.5 py-1.5 text-xs font-medium text-brand transition-colors hover:bg-brand/10"
           >
             Enrollments
             <ChevronRight className="h-3.5 w-3.5" />
@@ -214,8 +214,8 @@ function CourseGroupCard({
   const theme = SECTION_THEME[tone];
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-brand/20 bg-white shadow-sm">
-      <div className="flex items-center gap-3 border-b border-brand/20 bg-white px-4 py-3">
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-brand/20 bg-surface shadow-sm">
+      <div className="flex items-center gap-3 border-b border-brand/20 bg-surface px-4 py-3">
         <div
           className={cn(
             "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
@@ -311,7 +311,7 @@ function CourseTypeSection({
   }
 
   return (
-    <section className="flex w-full flex-col overflow-hidden rounded-xl border border-brand/20 bg-white shadow-sm">
+    <section className="flex w-full flex-col overflow-hidden rounded-xl border border-brand/20 bg-surface shadow-sm">
       <div className={cn("space-y-3 border-b border-brand/20 px-5 py-4", theme.headerBg)}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3">
@@ -469,7 +469,7 @@ function BatchesSummary({
       {cards.map((card) => (
         <Card
           key={card.label}
-          className="overflow-hidden border-brand/20 bg-white shadow-sm"
+          className="overflow-hidden border-brand/20 bg-surface shadow-sm"
         >
           <CardContent className="flex items-center justify-between gap-3 p-4">
             <div>

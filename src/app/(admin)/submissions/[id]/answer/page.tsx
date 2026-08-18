@@ -28,7 +28,7 @@ export default async function SubmissionAnswerPage({
         <div className="flex items-start gap-3">
           <BackLink
             href="/submissions"
-            className="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-surface-muted"
+            className="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-surface text-gray-600 transition-colors hover:bg-surface-muted"
           />
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-brand">
@@ -46,7 +46,7 @@ export default async function SubmissionAnswerPage({
         <DownloadAnswerButton submission={submission} size="md" />
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-gray-200 bg-surface p-6 shadow-sm">
         <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-gray-800">
           {submission.text_answer}
         </pre>

@@ -204,7 +204,7 @@ function EnrollDialog({
               </div>
             </div>
           </div>
-          <div className="flex shrink-0 justify-end border-t border-brand/15 bg-white px-6 py-4 sm:px-7">
+          <div className="flex shrink-0 justify-end border-t border-brand/15 bg-surface px-6 py-4 sm:px-7">
             <Button
               className="min-w-40"
               disabled={loading || !userId || !courseId || !batchId}
@@ -263,7 +263,7 @@ function EnrollmentFilters({
   const hasFilters = Boolean(courseId || batchId);
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-brand/25 bg-white p-4 shadow-sm">
+    <div className="w-full overflow-hidden rounded-xl border border-brand/25 bg-surface p-4 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="min-w-0">

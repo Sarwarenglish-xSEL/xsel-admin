@@ -33,7 +33,7 @@ const signupSchema = z
 type SignupForm = z.infer<typeof signupSchema>;
 
 const fieldClassName = cn(
-  "h-11 border-gray-200 bg-gray-50/80 transition-colors focus:bg-white",
+  "h-11 border-gray-200 bg-gray-50/80 transition-colors focus:bg-surface",
   "[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_#f9fafb]",
   "[&:-webkit-autofill]:[-webkit-text-fill-color:#111827]"
 );
@@ -98,7 +98,7 @@ export default function SignupForm() {
       <AuthHeroPanel />
 
       <AuthFormPanel scrollable>
-        <div className="overflow-hidden rounded-2xl bg-white shadow-2xl shadow-gray-300/20 ring-1 ring-gray-200/70">
+        <div className="overflow-hidden rounded-2xl bg-surface shadow-2xl shadow-gray-300/20 ring-1 ring-gray-200/70">
             <div className="border-b border-gray-100 px-7 pb-6 pt-7 sm:px-8 sm:pt-8">
               <span className="inline-flex items-center rounded-full bg-brand/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-brand">
                 Admin Portal

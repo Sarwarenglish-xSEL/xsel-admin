@@ -144,7 +144,7 @@ const ROLE_BADGE_CLASS: Record<Profile["role"], string> = {
   superadmin: "border-transparent bg-brand text-white",
   admin: "border-transparent bg-brand/15 text-brand",
   manager: "border-transparent bg-accent/20 text-accent-dark",
-  user: "border-brand/20 bg-white text-brand",
+  user: "border-brand/20 bg-surface text-brand",
 };
 
 const columns = (

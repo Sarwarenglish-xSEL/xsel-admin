@@ -20,7 +20,7 @@ const resetSchema = z.object({
 type ResetForm = z.infer<typeof resetSchema>;
 
 const fieldClassName = cn(
-  "h-11 border-gray-200 bg-gray-50/80 pl-10 transition-colors focus:bg-white",
+  "h-11 border-gray-200 bg-gray-50/80 pl-10 transition-colors focus:bg-surface",
   "[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_#f9fafb]",
   "[&:-webkit-autofill]:[-webkit-text-fill-color:#111827]"
 );
@@ -83,7 +83,7 @@ export function ForgotPasswordDialog({
         className="relative overflow-hidden p-0"
         onClose={() => onOpenChange(false)}
       >
-        <div className="border-b border-brand/15 bg-gradient-to-br from-brand/18 via-white to-accent/10 px-6 pb-5 pt-6 sm:px-7">
+        <div className="border-b border-brand/15 brand-gradient px-6 pb-5 pt-6 sm:px-7">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand/20 text-brand ring-4 ring-brand/10">
             <KeyRound className="h-5 w-5" strokeWidth={2} />
           </div>

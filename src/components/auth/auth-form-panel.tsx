@@ -1,4 +1,5 @@
 import { BackgroundRippleEffect } from "@/components/ui/background-ripple-effect";
+import { ThemeLogoButton } from "@/components/theme/theme-toggle";
 import { cn } from "@/lib/utils";
 
 type AuthFormPanelProps = {
@@ -15,7 +16,7 @@ export function AuthFormPanel({
   return (
     <div
       className={cn(
-        "relative flex h-full min-h-0 flex-1 bg-white",
+        "relative flex h-full min-h-0 flex-1 bg-background",
         /* Grid colors — or change once in globals.css under --color-auth-grid-* */
         "[--cell-border-color:var(--color-auth-grid-border)]",
         "[--cell-fill-color:var(--color-auth-grid-fill)]",
@@ -40,6 +41,9 @@ export function AuthFormPanel({
               className
             )}
           >
+            <div className="pointer-events-auto absolute right-5 top-5 z-20 sm:right-8 lg:right-12 xl:right-16">
+              <ThemeLogoButton />
+            </div>
             <div
               className={cn(
                 "pointer-events-auto w-full max-w-[420px] shrink-0",

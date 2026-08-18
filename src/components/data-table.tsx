@@ -73,7 +73,7 @@ export function DataTable<TData, TValue>({
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-brand/20 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-brand/20 bg-surface shadow-sm">
         <Table className={fixedLayout ? "table-fixed" : undefined}>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

@@ -58,28 +58,28 @@ export default async function DashboardPage() {
       value: stats!.totalUsers,
       icon: Users,
       tone: "bg-brand/20 text-brand",
-      cardBg: "border-brand/25 bg-gradient-to-br from-brand/20 via-white to-brand/5",
+      cardBg: "border-brand/25 bg-gradient-to-br from-brand/20 via-surface to-brand/5",
     },
     {
       label: "Total Courses",
       value: stats!.totalCourses,
       icon: BookOpen,
-      tone: "bg-teal-500/20 text-teal-700",
-      cardBg: "border-teal-400/40 bg-gradient-to-br from-teal-500/22 via-white to-teal-400/8",
+      tone: "bg-teal-500/20 text-teal-700 dark:text-teal-300",
+      cardBg: "border-teal-400/40 bg-gradient-to-br from-teal-500/22 via-surface to-teal-400/8",
     },
     {
       label: "Pending Purchases",
       value: stats!.pendingPurchases,
       icon: ShoppingCart,
       tone: "bg-danger/15 text-danger",
-      cardBg: "border-danger/25 bg-gradient-to-br from-danger/16 via-white to-danger/5",
+      cardBg: "border-danger/25 bg-gradient-to-br from-danger/16 via-surface to-danger/5",
     },
     {
       label: "Upcoming Live Lessons",
       value: stats!.upcomingLiveLessons,
       icon: CalendarClock,
       tone: "bg-success/15 text-success",
-      cardBg: "border-success/25 bg-gradient-to-br from-success/16 via-white to-success/5",
+      cardBg: "border-success/25 bg-gradient-to-br from-success/16 via-surface to-success/5",
     },
   ];
 
@@ -121,7 +121,7 @@ export default async function DashboardPage() {
           actions={
             <Link
               href="/purchases"
-              className="inline-flex h-8 items-center rounded-lg border border-brand/25 bg-white px-3 text-xs font-medium text-brand hover:bg-brand/10"
+              className="inline-flex h-8 items-center rounded-lg border border-brand/25 bg-surface px-3 text-xs font-medium text-brand hover:bg-brand/10"
             >
               View all
             </Link>

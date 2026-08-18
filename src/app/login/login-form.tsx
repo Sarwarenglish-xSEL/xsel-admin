@@ -24,7 +24,7 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 const fieldClassName = cn(
-  "h-11 border-brand/25 bg-white",
+  "h-11 border-brand/25 bg-surface",
   "[&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_#ffffff]",
   "[&:-webkit-autofill]:[-webkit-text-fill-color:#02143d]"
 );
@@ -100,7 +100,7 @@ export default function LoginForm() {
       <AuthHeroPanel />
 
       <AuthFormPanel>
-        <div className="overflow-hidden rounded-2xl border border-brand/20 bg-white shadow-xl shadow-brand/10">
+        <div className="overflow-hidden rounded-2xl border border-brand/20 bg-surface shadow-xl shadow-brand/10">
             <div className="border-b border-brand/15 brand-gradient px-7 py-6 sm:px-8">
               <span className="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 font-sans text-[11px] font-semibold uppercase tracking-wider text-brand">
                 Admin Portal
@@ -118,7 +118,7 @@ export default function LoginForm() {
               </div>
             </div>
 
-            <div className="bg-white px-7 pb-7 pt-5 sm:px-8 sm:pb-8">
+            <div className="bg-surface px-7 pb-7 pt-5 sm:px-8 sm:pb-8">
               {registered && (
                 <Alert className="mb-4 border-brand/30 bg-brand/10 py-2.5">
                   <AlertDescription className="text-xs leading-relaxed text-brand/70 sm:text-sm">

@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { signOutAction } from "@/app/actions";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu } from "@/components/ui/dropdown-menu";
+import { ThemeLogoButton } from "@/components/theme/theme-toggle";
 import type { AdminModule } from "@/lib/permissions";
 import type { Profile } from "@/types/database";
 
@@ -64,7 +65,7 @@ const ROLE_BADGE_CLASS: Record<Profile["role"], string> = {
   superadmin: "border-transparent bg-brand text-white",
   admin: "border-transparent bg-brand/15 text-brand",
   manager: "border-transparent bg-accent/20 text-accent-dark",
-  user: "border-brand/20 bg-white text-brand",
+  user: "border-brand/20 bg-surface text-brand",
 };
 
 function SidebarUserMenu({ profile }: { profile: Profile }) {
@@ -82,7 +83,7 @@ function SidebarUserMenu({ profile }: { profile: Profile }) {
           aria-label="Open user menu"
           className="flex shrink-0 rounded-full p-0.5 transition-colors hover:bg-brand/5"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand/15 font-sans text-xs font-semibold text-brand ring-2 ring-white">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand/15 font-sans text-xs font-semibold text-brand ring-2 ring-surface">
             {initials}
           </div>
         </button>
@@ -143,7 +144,7 @@ function NavTooltip({
       {children}
       <span
         role="tooltip"
-        className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-md bg-gray-900 px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover/nav:opacity-100"
+        className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-md bg-zinc-950 px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover/nav:opacity-100"
       >
         {label}
       </span>
@@ -176,7 +177,7 @@ export function AppSidebar({
   return (
     <aside
       className={cn(
-        "relative sticky top-0 flex h-screen shrink-0 flex-col border-r border-gray-200/80 bg-white transition-[width] duration-300 ease-in-out",
+        "relative sticky top-0 flex h-screen shrink-0 flex-col border-r border-brand/20 bg-surface transition-[width] duration-300 ease-in-out",
         collapsed ? "w-[4.25rem]" : "w-64"
       )}
     >
@@ -184,7 +185,7 @@ export function AppSidebar({
         type="button"
         onClick={() => setCollapsed((value) => !value)}
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        className="absolute -right-3 top-[4.25rem] z-10 flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800"
+        className="absolute -right-3 top-[4.25rem] z-10 flex h-6 w-6 items-center justify-center rounded-full border border-brand/20 bg-surface text-gray-500 shadow-sm transition-colors hover:border-brand/40 hover:bg-surface-muted hover:text-brand-dark"
       >
         {collapsed ? (
           <ChevronRight className="h-3.5 w-3.5" />
@@ -207,9 +208,7 @@ export function AppSidebar({
             collapsed ? "justify-center" : "min-w-0 flex-1 gap-3"
           )}
         >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand text-sm font-bold text-white shadow-sm ring-4 ring-brand/20">
-            X
-          </div>
+          <ThemeLogoButton />
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <p className="truncate font-sans text-sm font-semibold tracking-tight text-brand-dark">
@@ -245,7 +244,7 @@ export function AppSidebar({
                   collapsed ? "justify-center px-0 py-2.5" : "gap-3 px-3 py-2.5",
                   active
                     ? "bg-brand text-white shadow-sm shadow-brand/20"
-                    : "text-gray-600 hover:bg-gray-100/80 hover:text-gray-900"
+                    : "text-gray-600 hover:bg-surface-muted hover:text-brand-dark"
                 )}
               >
                 <item.icon

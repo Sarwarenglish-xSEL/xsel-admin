@@ -5,7 +5,7 @@ import { ContainerTextFlip } from "@/components/ui/container-text-flip";
 
 export function AuthHeroPanel() {
   return (
-    <div className="relative hidden h-full shrink-0 overflow-hidden bg-white lg:block lg:w-[46%] xl:w-1/2">
+    <div className="relative hidden h-full shrink-0 overflow-hidden bg-background lg:block lg:w-[46%] xl:w-1/2">
       <Image
         src={signupLogoBg}
         alt=""

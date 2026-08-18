@@ -206,7 +206,7 @@ function QuestionManager({
           ) : (
             <div
               key={q.id}
-              className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+              className="rounded-xl border border-gray-200 bg-surface p-4 shadow-sm"
             >
               <div className="flex justify-between gap-2">
                 <p className="font-medium text-gray-900">

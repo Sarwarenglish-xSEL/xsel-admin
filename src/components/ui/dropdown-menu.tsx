@@ -79,7 +79,7 @@ export function DropdownMenu({
             <div
               ref={menuRef}
               className={cn(
-                "fixed z-50 min-w-40 rounded-lg border border-brand/20 bg-white py-1 shadow-lg",
+                "fixed z-50 min-w-40 rounded-lg border border-brand/20 bg-surface py-1 shadow-lg",
                 align === "end" && "-translate-x-full",
                 className
               )}

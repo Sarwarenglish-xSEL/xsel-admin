@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* Primary — navy blue */
   --color-brand: #04267c;
@@ -20,8 +22,12 @@
   --color-warning-dark: #0d7aa3;
 
   /* Surfaces — white canvas; muted is a neutral gray, not blue */
+  --color-background: #ffffff;
+  --color-foreground: #111827;
   --color-surface: #ffffff;
   --color-surface-muted: #f4f4f5;
+  --color-card: #ffffff;
+  --color-border: rgb(4 38 124 / 0.2);
 
   /* Auth ripple grid (login/signup right panel) — tweak these to adjust the grid */
   --color-auth-grid-border: rgb(4 38 124 / 0.18);
@@ -49,18 +55,132 @@
   }
 }
 
+@layer theme {
+  .dark {
+    color-scheme: dark;
+
+    --color-brand: #5b8bf2;
+    --color-brand-dark: #3d6fe0;
+    --color-brand-light: #8babf8;
+    --color-accent: #3ec8ea;
+    --color-accent-dark: #7ddbf0;
+    --color-success: #4ade80;
+    --color-success-light: #86efac;
+    --color-danger: #f07171;
+    --color-danger-dark: #fb9a9a;
+    --color-destructive: #f07171;
+    --color-warning: #3ec8ea;
+    --color-warning-dark: #7ddbf0;
+
+    --color-background: #0b1220;
+    --color-foreground: #ffffff;
+    --color-surface: #151d2e;
+    --color-surface-muted: #1c2640;
+    --color-card: #151d2e;
+    --color-border: rgb(91 139 242 / 0.28);
+
+    --color-gray-50: #1c2640;
+    --color-gray-100: #222c44;
+    --color-gray-200: #2d3b55;
+    --color-gray-300: #3d4d6c;
+    --color-gray-400: #d4dbe8;
+    --color-gray-500: #e2e8f0;
+    --color-gray-600: #eef2f7;
+    --color-gray-700: #f5f7fb;
+    --color-gray-800: #f8fafc;
+    --color-gray-900: #ffffff;
+
+    --color-auth-grid-border: rgb(91 139 242 / 0.22);
+    --color-auth-grid-fill: rgb(21 29 46 / 0.78);
+    --color-auth-grid-hover: rgb(62 200 234 / 0.28);
+    --color-auth-grid-ripple: rgb(62 200 234 / 0.5);
+  }
+}
+
 @layer base {
   html {
     @apply font-sans;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+    color: #ffffff;
   }
   body {
-    @apply bg-white text-gray-900 antialiased;
+    @apply bg-background text-foreground antialiased;
+  }
+  .dark body {
+    color: #ffffff;
+  }
+
+  .dark :is(
+    p,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    span,
+    label,
+    a,
+    li,
+    td,
+    th,
+    dt,
+    dd,
+    small,
+    strong,
+    em,
+    legend,
+    caption,
+    button,
+    input,
+    select,
+    textarea,
+    option,
+    code,
+    pre,
+    summary,
+    blockquote
+  ) {
+    color: #ffffff;
+  }
+
+  .dark [class*="text-brand"],
+  .dark [class*="text-accent"],
+  .dark [class*="text-success"],
+  .dark [class*="text-danger"],
+  .dark [class*="text-warning"],
+  .dark [class*="text-gray-"],
+  .dark [class*="text-foreground"],
+  .dark [class*="text-teal-"],
+  .dark [class*="text-slate-"],
+  .dark [class*="text-zinc-"],
+  .dark [class*="text-muted"] {
+    color: #ffffff !important;
+  }
+
+  .dark ::placeholder {
+    color: rgb(255 255 255 / 0.45) !important;
+  }
+
+  .dark input,
+  .dark select,
+  .dark textarea {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff;
   }
 }
 
 @layer utilities {
   .brand-gradient {
-    @apply bg-gradient-to-br from-brand/22 via-white to-accent/20;
+    background-image: linear-gradient(
+      to bottom right,
+      color-mix(in srgb, var(--color-brand) 22%, var(--color-surface)),
+      var(--color-surface),
+      color-mix(in srgb, var(--color-accent) 20%, var(--color-surface))
+    );
   }
 
   .brand-accent-bar {
@@ -69,7 +189,7 @@
 
   .brand-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgb(4 38 124 / 0.4) transparent;
+    scrollbar-color: color-mix(in srgb, var(--color-brand) 40%, transparent) transparent;
   }
 
   .brand-scrollbar::-webkit-scrollbar {
@@ -81,12 +201,12 @@
   }
 
   .brand-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgb(4 38 124 / 0.35);
+    background-color: color-mix(in srgb, var(--color-brand) 35%, transparent);
     border-radius: 999px;
   }
 
   .brand-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgb(4 38 124 / 0.55);
+    background-color: color-mix(in srgb, var(--color-brand) 55%, transparent);
   }
 }
 

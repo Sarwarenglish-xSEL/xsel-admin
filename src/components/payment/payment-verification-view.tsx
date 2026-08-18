@@ -443,7 +443,7 @@ function StepBadge({ step, label }: { step: number; label: string }) {
 
 export function InvalidPaymentLink({ courseId }: { courseId: string }) {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-white px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-surface px-4">
       <div className="max-w-md rounded-2xl border border-accent/30 bg-card p-6 text-center shadow-sm">
         <h1 className="text-lg font-semibold text-gray-900">Invalid payment link</h1>
         <p className="mt-2 text-sm leading-relaxed text-gray-500">
@@ -460,7 +460,7 @@ export function InvalidPaymentLink({ courseId }: { courseId: string }) {
 
 export function PaymentAccessError() {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-white px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-surface px-4">
       <div className="max-w-lg rounded-2xl border border-danger/25 bg-card p-6 shadow-sm">
         <h1 className="text-lg font-semibold text-gray-900">
           Payment page database access
@@ -470,7 +470,7 @@ export function PaymentAccessError() {
           <code className="text-xs">.env.local</code> so receipts can be saved
           without sign-in. Or run this in the Supabase SQL Editor for course reads:
         </p>
-        <pre className="mt-4 overflow-x-auto rounded-lg bg-gray-900 p-4 text-xs text-gray-100">
+        <pre className="mt-4 overflow-x-auto rounded-lg bg-zinc-950 p-4 text-xs text-zinc-100">
 {`grant usage on schema public to anon, authenticated;
 grant select on table public.courses to anon, authenticated;`}
         </pre>
@@ -498,7 +498,7 @@ export function PaymentVerificationView({
     !existingPurchase || existingPurchase.status === "rejected";
 
   return (
-    <div className="min-h-dvh bg-white">
+    <div className="min-h-dvh bg-surface">
       <div className="border-b border-gray-200/80 bg-card">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
           <div>

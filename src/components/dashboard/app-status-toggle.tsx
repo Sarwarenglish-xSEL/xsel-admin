@@ -49,7 +49,7 @@ export function AppStatusToggle({ initialEnabled }: { initialEnabled: boolean })
       </div>
 
       <div className="text-left">
-        <p className="text-sm font-semibold text-gray-900">
+        <p className="text-sm font-semibold text-brand-dark">
           {isPending ? "Updating..." : "Application Status"}
         </p>
         <div className="mt-0.5 flex items-center gap-2">

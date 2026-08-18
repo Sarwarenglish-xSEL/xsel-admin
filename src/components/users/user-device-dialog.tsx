@@ -32,7 +32,7 @@ const ROLE_BADGE_CLASS: Record<Profile["role"], string> = {
   superadmin: "border-transparent bg-brand text-white",
   admin: "border-transparent bg-brand/15 text-brand",
   manager: "border-transparent bg-accent/20 text-accent-dark",
-  user: "border-brand/20 bg-white text-brand",
+  user: "border-brand/20 bg-surface text-brand",
 };
 
 function formatMaybeDate(value?: string | null) {
@@ -253,7 +253,7 @@ export function UserDeviceDialog({
                   <StatCard label="App" value={appVersion || "—"} />
                 </div>
 
-                <div className="space-y-4 rounded-xl border border-brand/20 bg-white p-4">
+                <div className="space-y-4 rounded-xl border border-brand/20 bg-surface p-4">
                   {osRaw ? (
                     <DetailField
                       label="OS build"
@@ -311,7 +311,7 @@ export function UserDeviceDialog({
                   return (
                     <div
                       key={`${user.id}-transfer-${index}`}
-                      className="rounded-xl border border-brand/20 bg-white p-4"
+                      className="rounded-xl border border-brand/20 bg-surface p-4"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">

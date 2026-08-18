@@ -12,6 +12,7 @@ import {
   ListChecks,
   Save,
   Settings2,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Course, Profile } from "@/types/database";
@@ -67,14 +68,24 @@ function getLearningOutcomes(course: Course): FormValues["learning_outcomes"] {
 function SectionLabel({
   icon: Icon,
   children,
+  description,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   children: React.ReactNode;
+  description?: string;
 }) {
   return (
-    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
-      <Icon className="h-3.5 w-3.5 text-brand" />
-      {children}
+    <div className="flex items-start gap-3 rounded-lg border border-brand/20 brand-gradient px-4 py-3">
+      <div className="mt-0.5 h-7 w-1 shrink-0 rounded-full brand-accent-bar" />
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-dark">
+          <Icon className="h-3.5 w-3.5 text-brand" />
+          {children}
+        </div>
+        {description ? (
+          <p className="mt-1 text-xs text-brand/70">{description}</p>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -147,8 +158,7 @@ export function CourseDetailsForm({
         description="Edit the public course information, pricing, and media."
       />
       <CardContent className="p-5 sm:p-6">
-        <form onSubmit={handleSubmit(onSubmit)} className="mx-auto max-w-3xl space-y-8">
-          {/* Basics */}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           <section className="space-y-4">
             <SectionLabel icon={BookOpen}>Basics</SectionLabel>
             <div>
@@ -162,6 +172,7 @@ export function CourseDetailsForm({
               <Label>Description</Label>
               <Textarea
                 rows={4}
+                className="min-h-[7rem] resize-none"
                 {...register("description")}
                 placeholder="What this course covers"
               />
@@ -169,14 +180,14 @@ export function CourseDetailsForm({
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label>Type</Label>
-                <Select {...register("course_type")}>
+                <Select className="w-full" {...register("course_type")}>
                   <option value="prerecorded">Pre-recorded</option>
                   <option value="live">Live</option>
                 </Select>
               </div>
               <div>
                 <Label>Category</Label>
-                <Select {...register("category")}>
+                <Select className="w-full" {...register("category")}>
                   <option value="design">Design</option>
                   <option value="coding">Coding</option>
                   <option value="business">Business</option>
@@ -185,8 +196,7 @@ export function CourseDetailsForm({
             </div>
           </section>
 
-          {/* Publishing */}
-          <section className="space-y-4 border-t border-gray-100 pt-8">
+          <section className="space-y-4">
             <SectionLabel icon={Settings2}>Publishing</SectionLabel>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
@@ -199,19 +209,19 @@ export function CourseDetailsForm({
                 />
               </div>
               <div>
-                <Label>Fake Enrollments</Label>
+                <Label>Fake enrollments</Label>
                 <Input
                   type="number"
                   min={0}
                   {...register("fake_enrollments", { valueAsNumber: true })}
                 />
-                <p className="mt-1.5 text-xs text-gray-500">
+                <p className="mt-1.5 text-xs text-brand/60">
                   Shown as enrollment count on the app
                 </p>
               </div>
               <div>
                 <Label>Status</Label>
-                <Select {...register("status")}>
+                <Select className="w-full" {...register("status")}>
                   <option value="draft">Draft</option>
                   <option value="published">Published</option>
                   <option value="archived">Archived</option>
@@ -220,6 +230,7 @@ export function CourseDetailsForm({
               <div>
                 <Label>Instructor</Label>
                 <Select
+                  className="w-full"
                   {...register("instructor_id")}
                   defaultValue={course.instructor_id ?? ""}
                 >
@@ -234,9 +245,8 @@ export function CourseDetailsForm({
             </div>
           </section>
 
-          {/* Live schedule */}
           {courseType === "live" && (
-            <section className="space-y-4 border-t border-gray-100 pt-8">
+            <section className="space-y-4">
               <SectionLabel icon={CalendarDays}>Live schedule</SectionLabel>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
@@ -245,14 +255,14 @@ export function CourseDetailsForm({
                     type="datetime-local"
                     {...register("registration_deadline")}
                   />
-                  <p className="mt-1.5 text-xs text-gray-500">
+                  <p className="mt-1.5 text-xs text-brand/60">
                     Last date students can register
                   </p>
                 </div>
                 <div>
                   <Label>Course start date</Label>
                   <Input type="datetime-local" {...register("course_start_date")} />
-                  <p className="mt-1.5 text-xs text-gray-500">
+                  <p className="mt-1.5 text-xs text-brand/60">
                     When the live course begins
                   </p>
                 </div>
@@ -260,19 +270,18 @@ export function CourseDetailsForm({
             </section>
           )}
 
-          {/* Learning outcomes */}
-          <section className="space-y-4 border-t border-gray-100 pt-8">
-            <div>
-              <SectionLabel icon={ListChecks}>Learning outcomes</SectionLabel>
-              <p className="mt-1.5 text-xs text-gray-500">
-                Short benefits shown on the course page.
-              </p>
-            </div>
+          <section className="space-y-4">
+            <SectionLabel
+              icon={ListChecks}
+              description="Short benefits shown on the course page."
+            >
+              Learning outcomes
+            </SectionLabel>
 
-            <div className="divide-y divide-gray-100 rounded-xl border border-gray-200">
+            <div className="divide-y divide-brand/10 overflow-hidden rounded-xl border border-brand/20 bg-surface">
               {([0, 1, 2] as const).map((index) => (
                 <div key={index} className="space-y-3 p-4 sm:p-5">
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm font-semibold text-brand-dark">
                     Outcome {index + 1}
                   </span>
                   <div className="grid gap-3 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)]">
@@ -306,11 +315,10 @@ export function CourseDetailsForm({
             </div>
           </section>
 
-          {/* Media */}
-          <section className="space-y-4 border-t border-gray-100 pt-8">
+          <section className="space-y-4">
             <SectionLabel icon={ImageIcon}>Media</SectionLabel>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-              <div className="flex h-36 w-full max-w-[240px] shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+            <div className="flex flex-col overflow-hidden rounded-xl border border-brand/20 sm:flex-row">
+              <div className="flex h-44 w-full shrink-0 items-center justify-center overflow-hidden bg-surface-muted sm:w-64">
                 {thumbnailUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -320,16 +328,20 @@ export function CourseDetailsForm({
                   />
                 ) : (
                   <div className="flex flex-col items-center gap-2 px-4 text-center">
-                    <ImageIcon className="h-6 w-6 text-gray-300" />
-                    <p className="text-xs text-gray-400">No thumbnail yet</p>
+                    <ImageIcon className="h-7 w-7 text-brand/40" />
+                    <p className="font-sans text-xs text-brand/50">No thumbnail yet</p>
                   </div>
                 )}
               </div>
-              <div className="min-w-0 flex-1 space-y-2">
-                <Label>Thumbnail image</Label>
-                <Input
+              <div className="flex min-w-0 flex-1 flex-col justify-center gap-3 p-5">
+                <p className="font-sans text-sm font-semibold text-brand-dark">
+                  Thumbnail image
+                </p>
+                <input
+                  id="course-thumbnail"
                   type="file"
                   accept="image/*"
+                  className="sr-only"
                   disabled={uploading}
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
@@ -347,20 +359,37 @@ export function CourseDetailsForm({
                       toast.error(err instanceof Error ? err.message : "Upload failed");
                     } finally {
                       setUploading(false);
+                      e.target.value = "";
                     }
                   }}
                 />
-                <p className="text-xs text-gray-500">
-                  {uploading
-                    ? "Uploading…"
-                    : "Recommended: landscape image, at least 1280×720."}
+                <label
+                  htmlFor="course-thumbnail"
+                  className={`flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-brand/30 bg-surface-muted/40 px-4 py-3.5 transition-colors hover:border-brand/50 hover:bg-brand/5 ${
+                    uploading ? "pointer-events-none opacity-60" : ""
+                  }`}
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand/15 text-brand">
+                    <Upload className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0 text-left">
+                    <span className="block font-sans text-sm font-medium text-brand-dark">
+                      {uploading ? "Uploading…" : "Choose image"}
+                    </span>
+                    <span className="mt-0.5 block font-sans text-xs text-brand/60">
+                      Landscape, at least 1280×720
+                    </span>
+                  </span>
+                </label>
+                <p className="font-sans text-xs text-brand/60">
+                  PNG or JPG. This image is shown on the course card.
                 </p>
               </div>
             </div>
           </section>
 
-          <div className="flex justify-end border-t border-gray-100 pt-6">
-            <Button type="submit" disabled={loading}>
+          <div className="flex justify-end border-t border-brand/15 pt-6">
+            <Button type="submit" disabled={loading} className="min-w-40">
               <Save className="h-4 w-4" />
               {loading ? "Saving..." : "Save Changes"}
             </Button>

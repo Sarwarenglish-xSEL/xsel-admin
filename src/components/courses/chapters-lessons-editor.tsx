@@ -178,7 +178,7 @@ export function ChaptersLessonsEditor({
                 void addChapter();
               }
             }}
-            className="border-gray-200 bg-white"
+            className="border-gray-200 bg-surface"
           />
           <Button onClick={addChapter} className="shrink-0 sm:w-auto">
             <Plus className="h-4 w-4" />
@@ -188,7 +188,7 @@ export function ChaptersLessonsEditor({
       </Card>
 
       {chapters.length === 0 ? (
-        <Card className="border-dashed border-gray-300 bg-white/70">
+        <Card className="border-dashed border-gray-300 bg-surface/70">
           <CardContent className="flex flex-col items-center px-6 py-14 text-center">
             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand/20 text-brand">
               <BookOpen className="h-5 w-5" />
@@ -231,7 +231,7 @@ export function ChaptersLessonsEditor({
                         }
                       }
                     }}
-                    className="h-9 border-transparent bg-transparent px-0 font-sans text-base font-semibold text-brand-dark shadow-none hover:border-brand/20 hover:bg-white/70 focus:border-brand/20 focus:bg-white"
+                    className="h-9 border-transparent bg-transparent px-0 font-sans text-base font-semibold text-brand-dark shadow-none hover:border-brand/20 hover:bg-surface/70 focus:border-brand/20 focus:bg-surface"
                   />
                 </div>
                 <div className="flex shrink-0 items-center gap-0.5">
@@ -282,7 +282,7 @@ export function ChaptersLessonsEditor({
 
               <div className="space-y-3 bg-surface-muted/40 p-4">
                 {lessons.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-gray-300 bg-white/60 px-4 py-8 text-center">
+                  <div className="rounded-xl border border-dashed border-gray-300 bg-surface/60 px-4 py-8 text-center">
                     <p className="text-sm font-medium text-gray-700">
                       No lessons in this chapter
                     </p>
@@ -301,7 +301,7 @@ export function ChaptersLessonsEditor({
                     return (
                       <div
                         key={lesson.id}
-                        className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+                        className="overflow-hidden rounded-xl border border-gray-200 bg-surface shadow-sm"
                       >
                         <div className="flex flex-col gap-3 border-b border-brand/15 brand-gradient px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                           <div className="min-w-0 space-y-2">
@@ -421,7 +421,7 @@ export function ChaptersLessonsEditor({
                         </div>
 
                         <div className="grid gap-3 border-t border-gray-100 bg-gray-50/80 p-3 sm:grid-cols-2">
-                          <div className="rounded-lg border border-gray-200/80 bg-white p-3">
+                          <div className="rounded-lg border border-gray-200/80 bg-surface p-3">
                             <div className="mb-2.5 flex items-center justify-between gap-2">
                               <div className="flex items-center gap-1.5">
                                 <FileQuestion className="h-3.5 w-3.5 text-brand" />
@@ -476,7 +476,7 @@ export function ChaptersLessonsEditor({
                             )}
                           </div>
 
-                          <div className="rounded-lg border border-gray-200/80 bg-white p-3">
+                          <div className="rounded-lg border border-gray-200/80 bg-surface p-3">
                             <div className="mb-2.5 flex items-center justify-between gap-2">
                               <div className="flex items-center gap-1.5">
                                 <ClipboardList className="h-3.5 w-3.5 text-accent-dark" />
@@ -537,7 +537,7 @@ export function ChaptersLessonsEditor({
 
                 <Button
                   variant="outline"
-                  className="w-full border-dashed border-gray-300 bg-white/80 text-gray-700 hover:border-brand/40 hover:bg-brand/10 hover:text-brand"
+                  className="w-full border-dashed border-gray-300 bg-surface/80 text-gray-700 hover:border-brand/40 hover:bg-brand/10 hover:text-brand"
                   onClick={() => setLessonDialog({ chapterId: chapter.id })}
                 >
                   <Plus className="h-4 w-4" />
@@ -729,37 +729,79 @@ function LessonDialog({
   }
 
   return (
-    <Dialog open onOpenChange={() => onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto" onClose={onClose}>
-        <DialogHeader>
-          <DialogTitle>{lesson ? "Edit Lesson" : "Add Lesson"}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label>Title</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-          </div>
-          <div>
-            <Label>Type</Label>
-            <Select
-              value={lessonType}
-              onChange={(e) => setLessonType(e.target.value as "video" | "live")}
-            >
-              <option value="video">Video</option>
-              <option value="live">Live</option>
-            </Select>
-          </div>
-          {lessonType === "live" && (
+    <Dialog open onOpenChange={() => onClose()} className="max-w-2xl">
+      <DialogContent
+        className="flex w-full max-h-[min(40rem,85vh)] flex-col overflow-hidden p-0"
+        onClose={onClose}
+      >
+        <div className="shrink-0 border-b border-brand/15 brand-gradient px-6 py-5 pr-12 sm:px-7">
+          <DialogHeader className="mb-0">
+            <div className="flex items-start gap-3">
+              <div className="mt-1 h-8 w-1 shrink-0 rounded-full brand-accent-bar" />
+              <div>
+                <DialogTitle className="text-xl">
+                  {lesson ? "Edit Lesson" : "Add Lesson"}
+                </DialogTitle>
+                <p className="mt-1 text-sm text-brand/70">
+                  {lesson
+                    ? "Update lesson details, schedule, and publishing status"
+                    : "Add a video or live lesson to this chapter"}
+                </p>
+              </div>
+            </div>
+          </DialogHeader>
+        </div>
+
+        <div className="brand-scrollbar min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5 sm:px-7">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <Label>Live class status</Label>
+              <Label>Title</Label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Lesson 1"
+              />
+            </div>
+            <div>
+              <Label>Type</Label>
               <Select
-                value={liveClassStatus}
-                onChange={(e) => setLiveClassStatus(e.target.value)}
+                className="w-full"
+                value={lessonType}
+                onChange={(e) => setLessonType(e.target.value as "video" | "live")}
               >
-                <option value="pending">pending</option>
-                <option value="live">live</option>
-                <option value="completed">completed</option>
+                <option value="video">Video</option>
+                <option value="live">Live</option>
               </Select>
+            </div>
+          </div>
+
+          {lessonType === "live" && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label>Live class status</Label>
+                <Select
+                  className="w-full"
+                  value={liveClassStatus}
+                  onChange={(e) => setLiveClassStatus(e.target.value)}
+                >
+                  <option value="pending">Pending</option>
+                  <option value="live">Live</option>
+                  <option value="completed">Completed</option>
+                </Select>
+              </div>
+              <div>
+                <Label>Status</Label>
+                <Select
+                  className="w-full"
+                  value={status}
+                  onChange={(e) =>
+                    setStatus(e.target.value as CourseLesson["status"])
+                  }
+                >
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                </Select>
+              </div>
             </div>
           )}
 
@@ -772,7 +814,7 @@ function LessonDialog({
                 placeholder="e.g. 0e143fb4-5bf5-4a2b-8871-7f6e05b4b371"
               />
               {lesson?.duration_seconds != null && (
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1.5 text-xs text-brand/60">
                   Current duration: {Math.floor(lesson.duration_seconds / 60)}m{" "}
                   {lesson.duration_seconds % 60}s
                 </p>
@@ -789,7 +831,7 @@ function LessonDialog({
                 placeholder="Bunny video ID or URL"
               />
               {lesson?.duration_seconds != null && (
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1.5 text-xs text-brand/60">
                   Current duration: {Math.floor(lesson.duration_seconds / 60)}m{" "}
                   {lesson.duration_seconds % 60}s
                 </p>
@@ -803,14 +845,15 @@ function LessonDialog({
               <Input
                 value={liveMeetingUrl}
                 onChange={(e) => setLiveMeetingUrl(e.target.value)}
+                placeholder="https://"
               />
             </div>
           )}
 
           {lessonType === "live" && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <Label>Start Time</Label>
+                <Label>Start time</Label>
                 <Input
                   type="datetime-local"
                   value={liveStart}
@@ -818,7 +861,7 @@ function LessonDialog({
                 />
               </div>
               <div>
-                <Label>End Time</Label>
+                <Label>End time</Label>
                 <Input
                   type="datetime-local"
                   value={liveEnd}
@@ -828,19 +871,25 @@ function LessonDialog({
             </div>
           )}
 
-          <div>
-            <Label>Status</Label>
-            <Select
-              value={status}
-              onChange={(e) =>
-                setStatus(e.target.value as CourseLesson["status"])
-              }
-            >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-            </Select>
-          </div>
-          <Button onClick={save} disabled={loading} className="w-full">
+          {lessonType !== "live" && (
+            <div>
+              <Label>Status</Label>
+              <Select
+                className="w-full"
+                value={status}
+                onChange={(e) =>
+                  setStatus(e.target.value as CourseLesson["status"])
+                }
+              >
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+              </Select>
+            </div>
+          )}
+        </div>
+
+        <div className="flex shrink-0 justify-end border-t border-brand/15 bg-surface px-6 py-4 sm:px-7">
+          <Button onClick={save} disabled={loading} className="min-w-40">
             {loading ? "Saving..." : "Save Lesson"}
           </Button>
         </div>
@@ -961,45 +1010,65 @@ function QuizDialog({
   }
 
   return (
-    <Dialog open onOpenChange={() => onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto" onClose={onClose}>
-        <DialogHeader>
-          <DialogTitle>Add Quiz to &ldquo;{lessonTitle}&rdquo;</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label>Quiz Title</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-          </div>
-          <div>
-            <Label>Quiz Type</Label>
-            <Select
-              value={quizType}
-              onChange={(e) => setQuizType(e.target.value as QuizType)}
-            >
-              <option value="lesson">Lesson</option>
-              <option value="video" disabled={hasVideoQuiz}>
-                Video{hasVideoQuiz ? " (already exists)" : ""}
-              </option>
-            </Select>
+    <Dialog open onOpenChange={() => onClose()} className="max-w-2xl">
+      <DialogContent
+        className="flex w-full max-h-[min(42rem,85vh)] flex-col overflow-hidden p-0"
+        onClose={onClose}
+      >
+        <div className="shrink-0 border-b border-brand/15 brand-gradient px-6 py-5 pr-12 sm:px-7">
+          <DialogHeader className="mb-0">
+            <div className="flex items-start gap-3">
+              <div className="mt-1 h-8 w-1 shrink-0 rounded-full brand-accent-bar" />
+              <div>
+                <DialogTitle className="text-xl">
+                  Add Quiz to &ldquo;{lessonTitle}&rdquo;
+                </DialogTitle>
+                <p className="mt-1 text-sm text-brand/70">
+                  Create a lesson or video quiz with multiple-choice questions
+                </p>
+              </div>
+            </div>
+          </DialogHeader>
+        </div>
+
+        <div className="brand-scrollbar min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5 sm:px-7">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label>Quiz title</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+            </div>
+            <div>
+              <Label>Quiz type</Label>
+              <Select
+                className="w-full"
+                value={quizType}
+                onChange={(e) => setQuizType(e.target.value as QuizType)}
+              >
+                <option value="lesson">Lesson</option>
+                <option value="video" disabled={hasVideoQuiz}>
+                  Video{hasVideoQuiz ? " (already exists)" : ""}
+                </option>
+              </Select>
+            </div>
           </div>
 
           {questions.map((q, index) => (
             <div
               key={index}
-              className="space-y-3 rounded-lg border border-dashed p-4"
+              className="space-y-4 rounded-xl border border-dashed border-brand/30 bg-surface-muted/50 p-4"
             >
-              <div className="flex items-center justify-between">
-                <Label>Question {index + 1}</Label>
+              <div className="flex items-center justify-between gap-3">
+                <Label className="mb-0">Question {index + 1}</Label>
                 {questions.length > 1 && (
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="h-8 w-8 text-danger hover:bg-danger/10 hover:text-danger"
                     onClick={() =>
                       setQuestions((prev) => prev.filter((_, i) => i !== index))
                     }
                   >
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 )}
               </div>
@@ -1009,18 +1078,19 @@ function QuizDialog({
                   updateQuestion(index, "question", e.target.value)
                 }
                 placeholder="Enter the question"
+                className="min-h-[5.5rem] resize-none"
               />
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-brand/60">
                   Fill 2–4 options. Leave unused ones empty.
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {OPTION_KEYS.map((key) => (
                     <div key={key}>
                       <Label>
                         Option {key.toUpperCase()}
                         {key === "c" || key === "d" ? (
-                          <span className="ml-1 font-normal text-muted-foreground">
+                          <span className="ml-1 font-normal text-brand/50">
                             (optional)
                           </span>
                         ) : null}
@@ -1050,8 +1120,9 @@ function QuizDialog({
                 </div>
               </div>
               <div>
-                <Label>Correct Option</Label>
+                <Label>Correct option</Label>
                 <Select
+                  className="w-full"
                   value={q.correct_option}
                   onChange={(e) =>
                     updateQuestion(
@@ -1079,6 +1150,7 @@ function QuizDialog({
                     updateQuestion(index, "reason", e.target.value)
                   }
                   placeholder="Explain why the correct answer is correct"
+                  className="min-h-[5rem] resize-none"
                 />
               </div>
             </div>
@@ -1086,14 +1158,15 @@ function QuizDialog({
 
           <Button
             variant="outline"
-            size="sm"
             onClick={() => setQuestions((prev) => [...prev, emptyQuestion()])}
           >
-            <Plus className="mr-1 h-3 w-3" />
-            Add Another Question
+            <Plus className="h-4 w-4" />
+            Add another question
           </Button>
+        </div>
 
-          <Button onClick={save} disabled={loading} className="w-full">
+        <div className="flex shrink-0 justify-end border-t border-brand/15 bg-surface px-6 py-4 sm:px-7">
+          <Button onClick={save} disabled={loading} className="min-w-40">
             {loading ? "Saving..." : "Save Quiz"}
           </Button>
         </div>
@@ -1165,25 +1238,44 @@ function AssignmentDialog({
   }
 
   return (
-    <Dialog open onOpenChange={() => onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto" onClose={onClose}>
-        <DialogHeader>
-          <DialogTitle>Add Assignment to &ldquo;{lessonTitle}&rdquo;</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label>Assignment Title</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-          </div>
-          <div>
-            <Label>Type</Label>
-            <Select
-              value={type}
-              onChange={(e) => setType(e.target.value as AssignmentType)}
-            >
-              <option value="written">Written — students type an answer</option>
-              <option value="file">File — students upload a file</option>
-            </Select>
+    <Dialog open onOpenChange={() => onClose()} className="max-w-2xl">
+      <DialogContent
+        className="flex w-full max-h-[min(42rem,85vh)] flex-col overflow-hidden p-0"
+        onClose={onClose}
+      >
+        <div className="shrink-0 border-b border-brand/15 brand-gradient px-6 py-5 pr-12 sm:px-7">
+          <DialogHeader className="mb-0">
+            <div className="flex items-start gap-3">
+              <div className="mt-1 h-8 w-1 shrink-0 rounded-full brand-accent-bar" />
+              <div>
+                <DialogTitle className="text-xl">
+                  Add Assignment to &ldquo;{lessonTitle}&rdquo;
+                </DialogTitle>
+                <p className="mt-1 text-sm text-brand/70">
+                  Set the question, submission type, and marking details
+                </p>
+              </div>
+            </div>
+          </DialogHeader>
+        </div>
+
+        <div className="brand-scrollbar min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5 sm:px-7">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label>Assignment title</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+            </div>
+            <div>
+              <Label>Type</Label>
+              <Select
+                className="w-full"
+                value={type}
+                onChange={(e) => setType(e.target.value as AssignmentType)}
+              >
+                <option value="written">Written — students type an answer</option>
+                <option value="file">File — students upload a file</option>
+              </Select>
+            </div>
           </div>
           <div>
             <Label>Question</Label>
@@ -1192,6 +1284,7 @@ function AssignmentDialog({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="Enter the assignment question"
+              className="min-h-[6.5rem] resize-none"
             />
           </div>
           <div>
@@ -1201,10 +1294,11 @@ function AssignmentDialog({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Optional instructions or details"
+              className="min-h-[5rem] resize-none"
             />
           </div>
-          <div>
-            <Label>Max Marks</Label>
+          <div className="max-w-xs">
+            <Label>Max marks</Label>
             <Input
               type="number"
               min={1}
@@ -1212,7 +1306,10 @@ function AssignmentDialog({
               onChange={(e) => setMaxMarks(Number(e.target.value))}
             />
           </div>
-          <Button onClick={save} disabled={loading} className="w-full">
+        </div>
+
+        <div className="flex shrink-0 justify-end border-t border-brand/15 bg-surface px-6 py-4 sm:px-7">
+          <Button onClick={save} disabled={loading} className="min-w-40">
             {loading ? "Saving..." : "Save Assignment"}
           </Button>
         </div>

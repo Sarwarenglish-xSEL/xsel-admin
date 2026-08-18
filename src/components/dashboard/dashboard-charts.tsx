@@ -17,19 +17,9 @@ import {
 } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { SectionHeader } from "@/components/layout/page-header";
+import { useTheme } from "@/components/theme/theme-provider";
 import type { DashboardChartData } from "@/types/database";
-import { chartColors } from "@/lib/theme";
-
-const BRAND = chartColors.brand;
-
-const STATUS_COLORS: Record<string, string> = {
-  approved: chartColors.approved,
-  pending: chartColors.pending,
-  rejected: chartColors.rejected,
-  active: chartColors.active,
-  completed: chartColors.completed,
-  blocked: chartColors.blocked,
-};
+import { getChartColors } from "@/lib/theme";
 
 const STATUS_LABELS: Record<string, string> = {
   approved: "Approved",
@@ -54,10 +44,14 @@ function ChartTooltip({
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-lg">
-      <p className="mb-1 text-xs font-medium text-gray-500">{label}</p>
+    <div className="rounded-lg border border-brand/20 bg-surface px-3 py-2 shadow-lg">
+      <p className="mb-1 text-xs font-medium text-brand/60">{label}</p>
       {payload.map((entry) => (
-        <p key={entry.name} className="text-sm font-semibold" style={{ color: entry.color }}>
+        <p key={entry.name} className="flex items-center gap-2 text-sm font-semibold text-brand-dark">
+          <span
+            className="h-2 w-2 shrink-0 rounded-full"
+            style={{ backgroundColor: entry.color }}
+          />
           {entry.name}: {valueFormatter ? valueFormatter(entry.value) : entry.value}
         </p>
       ))}
@@ -67,13 +61,20 @@ function ChartTooltip({
 
 function EmptyChartState({ message }: { message: string }) {
   return (
-    <div className="flex h-[260px] items-center justify-center text-sm text-gray-400">
+    <div className="flex h-[260px] items-center justify-center text-sm text-brand/50">
       {message}
     </div>
   );
 }
 
 export function DashboardCharts({ data }: { data: DashboardChartData }) {
+  const { theme, mounted } = useTheme();
+  const palette = getChartColors(mounted && theme === "dark" ? "dark" : "light");
+  const isDark = mounted && theme === "dark";
+  const axis = isDark ? "#ffffff" : "#94a3b8";
+  const grid = isDark ? "rgba(255, 255, 255, 0.12)" : "#f1f5f9";
+  const legend = { fontSize: 12, paddingTop: 12, color: isDark ? "#ffffff" : "#334155" };
+
   const hasSignups = data.userSignupsByMonth.some((entry) => entry.count > 0);
   const hasRevenue = data.revenueByMonth.some((entry) => entry.revenue > 0);
   const hasPurchaseTrend = data.purchaseTrendByMonth.some(
@@ -87,7 +88,7 @@ export function DashboardCharts({ data }: { data: DashboardChartData }) {
     .map((entry) => ({
       name: STATUS_LABELS[entry.status] ?? entry.status,
       value: entry.count,
-      fill: STATUS_COLORS[entry.status] ?? BRAND,
+      fill: palette[entry.status as keyof typeof palette] ?? palette.brand,
     }));
 
   const enrollmentPieData = data.enrollmentStatusCounts
@@ -95,7 +96,7 @@ export function DashboardCharts({ data }: { data: DashboardChartData }) {
     .map((entry) => ({
       name: STATUS_LABELS[entry.status] ?? entry.status,
       value: entry.count,
-      fill: STATUS_COLORS[entry.status] ?? BRAND,
+      fill: palette[entry.status as keyof typeof palette] ?? palette.brand,
     }));
 
   return (
@@ -111,16 +112,16 @@ export function DashboardCharts({ data }: { data: DashboardChartData }) {
           ) : (
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={data.userSignupsByMonth} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
                 <XAxis
                   dataKey="month"
-                  tick={{ fontSize: 12, fill: "#94a3b8" }}
+                  tick={{ fontSize: 12, fill: axis }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   allowDecimals={false}
-                  tick={{ fontSize: 12, fill: "#94a3b8" }}
+                  tick={{ fontSize: 12, fill: axis }}
                   axisLine={false}
                   tickLine={false}
                 />
@@ -129,7 +130,7 @@ export function DashboardCharts({ data }: { data: DashboardChartData }) {
                     <ChartTooltip valueFormatter={(value) => `${value} users`} />
                   }
                 />
-                <Bar dataKey="count" name="Users" fill={BRAND} radius={[6, 6, 0, 0]} />
+                <Bar dataKey="count" name="Users" fill={palette.brand} radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -149,19 +150,19 @@ export function DashboardCharts({ data }: { data: DashboardChartData }) {
               <AreaChart data={data.revenueByMonth} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
                 <defs>
                   <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={BRAND} stopOpacity={0.48} />
-                    <stop offset="100%" stopColor={chartColors.accent} stopOpacity={0.1} />
+                    <stop offset="0%" stopColor={palette.brand} stopOpacity={0.55} />
+                    <stop offset="100%" stopColor={palette.accent} stopOpacity={0.12} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
                 <XAxis
                   dataKey="month"
-                  tick={{ fontSize: 12, fill: "#94a3b8" }}
+                  tick={{ fontSize: 12, fill: axis }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 12, fill: "#94a3b8" }}
+                  tick={{ fontSize: 12, fill: axis }}
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={(value) => `$${value}`}
@@ -175,7 +176,7 @@ export function DashboardCharts({ data }: { data: DashboardChartData }) {
                   type="monotone"
                   dataKey="revenue"
                   name="Revenue"
-                  stroke={BRAND}
+                  stroke={palette.brand}
                   strokeWidth={2}
                   fill="url(#revenueGradient)"
                 />
@@ -196,27 +197,24 @@ export function DashboardCharts({ data }: { data: DashboardChartData }) {
           ) : (
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={data.purchaseTrendByMonth} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
                 <XAxis
                   dataKey="month"
-                  tick={{ fontSize: 12, fill: "#94a3b8" }}
+                  tick={{ fontSize: 12, fill: axis }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   allowDecimals={false}
-                  tick={{ fontSize: 12, fill: "#94a3b8" }}
+                  tick={{ fontSize: 12, fill: axis }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <Tooltip content={<ChartTooltip />} />
-                <Legend
-                  iconType="circle"
-                  wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
-                />
-                <Bar dataKey="approved" name="Approved" fill={STATUS_COLORS.approved} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="pending" name="Pending" fill={STATUS_COLORS.pending} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="rejected" name="Rejected" fill={STATUS_COLORS.rejected} radius={[4, 4, 0, 0]} />
+                <Legend iconType="circle" wrapperStyle={legend} />
+                <Bar dataKey="approved" name="Approved" fill={palette.approved} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="pending" name="Pending" fill={palette.pending} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="rejected" name="Rejected" fill={palette.rejected} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -255,7 +253,7 @@ export function DashboardCharts({ data }: { data: DashboardChartData }) {
                         ))}
                       </Pie>
                       <Tooltip content={<ChartTooltip />} />
-                      <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                      <Legend iconType="circle" wrapperStyle={legend} />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
@@ -284,7 +282,7 @@ export function DashboardCharts({ data }: { data: DashboardChartData }) {
                         ))}
                       </Pie>
                       <Tooltip content={<ChartTooltip />} />
-                      <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                      <Legend iconType="circle" wrapperStyle={legend} />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (

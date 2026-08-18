@@ -9,7 +9,7 @@ export function Alert({
     <div
       className={cn(
         "rounded-lg border px-4 py-3 text-sm",
-        variant === "default" && "border-brand/25 bg-brand/10 text-gray-700",
+        variant === "default" && "border-brand/25 bg-brand/10 text-brand-dark",
         variant === "destructive" && "border-danger/25 bg-danger/5 text-danger",
         className
       )}

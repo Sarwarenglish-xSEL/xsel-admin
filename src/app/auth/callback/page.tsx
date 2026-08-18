@@ -76,7 +76,7 @@ export default function AuthCallbackPage() {
   }, [router]);
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-white px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-surface px-4">
       <p className="text-sm text-gray-600">{message}</p>
     </div>
   );

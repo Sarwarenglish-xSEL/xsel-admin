@@ -24,3 +24,22 @@ export const chartColors = {
   completed: colors.successLight,
   blocked: colors.danger,
 } as const;
+
+/** Brighter bars/slices that stay readable on the dark canvas */
+export const chartColorsDark = {
+  brand: "#6b9aff",
+  accent: "#3ec8ea",
+  success: "#4ade80",
+  successLight: "#86efac",
+  danger: "#f07171",
+  pending: "#3ec8ea",
+  approved: "#4ade80",
+  rejected: "#f07171",
+  active: "#6b9aff",
+  completed: "#86efac",
+  blocked: "#f07171",
+} as const;
+
+export function getChartColors(theme: "light" | "dark") {
+  return theme === "dark" ? chartColorsDark : chartColors;
+}
