@@ -156,7 +156,7 @@ export async function getUpcomingLiveLessons() {
   const { data, error } = await supabase
     .from("course_lessons")
     .select(
-      "*, chapter:course_chapters(id, title, course:courses(id, title))"
+      "*, chapter:course_chapters(id, title, batch_id, course:courses(id, title), batch:course_batches(id, name))"
     )
     .eq("lesson_type", "live")
     .order("live_start_time");

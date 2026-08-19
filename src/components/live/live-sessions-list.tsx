@@ -26,7 +26,9 @@ type LiveLesson = {
   status: string;
   chapter?: {
     title: string;
+    batch_id?: string | null;
     course?: { id: string; title: string };
+    batch?: { id: string; name: string } | null;
   };
 };
 
@@ -125,7 +127,13 @@ function LiveSessionCard({
     <Card className="overflow-hidden border-brand/20 shadow-sm">
       <SectionHeader
         title={lesson.title}
-        description={`${lesson.chapter?.course?.title ?? "Course"} · ${lesson.chapter?.title ?? "Chapter"}`}
+        description={[
+          lesson.chapter?.batch?.name,
+          lesson.chapter?.course?.title ?? "Course",
+          lesson.chapter?.title ?? "Chapter",
+        ]
+          .filter(Boolean)
+          .join(" · ")}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {isLiveNow && (

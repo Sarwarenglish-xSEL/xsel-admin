@@ -94,7 +94,7 @@ const columns: ColumnDef<Course>[] = [
   {
     accessorKey: "price",
     header: "Price",
-    cell: ({ row }) => `$${Number(row.original.price).toFixed(2)}`,
+    cell: ({ row }) => `Rs ${Number(row.original.price).toFixed(2)}`,
   },
   {
     accessorKey: "status",

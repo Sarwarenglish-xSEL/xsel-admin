@@ -200,7 +200,7 @@ export function CourseDetailsForm({
             <SectionLabel icon={Settings2}>Publishing</SectionLabel>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <Label>Price ($)</Label>
+                <Label>Price (Rs)</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -235,7 +235,9 @@ export function CourseDetailsForm({
                   defaultValue={course.instructor_id ?? ""}
                 >
                   <option value="">No instructor</option>
-                  {instructors.map((p) => (
+                  {instructors
+                    .filter((p) => p.role !== "superadmin")
+                    .map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.full_name || p.email}
                     </option>

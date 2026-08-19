@@ -124,7 +124,7 @@ export function CreateCourseDialog() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Price ($)</Label>
+                  <Label>Price (Rs)</Label>
                   <Input
                     type="number"
                     min={0}
