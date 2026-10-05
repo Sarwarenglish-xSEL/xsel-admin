@@ -1,27 +1,41 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import { toast } from "sonner";
 import {
   BookOpen,
   Calendar,
+  ChevronLeft,
   ChevronRight,
   Layers,
+  Loader2,
   Pencil,
   Radio,
+  Trash2,
   Users,
   Video,
 } from "lucide-react";
 import type { BatchStatus, Course, CourseBatch, CourseStatus } from "@/types/database";
+import { deleteBatchAction } from "@/app/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 type StatusFilter = "all" | CourseStatus;
 
 const PAGE_SIZE = 6;
+/** Batches shown per course column before using pager / “View all”. */
+const BATCHES_PREVIEW = 1;
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "All" },
@@ -128,6 +142,90 @@ function StatusFilterBar({
   );
 }
 
+function DeleteBatchDialog({
+  batch,
+  open,
+  onOpenChange,
+}: {
+  batch: CourseBatch;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const enrolled = (batch.enrollment_count ?? 0) > 0;
+
+  async function handleDelete() {
+    setLoading(true);
+    try {
+      await deleteBatchAction(batch.id);
+      toast.success(`Deleted "${batch.name}"`);
+      onOpenChange(false);
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete batch");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent onClose={() => onOpenChange(false)} className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Delete batch</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 px-1 pb-1">
+          <p className="text-sm text-gray-600">
+            Are you sure you want to delete{" "}
+            <span className="font-semibold text-brand-dark">{batch.name}</span>? This
+            removes chapters, lessons, and schedule for this batch.
+          </p>
+          {enrolled ? (
+            <p className="rounded-lg border border-danger/25 bg-danger/5 px-3 py-2 text-sm text-danger">
+              This batch has {batch.enrollment_count} enrolled student
+              {batch.enrollment_count === 1 ? "" : "s"}. Remove or move enrollments
+              before deleting.
+            </p>
+          ) : (
+            <p className="text-xs text-gray-500">This action cannot be undone.</p>
+          )}
+          <div className="flex justify-end gap-2 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={loading}
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
+              disabled={loading || enrolled}
+              onClick={handleDelete}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Deleting…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete batch
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function BatchCard({
   batch,
   tone,
@@ -136,6 +234,7 @@ function BatchCard({
   tone: SectionTone;
 }) {
   const theme = SECTION_THEME[tone];
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const seatLabel =
     batch.max_seats != null
       ? `${batch.enrollment_count ?? 0} / ${batch.max_seats}`
@@ -200,10 +299,121 @@ function BatchCard({
             Enrollments
             <ChevronRight className="h-3.5 w-3.5" />
           </Link>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-auto gap-1 border-danger/30 px-2.5 py-1.5 text-xs font-medium text-danger hover:bg-danger/5"
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete
+          </Button>
         </div>
       </div>
+      <DeleteBatchDialog
+        batch={batch}
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+      />
     </div>
   );
+}
+
+const ALL_BATCHES_GRID_SIZE = 9; // 3 columns × 3 rows per page
+
+function AllBatchesDialog({
+  course,
+  batches,
+  tone,
+  open,
+  onOpenChange,
+}: {
+  course: Course;
+  batches: CourseBatch[];
+  tone: SectionTone;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [page, setPage] = useState(0);
+
+  useEffect(() => {
+    if (!open) setPage(0);
+  }, [open]);
+
+  const pageCount = Math.max(1, Math.ceil(batches.length / ALL_BATCHES_GRID_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const pagedBatches = batches.slice(
+    safePage * ALL_BATCHES_GRID_SIZE,
+    safePage * ALL_BATCHES_GRID_SIZE + ALL_BATCHES_GRID_SIZE
+  );
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      className="w-[min(96vw,72rem)] max-w-[72rem]"
+    >
+      <DialogContent
+        onClose={() => onOpenChange(false)}
+        className="flex w-full max-h-[88vh] flex-col overflow-hidden p-0"
+      >
+        <div className="shrink-0 border-b border-brand/15 brand-gradient px-6 py-5 pr-12 sm:px-8">
+          <DialogHeader className="mb-0">
+            <DialogTitle className="text-xl">{course.title}</DialogTitle>
+            <p className="mt-1 text-sm text-brand/70">
+              All {batches.length} batch{batches.length === 1 ? "" : "es"} for this course
+            </p>
+          </DialogHeader>
+        </div>
+        <div className="brand-scrollbar min-h-0 flex-1 overflow-y-auto px-6 py-5 sm:px-8">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {pagedBatches.map((batch) => (
+              <BatchCard key={batch.id} batch={batch} tone={tone} />
+            ))}
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-col gap-3 border-t border-brand/15 bg-surface px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          {pageCount > 1 ? (
+            <div className="flex items-center justify-center gap-2 sm:justify-start">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={safePage === 0}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+              >
+                Previous
+              </Button>
+              <span className="text-xs font-medium text-brand/70">
+                Page {safePage + 1} of {pageCount}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={safePage >= pageCount - 1}
+                onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+              >
+                Next
+              </Button>
+            </div>
+          ) : (
+            <div />
+          )}
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function viewAllButtonClass(tone: SectionTone) {
+  return tone === "live"
+    ? "border-0 bg-accent-dark text-white shadow-sm shadow-accent/30 hover:bg-accent"
+    : "border-0 bg-brand text-white shadow-sm shadow-brand/25 hover:bg-brand-dark";
 }
 
 function CourseGroupCard({
@@ -212,6 +422,13 @@ function CourseGroupCard({
   tone,
 }: CourseWithBatches & { tone: SectionTone }) {
   const theme = SECTION_THEME[tone];
+  const [batchPage, setBatchPage] = useState(0);
+  const [allOpen, setAllOpen] = useState(false);
+
+  const batchCount = batches.length;
+  const safePage = Math.min(batchPage, Math.max(0, batchCount - 1));
+  const previewBatch = batchCount > 0 ? batches[safePage] : null;
+  const hasMultiple = batchCount > BATCHES_PREVIEW;
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-brand/20 bg-surface shadow-sm">
@@ -224,7 +441,7 @@ function CourseGroupCard({
         >
           <BookOpen className="h-5 w-5" />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <Link
             href={`/courses/${course.id}/edit`}
             className="block truncate text-base font-semibold text-brand-dark hover:text-brand"
@@ -236,28 +453,92 @@ function CourseGroupCard({
               {course.status}
             </Badge>
             <Badge variant="warning">
-              {batches.length} batch{batches.length === 1 ? "" : "es"}
+              {batchCount} batch{batchCount === 1 ? "" : "es"}
             </Badge>
           </div>
         </div>
-      </div>
-
-      <div className="flex flex-1 flex-col gap-3 p-3">
-        {batches.length === 0 ? (
-          <p
-            className={cn(
-              "flex flex-1 items-center justify-center rounded-lg border border-dashed px-4 py-8 text-center text-sm text-gray-500",
-              theme.emptyBg
-            )}
+        {hasMultiple && (
+          <Button
+            type="button"
+            size="sm"
+            className={cn("hidden shrink-0 text-xs font-semibold sm:inline-flex", viewAllButtonClass(tone))}
+            onClick={() => setAllOpen(true)}
           >
-            No batches yet for this course.
-          </p>
-        ) : (
-          batches.map((batch) => (
-            <BatchCard key={batch.id} batch={batch} tone={tone} />
-          ))
+            View all
+          </Button>
         )}
       </div>
+
+      <div className="flex flex-1 flex-col p-2.5 pb-2">
+        <div className="flex-1">
+          {batchCount === 0 ? (
+            <p
+              className={cn(
+                "flex h-full min-h-[10rem] items-center justify-center rounded-lg border border-dashed px-3 py-6 text-center text-xs text-gray-500",
+                theme.emptyBg
+              )}
+            >
+              No batches yet for this course.
+            </p>
+          ) : (
+            previewBatch && <BatchCard batch={previewBatch} tone={tone} />
+          )}
+        </div>
+
+        {batchCount > 0 && (
+          <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-brand/10 pt-1.5">
+            {hasMultiple ? (
+              <>
+                <div className="flex items-center gap-0.5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7"
+                    disabled={safePage === 0}
+                    aria-label="Previous batch"
+                    onClick={() => setBatchPage((p) => Math.max(0, p - 1))}
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </Button>
+                  <span className="min-w-[3.5rem] text-center text-[11px] font-medium text-brand/70">
+                    {safePage + 1} of {batchCount}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7"
+                    disabled={safePage >= batchCount - 1}
+                    aria-label="Next batch"
+                    onClick={() => setBatchPage((p) => Math.min(batchCount - 1, p + 1))}
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  className={cn("h-7 px-2.5 text-[11px] font-semibold", viewAllButtonClass(tone))}
+                  onClick={() => setAllOpen(true)}
+                >
+                  View all {batchCount} batches
+                </Button>
+              </>
+            ) : (
+              <span className="text-[11px] text-brand/45">1 batch</span>
+            )}
+          </div>
+        )}
+      </div>
+
+      <AllBatchesDialog
+        course={course}
+        batches={batches}
+        tone={tone}
+        open={allOpen}
+        onOpenChange={setAllOpen}
+      />
     </div>
   );
 }
@@ -369,7 +650,7 @@ function CourseTypeSection({
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {pagedGroups.map(({ course, batches }) => (
                 <CourseGroupCard
                   key={course.id}
