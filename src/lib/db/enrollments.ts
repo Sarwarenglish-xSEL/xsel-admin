@@ -1,4 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
+import { getAdminDataClient } from "@/lib/db/admin-client";
+import {
+  normalizePage,
+  normalizePageSize,
+  pageRange,
+  toPaginatedResult,
+  type PaginatedResult,
+} from "@/lib/db/pagination";
 import type { CourseEnrollment, EnrollmentStatus } from "@/types/database";
 
 function normalizeEnrollmentStatus(status: string): EnrollmentStatus {
@@ -19,26 +27,44 @@ function mapEnrollmentRow(row: CourseEnrollment): CourseEnrollment {
   };
 }
 
+const ENROLLMENT_LIST_SELECT =
+  "id, user_id, course_id, batch_id, purchase_id, status, progress, created_at, user:profiles(id, email, full_name), course:courses(id, title, course_type), batch:course_batches(id, name)";
+
 export async function getEnrollments(filters?: {
   courseId?: string;
   batchId?: string;
-}): Promise<CourseEnrollment[]> {
-  const supabase = await createClient();
+  page?: number;
+  pageSize?: number;
+}): Promise<PaginatedResult<CourseEnrollment>> {
+  const supabase = await getAdminDataClient();
+  const page = normalizePage(filters?.page);
+  const pageSize = normalizePageSize(filters?.pageSize);
+  const { from, to } = pageRange(page, pageSize);
+
   let query = supabase
     .from("course_enrollments")
-    .select("*, user:profiles(*), course:courses(*), batch:course_batches(*)")
-    .order("created_at", { ascending: false });
+    .select(ENROLLMENT_LIST_SELECT, { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
   if (filters?.courseId) query = query.eq("course_id", filters.courseId);
   if (filters?.batchId) query = query.eq("batch_id", filters.batchId);
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
   if (error) throw error;
-  return ((data ?? []) as CourseEnrollment[]).map(mapEnrollmentRow);
+  const rows = ((data ?? []) as unknown as CourseEnrollment[]).map(mapEnrollmentRow);
+  return toPaginatedResult(rows, count ?? 0, page, pageSize);
 }
 
 export async function getEnrollmentsByBatch(batchId: string): Promise<CourseEnrollment[]> {
-  return getEnrollments({ batchId });
+  const supabase = await getAdminDataClient();
+  const { data, error } = await supabase
+    .from("course_enrollments")
+    .select(ENROLLMENT_LIST_SELECT)
+    .eq("batch_id", batchId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return ((data ?? []) as unknown as CourseEnrollment[]).map(mapEnrollmentRow);
 }
 
 export async function createEnrollment(

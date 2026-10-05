@@ -1,7 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
+import { getAdminDataClient } from "@/lib/db/admin-client";
+import {
+  normalizePage,
+  normalizePageSize,
+  pageRange,
+  toPaginatedResult,
+  type PaginatedResult,
+} from "@/lib/db/pagination";
 import type { Purchase, PurchaseStatus } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
+
+const PURCHASE_LIST_SELECT =
+  "id, user_id, course_id, batch_id, amount, status, receipt_url, admin_note, created_at, approved_at, user:profiles(id, email, full_name), course:courses(id, title), batch:course_batches(id, name)";
 
 /** Prefer service role for public payment flow (no sign-in). */
 async function getPaymentDbClient(): Promise<SupabaseClient> {
@@ -11,11 +22,12 @@ async function getPaymentDbClient(): Promise<SupabaseClient> {
 }
 
 async function attachEnrollmentStatus(
-  purchases: Purchase[]
+  purchases: Purchase[],
+  client?: SupabaseClient
 ): Promise<Purchase[]> {
   if (purchases.length === 0) return purchases;
 
-  const supabase = await createClient();
+  const supabase = client ?? (await getAdminDataClient());
   const userIds = [...new Set(purchases.map((p) => p.user_id))];
   const { data: enrollments, error } = await supabase
     .from("course_enrollments")
@@ -76,30 +88,42 @@ async function getActiveEnrollment(
   return data;
 }
 
-export async function getPurchases(status?: PurchaseStatus): Promise<Purchase[]> {
-  const supabase = await createClient();
+export async function getPurchases(
+  status?: PurchaseStatus,
+  pageParams?: { page?: number; pageSize?: number }
+): Promise<PaginatedResult<Purchase>> {
+  const supabase = await getAdminDataClient();
+  const page = normalizePage(pageParams?.page);
+  const pageSize = normalizePageSize(pageParams?.pageSize);
+  const { from, to } = pageRange(page, pageSize);
+
   let query = supabase
     .from("purchases")
-    .select("*, user:profiles(*), course:courses(*), batch:course_batches(*)")
-    .order("created_at", { ascending: false });
+    .select(PURCHASE_LIST_SELECT, { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
   if (status) query = query.eq("status", status);
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
   if (error) throw error;
-  return attachEnrollmentStatus((data ?? []) as Purchase[]);
+  const withEnrollment = await attachEnrollmentStatus(
+    (data ?? []) as unknown as Purchase[],
+    supabase
+  );
+  return toPaginatedResult(withEnrollment, count ?? 0, page, pageSize);
 }
 
 export async function getRecentPendingPurchases(limit = 5): Promise<Purchase[]> {
-  const supabase = await createClient();
+  const supabase = await getAdminDataClient();
   const { data, error } = await supabase
     .from("purchases")
-    .select("*, user:profiles(*), course:courses(*), batch:course_batches(*)")
+    .select(PURCHASE_LIST_SELECT)
     .eq("status", "pending")
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
-  return attachEnrollmentStatus((data ?? []) as Purchase[]);
+  return attachEnrollmentStatus((data ?? []) as unknown as Purchase[], supabase);
 }
 
 export async function approvePurchase(purchaseId: string): Promise<void> {

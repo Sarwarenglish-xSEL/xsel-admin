@@ -15,7 +15,8 @@ import {
   Upload,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { Course, Profile } from "@/types/database";
+import type { Course } from "@/types/database";
+import type { ProfileOption } from "@/lib/db/profiles";
 import { updateCourseAction } from "@/app/actions";
 import { DEFAULT_LEARNING_OUTCOMES } from "@/lib/course-defaults";
 import { uploadFile } from "@/lib/db/storage";
@@ -95,7 +96,7 @@ export function CourseDetailsForm({
   instructors,
 }: {
   course: Course;
-  instructors: Profile[];
+  instructors: ProfileOption[];
 }) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);

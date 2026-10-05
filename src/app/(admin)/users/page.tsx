@@ -1,23 +1,28 @@
 import { getProfiles, getCurrentProfile } from "@/lib/db/profiles";
+import { parsePageParam } from "@/lib/db/pagination";
 import { canManageUsers } from "@/lib/permissions";
 import { PageHeader } from "@/components/layout/page-header";
 import { CreateUserDialog } from "@/components/users/create-user-dialog";
 import { UsersTable } from "@/components/users/users-table";
+import { ListPagination } from "@/components/list-pagination";
 import { PageEmpty } from "@/components/page-states";
 
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; page?: string }>;
 }) {
-  const { q } = await searchParams;
-  let users;
+  const { q, page: pageParam } = await searchParams;
+  const page = parsePageParam(pageParam);
+  let usersResult;
   let error: string | null = null;
   let currentProfile;
 
   try {
-    [currentProfile, users] = await Promise.all([getCurrentProfile(), getProfiles(q)]);
-    users = users.filter((user) => user.role !== "superadmin");
+    [currentProfile, usersResult] = await Promise.all([
+      getCurrentProfile(),
+      getProfiles(q, { page }),
+    ]);
   } catch (e) {
     error = e instanceof Error ? e.message : "Failed to load users";
   }
@@ -32,6 +37,7 @@ export default async function UsersPage({
   }
 
   const canManage = canManageUsers(currentProfile!.role);
+  const users = usersResult!.data;
 
   return (
     <div className="space-y-6">
@@ -44,7 +50,7 @@ export default async function UsersPage({
           ) : undefined
         }
       />
-      {users!.length === 0 ? (
+      {users.length === 0 ? (
         <PageEmpty
           title="No users found"
           description={
@@ -54,12 +60,21 @@ export default async function UsersPage({
           }
         />
       ) : (
-        <UsersTable
-          users={users!}
-          canManage={canManage}
-          currentUserId={currentProfile!.id}
-          currentUserRole={currentProfile!.role}
-        />
+        <div className="space-y-4">
+          <UsersTable
+            users={users}
+            canManage={canManage}
+            currentUserId={currentProfile!.id}
+            currentUserRole={currentProfile!.role}
+          />
+          <ListPagination
+            page={usersResult!.page}
+            totalPages={usersResult!.totalPages}
+            total={usersResult!.total}
+            pageSize={usersResult!.pageSize}
+            searchParams={{ q }}
+          />
+        </div>
       )}
     </div>
   );

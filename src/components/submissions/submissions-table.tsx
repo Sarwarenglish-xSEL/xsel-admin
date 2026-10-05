@@ -201,5 +201,5 @@ export function SubmissionsTable({
 }: {
   submissions: AssignmentSubmission[];
 }) {
-  return <DataTable columns={columns} data={submissions} />;
+  return <DataTable columns={columns} data={submissions} pageSize={50} hidePagination />;
 }

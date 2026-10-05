@@ -140,5 +140,5 @@ const columns: ColumnDef<QuizAttempt>[] = [
 ];
 
 export function QuizAttemptsTable({ attempts }: { attempts: QuizAttempt[] }) {
-  return <DataTable columns={columns} data={attempts} />;
+  return <DataTable columns={columns} data={attempts} pageSize={50} hidePagination />;
 }

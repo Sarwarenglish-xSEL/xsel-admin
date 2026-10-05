@@ -1,7 +1,9 @@
 import { getUserSessions, getUserSessionStats } from "@/lib/db/sessions";
 import type { SessionStatusFilter } from "@/lib/db/sessions";
+import { parsePageParam } from "@/lib/db/pagination";
 import { PageHeader } from "@/components/layout/page-header";
 import { PageEmpty } from "@/components/page-states";
+import { ListPagination } from "@/components/list-pagination";
 import { SessionStats } from "@/components/sessions/session-stats";
 import { SessionsTable } from "@/components/sessions/sessions-table";
 
@@ -13,18 +15,19 @@ function parseStatus(value?: string): SessionStatusFilter {
 export default async function SessionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; page?: string }>;
 }) {
-  const { status: statusParam } = await searchParams;
+  const { status: statusParam, page: pageParam } = await searchParams;
   const status = parseStatus(statusParam);
+  const page = parsePageParam(pageParam);
 
-  let sessions;
+  let sessionsResult;
   let stats;
   let error: string | null = null;
 
   try {
-    [sessions, stats] = await Promise.all([
-      getUserSessions(status),
+    [sessionsResult, stats] = await Promise.all([
+      getUserSessions(status, { page }),
       getUserSessionStats(),
     ]);
   } catch (e) {
@@ -43,6 +46,8 @@ export default async function SessionsPage({
     );
   }
 
+  const sessions = sessionsResult!.data;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -52,13 +57,22 @@ export default async function SessionsPage({
 
       <SessionStats {...stats!} />
 
-      {sessions!.length === 0 && status === "all" ? (
+      {sessions.length === 0 && status === "all" && page === 1 ? (
         <PageEmpty
           title="No sessions found"
           description="User sessions will appear here once the app reports device activity."
         />
       ) : (
-        <SessionsTable sessions={sessions!} status={status} />
+        <div className="space-y-4">
+          <SessionsTable sessions={sessions} status={status} />
+          <ListPagination
+            page={sessionsResult!.page}
+            totalPages={sessionsResult!.totalPages}
+            total={sessionsResult!.total}
+            pageSize={sessionsResult!.pageSize}
+            searchParams={{ status: status === "all" ? undefined : status }}
+          />
+        </div>
       )}
     </div>
   );

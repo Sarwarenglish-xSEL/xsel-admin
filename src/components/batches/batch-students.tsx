@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { Plus, Users } from "lucide-react";
 import { toast } from "sonner";
-import type { CourseEnrollment, Profile } from "@/types/database";
+import type { CourseEnrollment } from "@/types/database";
+import type { ProfileOption } from "@/lib/db/profiles";
 import { createEnrollmentAction, updateEnrollmentStatusAction } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -30,7 +31,7 @@ function EnrollStudentDialog({
 }: {
   courseId: string;
   batchId: string;
-  users: Profile[];
+  users: ProfileOption[];
 }) {
   const [open, setOpen] = useState(false);
   const [userId, setUserId] = useState("");
@@ -111,7 +112,7 @@ export function BatchStudents({
   courseId: string;
   batchId: string;
   enrollments: CourseEnrollment[];
-  users: Profile[];
+  users: ProfileOption[];
 }) {
   const router = useRouter();
   const activeCount = enrollments.filter((e) => e.status === "active").length;

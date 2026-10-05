@@ -28,6 +28,7 @@ function StatusFilter({ status }: { status?: string }) {
           const params = new URLSearchParams(window.location.search);
           if (e.target.value === "all") params.delete("status");
           else params.set("status", e.target.value);
+          params.delete("page");
           window.location.search = params.toString();
         }}
       >
@@ -236,7 +237,7 @@ export function PurchasesTable({
     <div className="space-y-4">
       <StatusFilter status={status} />
       <div className="overflow-x-auto">
-        <DataTable columns={columns} data={purchases} />
+        <DataTable columns={columns} data={purchases} pageSize={50} hidePagination />
       </div>
     </div>
   );

@@ -12,8 +12,8 @@ import type {
   CourseEnrollment,
   CourseType,
   EnrollmentStatus,
-  Profile,
 } from "@/types/database";
+import type { ProfileOption } from "@/lib/db/profiles";
 import { DataTable } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -109,7 +109,7 @@ function EnrollDialog({
   courses,
   batches,
 }: {
-  users: Profile[];
+  users: ProfileOption[];
   courses: Course[];
   batches: CourseBatch[];
 }) {
@@ -334,7 +334,7 @@ export function EnrollmentsTable({
   initialBatchId,
 }: {
   enrollments: CourseEnrollment[];
-  users: Profile[];
+  users: ProfileOption[];
   courses: Course[];
   batches: CourseBatch[];
   initialCourseId?: string;
@@ -351,7 +351,7 @@ export function EnrollmentsTable({
         />
         <EnrollDialog users={users} courses={courses} batches={batches} />
       </div>
-      <DataTable columns={columns} data={enrollments} />
+      <DataTable columns={columns} data={enrollments} pageSize={50} hidePagination />
     </div>
   );
 }

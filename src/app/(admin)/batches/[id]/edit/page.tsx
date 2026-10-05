@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
 import { getBatchById } from "@/lib/db/batches";
 import { getChaptersWithLessons } from "@/lib/db/chapters";
-import { getEnrollments } from "@/lib/db/enrollments";
-import { getProfiles } from "@/lib/db/profiles";
+import { getEnrollmentsByBatch } from "@/lib/db/enrollments";
+import { getProfileOptions } from "@/lib/db/profiles";
 import { BatchSettingsForm } from "@/components/batches/batch-settings-form";
 import { BatchStudents } from "@/components/batches/batch-students";
 import { ChaptersLessonsEditor } from "@/components/courses/chapters-lessons-editor";
@@ -30,8 +30,8 @@ export default async function EditBatchPage({
     if (batch) {
       [chapters, enrollments, users] = await Promise.all([
         getChaptersWithLessons(id),
-        getEnrollments({ batchId: id }),
-        getProfiles(),
+        getEnrollmentsByBatch(id),
+        getProfileOptions(),
       ]);
     }
   } catch (e) {

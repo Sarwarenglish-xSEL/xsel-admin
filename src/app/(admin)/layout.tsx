@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/db/profiles";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AdminModuleGuard } from "@/components/layout/admin-module-guard";
+import { NavigationProgress } from "@/components/layout/navigation-progress";
 import { ThemedToaster } from "@/components/theme/themed-toaster";
 import {
   canAccessPortal,
@@ -26,6 +27,7 @@ export default async function AdminLayout({
 
   return (
     <div className="flex min-h-screen bg-background">
+      <NavigationProgress />
       <AppSidebar profile={profile} accessibleModules={accessibleModules} />
       <main className="flex-1 overflow-auto">
         <div className="w-full px-5 py-6 lg:px-8 lg:py-8">

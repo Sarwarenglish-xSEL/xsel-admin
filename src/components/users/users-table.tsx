@@ -287,6 +287,8 @@ export function UsersTable({
       searchKey="email"
       searchPlaceholder="Search by name or email..."
       fixedLayout
+      pageSize={50}
+      hidePagination
     />
   );
 }

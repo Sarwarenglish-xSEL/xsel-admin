@@ -1,5 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAdminDataClient } from "@/lib/db/admin-client";
+import {
+  normalizePage,
+  normalizePageSize,
+  pageRange,
+  toPaginatedResult,
+  type PaginatedResult,
+} from "@/lib/db/pagination";
 import type { Profile, UserSession } from "@/types/database";
 
 export type SessionStatusFilter = "all" | "online" | "offline";
@@ -9,28 +16,35 @@ export type UserSessionWithProfile = UserSession & {
 };
 
 export async function getUserSessions(
-  status: SessionStatusFilter = "all"
-): Promise<UserSessionWithProfile[]> {
+  status: SessionStatusFilter = "all",
+  pageParams?: { page?: number; pageSize?: number }
+): Promise<PaginatedResult<UserSessionWithProfile>> {
   const supabase = await getAdminDataClient();
+  const page = normalizePage(pageParams?.page);
+  const pageSize = normalizePageSize(pageParams?.pageSize);
+  const { from, to } = pageRange(page, pageSize);
 
   let query = supabase
     .from("user_sessions")
-    .select("*")
-    .order("last_seen_at", { ascending: false });
+    .select("*", { count: "exact" })
+    .order("last_seen_at", { ascending: false })
+    .range(from, to);
 
   if (status === "online") query = query.eq("is_online", true);
   if (status === "offline") query = query.eq("is_online", false);
 
-  const { data: sessions, error } = await query;
+  const { data: sessions, error, count } = await query;
   if (error) throw error;
 
   const rows = (sessions ?? []) as UserSession[];
-  if (rows.length === 0) return [];
+  if (rows.length === 0) {
+    return toPaginatedResult([], count ?? 0, page, pageSize);
+  }
 
   const userIds = [...new Set(rows.map((row) => row.user_id))];
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
-    .select("*")
+    .select("id, email, full_name, role, registered_device_model, registered_os, registered_app_version")
     .in("id", userIds);
 
   if (profilesError) throw profilesError;
@@ -39,14 +53,16 @@ export async function getUserSessions(
     ((profiles ?? []) as Profile[]).map((profile) => [profile.id, profile])
   );
 
-  return rows.map((session) => ({
+  const data = rows.map((session) => ({
     ...session,
     user: profileById.get(session.user_id) ?? null,
   }));
+
+  return toPaginatedResult(data, count ?? 0, page, pageSize);
 }
 
 export async function getUserSessionStats() {
-  const supabase = await createClient();
+  const supabase = await getAdminDataClient();
   const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
   const [total, online, recent] = await Promise.all([

@@ -38,7 +38,14 @@ export default async function DashboardPage() {
       getAppSetting("is_course_published").then((v) => v !== "true"),
     ]);
   } catch (e) {
-    error = e instanceof Error ? e.message : "Failed to load dashboard";
+    if (e instanceof Error && e.message) {
+      error = e.message;
+    } else if (e && typeof e === "object" && "message" in e && typeof (e as { message: unknown }).message === "string") {
+      error = (e as { message: string }).message;
+    } else {
+      error = "Failed to load dashboard";
+    }
+    console.error("[dashboard]", e);
   }
 
   const isSuperadmin = currentProfile?.role === "superadmin";

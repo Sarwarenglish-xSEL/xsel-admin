@@ -32,6 +32,10 @@ interface DataTableProps<TData, TValue> {
   searchPlaceholder?: string;
   toolbar?: React.ReactNode;
   fixedLayout?: boolean;
+  /** Rows per client page. Use a large value when server pagination is used. */
+  pageSize?: number;
+  /** Hide built-in pager when the parent provides server pagination. */
+  hidePagination?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -41,13 +45,18 @@ export function DataTable<TData, TValue>({
   searchPlaceholder = "Search...",
   toolbar,
   fixedLayout = false,
+  pageSize = 10,
+  hidePagination = false,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: hidePagination ? undefined : getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    initialState: {
+      pagination: { pageSize, pageIndex: 0 },
+    },
   });
 
   return (
@@ -125,34 +134,36 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
 
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs text-gray-500">
-          {table.getFilteredRowModel().rows.length} result
-          {table.getFilteredRowModel().rows.length === 1 ? "" : "s"}
-        </p>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <span className="text-sm text-gray-500">
-            Page {table.getState().pagination.pageIndex + 1} of{" "}
-            {table.getPageCount() || 1}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
+      {!hidePagination && (
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs text-gray-500">
+            {table.getFilteredRowModel().rows.length} result
+            {table.getFilteredRowModel().rows.length === 1 ? "" : "s"}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-gray-500">
+              Page {table.getState().pagination.pageIndex + 1} of{" "}
+              {table.getPageCount() || 1}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              Next
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

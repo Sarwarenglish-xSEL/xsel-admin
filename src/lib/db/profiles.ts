@@ -1,4 +1,3 @@
-import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient, createStandaloneAnonClient } from "@/lib/supabase/admin";
 import { DEFAULT_USER_PASSWORD } from "@/lib/user-defaults";
@@ -8,39 +7,57 @@ import {
   type AdminModule,
 } from "@/lib/permissions";
 import { getAdminDataClient } from "@/lib/db/admin-client";
+import { getCurrentProfile } from "@/lib/db/current-profile";
+import {
+  normalizePage,
+  normalizePageSize,
+  pageRange,
+  toPaginatedResult,
+  type PaginatedResult,
+} from "@/lib/db/pagination";
 import type { Profile } from "@/types/database";
 
-export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+export { getCurrentProfile };
 
-  const { data } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+export type ProfileOption = Pick<Profile, "id" | "email" | "full_name" | "role">;
 
-  return data;
-});
-
-export async function getProfiles(search?: string): Promise<Profile[]> {
+export async function getProfiles(
+  search?: string,
+  pageParams?: { page?: number; pageSize?: number }
+): Promise<PaginatedResult<Profile>> {
   const supabase = await getAdminDataClient();
+  const page = normalizePage(pageParams?.page);
+  const pageSize = normalizePageSize(pageParams?.pageSize);
+  const { from, to } = pageRange(page, pageSize);
+
   let query = supabase
     .from("profiles")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("*", { count: "exact" })
+    .neq("role", "superadmin")
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
   if (search?.trim()) {
     const term = `%${search.trim()}%`;
     query = query.or(`email.ilike.${term},full_name.ilike.${term}`);
   }
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
   if (error) throw error;
-  return data ?? [];
+  return toPaginatedResult((data ?? []) as Profile[], count ?? 0, page, pageSize);
+}
+
+/** Lightweight list for dropdowns (manual enroll, certificates, etc.). */
+export async function getProfileOptions(): Promise<ProfileOption[]> {
+  const supabase = await getAdminDataClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, email, full_name, role")
+    .neq("role", "superadmin")
+    .order("full_name")
+    .limit(500);
+  if (error) throw error;
+  return (data ?? []) as ProfileOption[];
 }
 
 export async function updateUserRole(
@@ -225,14 +242,15 @@ export async function deleteUser(userId: string): Promise<UserMutationResult> {
   return { ok: true };
 }
 
-export async function getStaffProfiles(): Promise<Profile[]> {
+export async function getStaffProfiles(): Promise<ProfileOption[]> {
   const supabase = await getAdminDataClient();
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select("id, email, full_name, role")
+    .in("role", ["superadmin", "admin", "manager"])
     .order("full_name");
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as ProfileOption[];
 }
 
 export async function createUser(

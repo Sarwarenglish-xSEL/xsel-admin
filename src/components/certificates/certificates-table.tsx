@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import type { Certificate, Course, CourseEnrollment, Profile } from "@/types/database";
+import type { Certificate, Course, CourseEnrollment } from "@/types/database";
+import type { ProfileOption } from "@/lib/db/profiles";
 import { DataTable } from "@/components/data-table";
 import { PageEmpty } from "@/components/page-states";
 import { Badge } from "@/components/ui/badge";
@@ -68,7 +69,7 @@ function IssueCertificateDialog({
   open,
   onOpenChange,
 }: {
-  users: Profile[];
+  users: ProfileOption[];
   courses: Course[];
   target: IssueTarget | null;
   open: boolean;
@@ -176,7 +177,7 @@ export function CertificatesTable({
 }: {
   certificates: Certificate[];
   eligible: CourseEnrollment[];
-  users: Profile[];
+  users: ProfileOption[];
   courses: Course[];
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -255,7 +256,7 @@ export function CertificatesTable({
                 description="Users appear here when their course progress reaches 100% and a certificate has not been issued yet."
               />
             ) : (
-              <DataTable columns={eligibleColumns} data={eligible} />
+              <DataTable columns={eligibleColumns} data={eligible} pageSize={50} hidePagination />
             )}
           </TabsContent>
 
@@ -266,7 +267,7 @@ export function CertificatesTable({
                 description="Issue a certificate from the Eligible tab."
               />
             ) : (
-              <DataTable columns={issuedColumns} data={certificates} />
+              <DataTable columns={issuedColumns} data={certificates} pageSize={50} hidePagination />
             )}
           </TabsContent>
         </Tabs>

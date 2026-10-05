@@ -1,18 +1,44 @@
-import { createClient } from "@/lib/supabase/server";
+import { getAdminDataClient } from "@/lib/db/admin-client";
+import {
+  normalizePage,
+  normalizePageSize,
+  pageRange,
+  toPaginatedResult,
+  type PaginatedResult,
+} from "@/lib/db/pagination";
 import type { Certificate, CourseEnrollment } from "@/types/database";
 
-export async function getCertificates(): Promise<Certificate[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
+const CERT_LIST_SELECT =
+  "id, user_id, course_id, certificate_url, issued_at, user:profiles(id, email, full_name), course:courses(id, title)";
+
+const ELIGIBLE_SELECT =
+  "id, user_id, course_id, batch_id, status, progress, created_at, user:profiles(id, email, full_name), course:courses(id, title), batch:course_batches(id, name)";
+
+export async function getCertificates(pageParams?: {
+  page?: number;
+  pageSize?: number;
+}): Promise<PaginatedResult<Certificate>> {
+  const supabase = await getAdminDataClient();
+  const page = normalizePage(pageParams?.page);
+  const pageSize = normalizePageSize(pageParams?.pageSize);
+  const { from, to } = pageRange(page, pageSize);
+
+  const { data, error, count } = await supabase
     .from("certificates")
-    .select("*, user:profiles(*), course:courses(*)")
-    .order("issued_at", { ascending: false });
+    .select(CERT_LIST_SELECT, { count: "exact" })
+    .order("issued_at", { ascending: false })
+    .range(from, to);
   if (error) throw error;
-  return (data ?? []) as Certificate[];
+  return toPaginatedResult(
+    (data ?? []) as unknown as Certificate[],
+    count ?? 0,
+    page,
+    pageSize
+  );
 }
 
 export async function getEligibleCertificateEnrollments(): Promise<CourseEnrollment[]> {
-  const supabase = await createClient();
+  const supabase = await getAdminDataClient();
 
   const [
     { data: enrollments, error: enrollError },
@@ -20,9 +46,10 @@ export async function getEligibleCertificateEnrollments(): Promise<CourseEnrollm
   ] = await Promise.all([
     supabase
       .from("course_enrollments")
-      .select("*, user:profiles(*), course:courses(*), batch:course_batches(*)")
+      .select(ELIGIBLE_SELECT)
       .eq("progress", 100)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(200),
     supabase.from("certificates").select("user_id, course_id"),
   ]);
 
@@ -36,7 +63,7 @@ export async function getEligibleCertificateEnrollments(): Promise<CourseEnrollm
   const seen = new Set<string>();
   const eligible: CourseEnrollment[] = [];
 
-  for (const row of (enrollments ?? []) as CourseEnrollment[]) {
+  for (const row of (enrollments ?? []) as unknown as CourseEnrollment[]) {
     const status = String(row.status);
     if (status === "blocked" || status === "revoked") continue;
     const key = `${row.user_id}:${row.course_id}`;
@@ -53,7 +80,7 @@ export async function issueCertificate(
   courseId: string,
   certificateUrl: string
 ): Promise<Certificate> {
-  const supabase = await createClient();
+  const supabase = await getAdminDataClient();
   const { data, error } = await supabase
     .from("certificates")
     .upsert(

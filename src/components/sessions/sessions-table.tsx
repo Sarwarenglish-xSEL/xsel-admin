@@ -22,6 +22,7 @@ function StatusFilter({ status }: { status: SessionStatusFilter }) {
           const params = new URLSearchParams(window.location.search);
           if (e.target.value === "all") params.delete("status");
           else params.set("status", e.target.value);
+          params.delete("page");
           window.location.search = params.toString();
         }}
       >
@@ -174,6 +175,8 @@ export function SessionsTable({
       searchKey="user"
       searchPlaceholder="Search by name or email..."
       toolbar={<StatusFilter status={status} />}
+      pageSize={50}
+      hidePagination
     />
   );
 }
