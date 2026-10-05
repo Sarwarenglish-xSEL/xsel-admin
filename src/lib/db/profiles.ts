@@ -47,7 +47,7 @@ export async function updateUserRole(
   userId: string,
   role: Profile["role"]
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = await getAdminDataClient();
   const { error } = await supabase
     .from("profiles")
     .update({ role })
@@ -90,7 +90,7 @@ export async function updateManagerModules(
   userId: string,
   modules: AdminModule[]
 ): Promise<UserMutationResult> {
-  const supabase = await createClient();
+  const supabase = await getAdminDataClient();
   const { error } = await supabase
     .from("profiles")
     .update({ allowed_modules: modules })
@@ -116,15 +116,19 @@ export async function updateUser(
   const roleError = validateRoleChange(manager, userId, input.role);
   if (roleError) return roleError;
 
-  const supabase = await createClient();
+  // Use admin/service client — profiles RLS typically only exposes the caller's own row.
+  const supabase = await getAdminDataClient();
   const { data: existing, error: fetchError } = await supabase
     .from("profiles")
     .select("email, role")
     .eq("id", userId)
-    .single();
+    .maybeSingle();
 
-  if (fetchError || !existing) {
-    return { ok: false, message: fetchError?.message ?? "User not found" };
+  if (fetchError) {
+    return { ok: false, message: fetchError.message };
+  }
+  if (!existing) {
+    return { ok: false, message: "User not found" };
   }
 
   if (!canAssignRole(manager.role, existing.role as Profile["role"])) {
@@ -147,7 +151,7 @@ export async function updateUser(
     role: input.role,
   };
 
-  if (typeof input.device_transfer_count === "number") {
+  if (typeof input.device_transfer_count === "number" && !Number.isNaN(input.device_transfer_count)) {
     profileUpdate.device_transfer_count = Math.min(
       2,
       Math.max(0, Math.trunc(input.device_transfer_count))
@@ -190,15 +194,18 @@ export async function deleteUser(userId: string): Promise<UserMutationResult> {
     return { ok: false, message: "You cannot delete your own account" };
   }
 
-  const supabase = await createClient();
+  const supabase = await getAdminDataClient();
   const { data: target, error: fetchError } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", userId)
-    .single();
+    .maybeSingle();
 
-  if (fetchError || !target) {
-    return { ok: false, message: fetchError?.message ?? "User not found" };
+  if (fetchError) {
+    return { ok: false, message: fetchError.message };
+  }
+  if (!target) {
+    return { ok: false, message: "User not found" };
   }
 
   if (!canAssignRole(manager.role, target.role as Profile["role"])) {
