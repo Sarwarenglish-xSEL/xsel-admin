@@ -11,7 +11,20 @@ import { getDashboardChartData } from "@/lib/db/dashboard";
 import { getRecentPendingPurchases } from "@/lib/db/purchases";
 import { getCurrentProfile } from "@/lib/db/profiles";
 import { getAppSetting } from "@/lib/db/app-settings";
-import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
+import dynamic from "next/dynamic";
+
+const DashboardCharts = dynamic(
+  () =>
+    import("@/components/dashboard/dashboard-charts").then((m) => m.DashboardCharts),
+  {
+    loading: () => (
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="h-72 animate-pulse rounded-xl border border-brand/15 bg-brand/[0.04]" />
+        <div className="h-72 animate-pulse rounded-xl border border-brand/15 bg-brand/[0.04]" />
+      </div>
+    ),
+  }
+);
 import { AppStatusToggle } from "@/components/dashboard/app-status-toggle";
 import { PageHeader, SectionHeader } from "@/components/layout/page-header";
 import { Card, CardContent } from "@/components/ui/card";

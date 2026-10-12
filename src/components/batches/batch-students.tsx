@@ -6,8 +6,8 @@ import { format } from "date-fns";
 import { Plus, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { CourseEnrollment } from "@/types/database";
-import type { ProfileOption } from "@/lib/db/profiles";
 import { createEnrollmentAction, updateEnrollmentStatusAction } from "@/app/actions";
+import { useLazyProfileOptions } from "@/components/use-lazy-profile-options";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -27,16 +27,16 @@ import {
 function EnrollStudentDialog({
   courseId,
   batchId,
-  users,
 }: {
   courseId: string;
   batchId: string;
-  users: ProfileOption[];
 }) {
   const [open, setOpen] = useState(false);
   const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { users, loading: usersLoading, error: usersError } =
+    useLazyProfileOptions(open);
 
   return (
     <>
@@ -65,14 +65,25 @@ function EnrollStudentDialog({
           <div className="space-y-5 px-6 py-5 sm:px-7">
             <div>
               <Label>Student</Label>
-              <Select className="w-full" value={userId} onChange={(e) => setUserId(e.target.value)}>
-                <option value="">Select student</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.full_name ? `${u.full_name} (${u.email})` : u.email}
+              {usersError ? (
+                <p className="mt-1 text-sm text-danger">{usersError}</p>
+              ) : (
+                <Select
+                  className="w-full"
+                  value={userId}
+                  disabled={usersLoading}
+                  onChange={(e) => setUserId(e.target.value)}
+                >
+                  <option value="">
+                    {usersLoading ? "Loading students..." : "Select student"}
                   </option>
-                ))}
-              </Select>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.full_name ? `${u.full_name} (${u.email})` : u.email}
+                    </option>
+                  ))}
+                </Select>
+              )}
             </div>
           </div>
           <div className="flex shrink-0 justify-end border-t border-brand/15 bg-surface px-6 py-4 sm:px-7">
@@ -107,12 +118,10 @@ export function BatchStudents({
   courseId,
   batchId,
   enrollments,
-  users,
 }: {
   courseId: string;
   batchId: string;
   enrollments: CourseEnrollment[];
-  users: ProfileOption[];
 }) {
   const router = useRouter();
   const activeCount = enrollments.filter((e) => e.status === "active").length;
@@ -123,7 +132,7 @@ export function BatchStudents({
         title="Batch students"
         description={`${enrollments.length} enrolled · ${activeCount} active`}
         actions={
-          <EnrollStudentDialog courseId={courseId} batchId={batchId} users={users} />
+          <EnrollStudentDialog courseId={courseId} batchId={batchId} />
         }
       />
       <CardContent className="p-0">

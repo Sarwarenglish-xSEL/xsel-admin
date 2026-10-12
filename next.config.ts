@@ -7,7 +7,12 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "6mb",
     },
-    optimizePackageImports: ["lucide-react", "date-fns", "@tanstack/react-table"],
+    optimizePackageImports: [
+      "lucide-react",
+      "date-fns",
+      "@tanstack/react-table",
+      "recharts",
+    ],
   },
   images: {
     remotePatterns: [

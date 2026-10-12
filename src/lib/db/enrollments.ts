@@ -30,9 +30,23 @@ function mapEnrollmentRow(row: CourseEnrollment): CourseEnrollment {
 const ENROLLMENT_LIST_SELECT =
   "id, user_id, course_id, batch_id, purchase_id, status, progress, created_at, user:profiles(id, email, full_name), course:courses(id, title, course_type), batch:course_batches(id, name)";
 
+async function findIdsByIlike(
+  table: "profiles" | "courses" | "course_batches",
+  columns: string[],
+  search: string
+): Promise<string[]> {
+  const supabase = await getAdminDataClient();
+  const term = `%${search.trim()}%`;
+  const filter = columns.map((col) => `${col}.ilike.${term}`).join(",");
+  const { data, error } = await supabase.from(table).select("id").or(filter);
+  if (error) throw error;
+  return (data ?? []).map((row) => row.id as string);
+}
+
 export async function getEnrollments(filters?: {
   courseId?: string;
   batchId?: string;
+  search?: string;
   page?: number;
   pageSize?: number;
 }): Promise<PaginatedResult<CourseEnrollment>> {
@@ -40,6 +54,40 @@ export async function getEnrollments(filters?: {
   const page = normalizePage(filters?.page);
   const pageSize = normalizePageSize(filters?.pageSize);
   const { from, to } = pageRange(page, pageSize);
+  const search = filters?.search?.trim();
+
+  if (search) {
+    const [userIds, courseIds, batchIds] = await Promise.all([
+      findIdsByIlike("profiles", ["email", "full_name"], search),
+      findIdsByIlike("courses", ["title"], search),
+      findIdsByIlike("course_batches", ["name"], search),
+    ]);
+    if (userIds.length === 0 && courseIds.length === 0 && batchIds.length === 0) {
+      return toPaginatedResult([], 0, page, pageSize);
+    }
+
+    const clauses: string[] = [];
+    if (userIds.length) clauses.push(`user_id.in.(${userIds.join(",")})`);
+    if (courseIds.length) clauses.push(`course_id.in.(${courseIds.join(",")})`);
+    if (batchIds.length) clauses.push(`batch_id.in.(${batchIds.join(",")})`);
+
+    let query = supabase
+      .from("course_enrollments")
+      .select(ENROLLMENT_LIST_SELECT, { count: "exact" })
+      .or(clauses.join(","))
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (filters?.courseId) query = query.eq("course_id", filters.courseId);
+    if (filters?.batchId) query = query.eq("batch_id", filters.batchId);
+
+    const { data, error, count } = await query;
+    if (error) throw error;
+    const rows = ((data ?? []) as unknown as CourseEnrollment[]).map(
+      mapEnrollmentRow
+    );
+    return toPaginatedResult(rows, count ?? 0, page, pageSize);
+  }
 
   let query = supabase
     .from("course_enrollments")

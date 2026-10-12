@@ -4,7 +4,6 @@ import { ArrowUpRight } from "lucide-react";
 import { getBatchById } from "@/lib/db/batches";
 import { getChaptersWithLessons } from "@/lib/db/chapters";
 import { getEnrollmentsByBatch } from "@/lib/db/enrollments";
-import { getProfileOptions } from "@/lib/db/profiles";
 import { BatchSettingsForm } from "@/components/batches/batch-settings-form";
 import { BatchStudents } from "@/components/batches/batch-students";
 import { ChaptersLessonsEditor } from "@/components/courses/chapters-lessons-editor";
@@ -22,16 +21,14 @@ export default async function EditBatchPage({
   let batch;
   let chapters;
   let enrollments;
-  let users;
   let error: string | null = null;
 
   try {
     batch = await getBatchById(id);
     if (batch) {
-      [chapters, enrollments, users] = await Promise.all([
+      [chapters, enrollments] = await Promise.all([
         getChaptersWithLessons(id),
         getEnrollmentsByBatch(id),
-        getProfileOptions(),
       ]);
     }
   } catch (e) {
@@ -115,7 +112,6 @@ export default async function EditBatchPage({
             courseId={batch.course_id}
             batchId={id}
             enrollments={enrollments!}
-            users={users!}
           />
         </TabsContent>
       </Tabs>

@@ -17,13 +17,14 @@ import {
   Video,
 } from "lucide-react";
 import { toast } from "sonner";
-import type {
-  AssignmentType,
-  CourseChapter,
-  CourseLesson,
-  LessonType,
-  QuizOption,
-  QuizType,
+import {
+  ADMIN_ASSIGNMENT_TYPE_OPTIONS,
+  type AssignmentType,
+  type CourseChapter,
+  type CourseLesson,
+  type LessonType,
+  type QuizOption,
+  type QuizType,
 } from "@/types/database";
 import {
   createChapterAction,
@@ -36,7 +37,14 @@ import {
   reorderLessonsAction,
   createQuizAction,
   createAssignmentAction,
+  saveQuizAction,
+  saveAssignmentAction,
+  deleteQuizAction,
+  deleteAssignmentAction,
 } from "@/app/actions";
+
+type LessonQuiz = NonNullable<CourseLesson["quizzes"]>[number];
+type LessonAssignment = NonNullable<CourseLesson["assignments"]>[number];
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -74,10 +82,12 @@ export function ChaptersLessonsEditor({
     lessonId: string;
     lessonTitle: string;
     hasVideoQuiz: boolean;
+    quiz?: LessonQuiz;
   } | null>(null);
   const [assignmentDialog, setAssignmentDialog] = useState<{
     lessonId: string;
     lessonTitle: string;
+    assignment?: LessonAssignment;
   } | null>(null);
   const router = useRouter();
 
@@ -452,25 +462,95 @@ export function ChaptersLessonsEditor({
                             ) : (
                               <div className="flex flex-col gap-1.5">
                                 {quizzes.map((quiz) => (
-                                  <Link
+                                  <div
                                     key={quiz.id}
-                                    href={`/batches/${batchId}/lessons/${lesson.id}/quiz/${quiz.id}`}
                                     className={cn(
-                                      "group flex items-center gap-2 rounded-md border border-gray-200 px-2.5 py-2",
-                                      "text-sm text-gray-700 transition-colors hover:border-brand/30 hover:bg-brand/10 hover:text-brand"
+                                      "flex items-center gap-1 rounded-md border border-gray-200 px-2 py-1.5",
+                                      "text-sm text-gray-700"
                                     )}
                                   >
-                                    <FileQuestion className="h-3.5 w-3.5 shrink-0 text-gray-400 group-hover:text-brand" />
-                                    <span className="min-w-0 flex-1 truncate font-medium">
-                                      {quiz.title}
-                                    </span>
+                                    <Link
+                                      href={`/batches/${batchId}/lessons/${lesson.id}/quiz/${quiz.id}`}
+                                      className="group flex min-w-0 flex-1 items-center gap-2 rounded-md px-0.5 py-0.5 transition-colors hover:text-brand"
+                                    >
+                                      <FileQuestion className="h-3.5 w-3.5 shrink-0 text-gray-400 group-hover:text-brand" />
+                                      <span className="min-w-0 flex-1 truncate font-medium">
+                                        {quiz.title}
+                                      </span>
+                                    </Link>
                                     <Badge
                                       variant="outline"
                                       className="shrink-0 capitalize"
                                     >
                                       {quiz.quiz_type}
                                     </Badge>
-                                  </Link>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      title="Edit quiz"
+                                      className="h-7 w-7 shrink-0"
+                                      onClick={() =>
+                                        setQuizDialog({
+                                          lessonId: lesson.id,
+                                          lessonTitle: lesson.title,
+                                          hasVideoQuiz: quizzes.some(
+                                            (q) =>
+                                              q.quiz_type === "video" &&
+                                              q.id !== quiz.id
+                                          ),
+                                          quiz,
+                                        })
+                                      }
+                                    >
+                                      <Pencil className="h-3.5 w-3.5" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      title="Delete quiz"
+                                      className="h-7 w-7 shrink-0 text-danger hover:bg-danger/10 hover:text-danger"
+                                      onClick={async () => {
+                                        if (!confirm("Delete this quiz?"))
+                                          return;
+                                        try {
+                                          await deleteQuizAction(
+                                            batchId,
+                                            lesson.id,
+                                            quiz.id
+                                          );
+                                          setChapters((prev) =>
+                                            prev.map((ch) => ({
+                                              ...ch,
+                                              lessons: (ch.lessons ?? []).map(
+                                                (l) =>
+                                                  l.id === lesson.id
+                                                    ? {
+                                                        ...l,
+                                                        quizzes: (
+                                                          l.quizzes ?? []
+                                                        ).filter(
+                                                          (q) =>
+                                                            q.id !== quiz.id
+                                                        ),
+                                                      }
+                                                    : l
+                                              ),
+                                            }))
+                                          );
+                                          toast.success("Quiz deleted");
+                                          router.refresh();
+                                        } catch (e) {
+                                          toast.error(
+                                            e instanceof Error
+                                              ? e.message
+                                              : "Failed"
+                                          );
+                                        }
+                                      }}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </div>
                                 ))}
                               </div>
                             )}
@@ -506,25 +586,93 @@ export function ChaptersLessonsEditor({
                             ) : (
                               <div className="flex flex-col gap-1.5">
                                 {assignments.map((assignment) => (
-                                  <Link
+                                  <div
                                     key={assignment.id}
-                                    href={`/batches/${batchId}/lessons/${lesson.id}/assignment/${assignment.id}`}
                                     className={cn(
-                                      "group flex items-center gap-2 rounded-md border border-gray-200 px-2.5 py-2",
-                                      "text-sm text-gray-700 transition-colors hover:border-accent/40 hover:bg-accent/5 hover:text-accent-dark"
+                                      "flex items-center gap-1 rounded-md border border-gray-200 px-2 py-1.5",
+                                      "text-sm text-gray-700"
                                     )}
                                   >
-                                    <ClipboardList className="h-3.5 w-3.5 shrink-0 text-gray-400 group-hover:text-accent-dark" />
-                                    <span className="min-w-0 flex-1 truncate font-medium">
-                                      {assignment.title}
-                                    </span>
+                                    <Link
+                                      href={`/batches/${batchId}/lessons/${lesson.id}/assignment/${assignment.id}`}
+                                      className="group flex min-w-0 flex-1 items-center gap-2 rounded-md px-0.5 py-0.5 transition-colors hover:text-accent-dark"
+                                    >
+                                      <ClipboardList className="h-3.5 w-3.5 shrink-0 text-gray-400 group-hover:text-accent-dark" />
+                                      <span className="min-w-0 flex-1 truncate font-medium">
+                                        {assignment.title}
+                                      </span>
+                                    </Link>
                                     <Badge
                                       variant="outline"
                                       className="shrink-0 capitalize"
                                     >
                                       {assignment.type}
                                     </Badge>
-                                  </Link>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      title="Edit assignment"
+                                      className="h-7 w-7 shrink-0"
+                                      onClick={() =>
+                                        setAssignmentDialog({
+                                          lessonId: lesson.id,
+                                          lessonTitle: lesson.title,
+                                          assignment,
+                                        })
+                                      }
+                                    >
+                                      <Pencil className="h-3.5 w-3.5" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      title="Delete assignment"
+                                      className="h-7 w-7 shrink-0 text-danger hover:bg-danger/10 hover:text-danger"
+                                      onClick={async () => {
+                                        if (
+                                          !confirm("Delete this assignment?")
+                                        )
+                                          return;
+                                        try {
+                                          await deleteAssignmentAction(
+                                            batchId,
+                                            lesson.id,
+                                            assignment.id
+                                          );
+                                          setChapters((prev) =>
+                                            prev.map((ch) => ({
+                                              ...ch,
+                                              lessons: (ch.lessons ?? []).map(
+                                                (l) =>
+                                                  l.id === lesson.id
+                                                    ? {
+                                                        ...l,
+                                                        assignments: (
+                                                          l.assignments ?? []
+                                                        ).filter(
+                                                          (a) =>
+                                                            a.id !==
+                                                            assignment.id
+                                                        ),
+                                                      }
+                                                    : l
+                                              ),
+                                            }))
+                                          );
+                                          toast.success("Assignment deleted");
+                                          router.refresh();
+                                        } catch (e) {
+                                          toast.error(
+                                            e instanceof Error
+                                              ? e.message
+                                              : "Failed"
+                                          );
+                                        }
+                                      }}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </div>
                                 ))}
                               </div>
                             )}
@@ -584,21 +732,24 @@ export function ChaptersLessonsEditor({
           lessonId={quizDialog.lessonId}
           lessonTitle={quizDialog.lessonTitle}
           hasVideoQuiz={quizDialog.hasVideoQuiz}
+          quiz={quizDialog.quiz}
           onClose={() => setQuizDialog(null)}
-          onSaved={(lessonId, quiz) => {
+          onSaved={(lessonId, quiz, isNew) => {
             setChapters((prev) =>
               prev.map((ch) => ({
                 ...ch,
-                lessons: (ch.lessons ?? []).map((l) =>
-                  l.id === lessonId
-                    ? {
-                        ...l,
-                        quizzes: [...(l.quizzes ?? []), quiz].sort(
-                          (a, b) => a.sort_order - b.sort_order
-                        ),
-                      }
-                    : l
-                ),
+                lessons: (ch.lessons ?? []).map((l) => {
+                  if (l.id !== lessonId) return l;
+                  const quizzes = l.quizzes ?? [];
+                  return {
+                    ...l,
+                    quizzes: (
+                      isNew
+                        ? [...quizzes, quiz]
+                        : quizzes.map((q) => (q.id === quiz.id ? quiz : q))
+                    ).sort((a, b) => a.sort_order - b.sort_order),
+                  };
+                }),
               }))
             );
           }}
@@ -610,21 +761,26 @@ export function ChaptersLessonsEditor({
           batchId={batchId}
           lessonId={assignmentDialog.lessonId}
           lessonTitle={assignmentDialog.lessonTitle}
+          assignment={assignmentDialog.assignment}
           onClose={() => setAssignmentDialog(null)}
-          onSaved={(lessonId, assignment) => {
+          onSaved={(lessonId, assignment, isNew) => {
             setChapters((prev) =>
               prev.map((ch) => ({
                 ...ch,
-                lessons: (ch.lessons ?? []).map((l) =>
-                  l.id === lessonId
-                    ? {
-                        ...l,
-                        assignments: [...(l.assignments ?? []), assignment].sort(
-                          (a, b) => a.sort_order - b.sort_order
-                        ),
-                      }
-                    : l
-                ),
+                lessons: (ch.lessons ?? []).map((l) => {
+                  if (l.id !== lessonId) return l;
+                  const assignments = l.assignments ?? [];
+                  return {
+                    ...l,
+                    assignments: (
+                      isNew
+                        ? [...assignments, assignment]
+                        : assignments.map((a) =>
+                            a.id === assignment.id ? assignment : a
+                          )
+                    ).sort((a, b) => a.sort_order - b.sort_order),
+                  };
+                }),
               }))
             );
           }}
@@ -929,6 +1085,7 @@ function QuizDialog({
   lessonId,
   lessonTitle,
   hasVideoQuiz,
+  quiz,
   onClose,
   onSaved,
 }: {
@@ -936,19 +1093,13 @@ function QuizDialog({
   lessonId: string;
   lessonTitle: string;
   hasVideoQuiz: boolean;
+  quiz?: LessonQuiz;
   onClose: () => void;
-  onSaved: (
-    lessonId: string,
-    quiz: {
-      id: string;
-      title: string;
-      quiz_type: QuizType;
-      sort_order: number;
-    }
-  ) => void;
+  onSaved: (lessonId: string, quiz: LessonQuiz, isNew: boolean) => void;
 }) {
-  const [title, setTitle] = useState(`${lessonTitle} Quiz`);
-  const [quizType, setQuizType] = useState<QuizType>("lesson");
+  const isEdit = Boolean(quiz);
+  const [title, setTitle] = useState(quiz?.title ?? `${lessonTitle} Quiz`);
+  const [quizType, setQuizType] = useState<QuizType>(quiz?.quiz_type ?? "lesson");
   const [questions, setQuestions] = useState<QuizQuestionDraft[]>([
     emptyQuestion(),
   ]);
@@ -974,6 +1125,39 @@ function QuizDialog({
       toast.error("This lesson already has a video quiz");
       return;
     }
+
+    if (isEdit && quiz) {
+      setLoading(true);
+      try {
+        const saved = await saveQuizAction(batchId, lessonId, quiz.id, {
+          title,
+          passing_marks: quiz.passing_marks,
+          total_marks: quiz.total_marks,
+          quiz_type: quizType,
+        });
+        onSaved(
+          lessonId,
+          {
+            id: saved.id,
+            title: saved.title,
+            quiz_type: saved.quiz_type,
+            sort_order: saved.sort_order,
+            passing_marks: saved.passing_marks,
+            total_marks: saved.total_marks,
+          },
+          false
+        );
+        toast.success("Quiz updated");
+        onClose();
+        router.refresh();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Failed");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     for (const [i, q] of questions.entries()) {
       if (!q.question.trim()) {
         toast.error(`Question ${i + 1} is required`);
@@ -993,12 +1177,12 @@ function QuizDialog({
     }
     setLoading(true);
     try {
-      const quiz = await createQuizAction(batchId, lessonId, {
+      const created = await createQuizAction(batchId, lessonId, {
         title,
         questions,
         quiz_type: quizType,
       });
-      onSaved(lessonId, quiz);
+      onSaved(lessonId, created, true);
       toast.success("Quiz created");
       onClose();
       router.refresh();
@@ -1021,10 +1205,16 @@ function QuizDialog({
               <div className="mt-1 h-8 w-1 shrink-0 rounded-full brand-accent-bar" />
               <div>
                 <DialogTitle className="text-xl">
-                  Add Quiz to &ldquo;{lessonTitle}&rdquo;
+                  {isEdit ? (
+                    <>Edit Quiz in &ldquo;{lessonTitle}&rdquo;</>
+                  ) : (
+                    <>Add Quiz to &ldquo;{lessonTitle}&rdquo;</>
+                  )}
                 </DialogTitle>
                 <p className="mt-1 text-sm text-brand/70">
-                  Create a lesson or video quiz with multiple-choice questions
+                  {isEdit
+                    ? "Update quiz title and type. Manage questions on the quiz page."
+                    : "Create a lesson or video quiz with multiple-choice questions"}
                 </p>
               </div>
             </div>
@@ -1052,122 +1242,147 @@ function QuizDialog({
             </div>
           </div>
 
-          {questions.map((q, index) => (
-            <div
-              key={index}
-              className="space-y-4 rounded-xl border border-dashed border-brand/30 bg-surface-muted/50 p-4"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <Label className="mb-0">Question {index + 1}</Label>
-                {questions.length > 1 && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-danger hover:bg-danger/10 hover:text-danger"
-                    onClick={() =>
-                      setQuestions((prev) => prev.filter((_, i) => i !== index))
-                    }
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-              <Textarea
-                value={q.question}
-                onChange={(e) =>
-                  updateQuestion(index, "question", e.target.value)
-                }
-                placeholder="Enter the question"
-                className="min-h-[5.5rem] resize-none"
-              />
-              <div className="space-y-2">
-                <p className="text-xs text-brand/60">
-                  Fill 2–4 options. Leave unused ones empty.
-                </p>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {OPTION_KEYS.map((key) => (
-                    <div key={key}>
-                      <Label>
-                        Option {key.toUpperCase()}
-                        {key === "c" || key === "d" ? (
-                          <span className="ml-1 font-normal text-brand/50">
-                            (optional)
-                          </span>
-                        ) : null}
-                      </Label>
-                      <Input
-                        value={q[`option_${key}`]}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          setQuestions((prev) =>
-                            prev.map((item, i) => {
-                              if (i !== index) return item;
-                              const next = { ...item, [`option_${key}`]: value };
-                              const filled = filledOptions(next);
-                              if (
-                                !next[`option_${next.correct_option}`].trim() &&
-                                filled.length > 0
-                              ) {
-                                next.correct_option = filled[0];
-                              }
-                              return next;
-                            })
-                          );
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <Label>Correct option</Label>
-                <Select
-                  className="w-full"
-                  value={q.correct_option}
-                  onChange={(e) =>
-                    updateQuestion(
-                      index,
-                      "correct_option",
-                      e.target.value as QuizOption
-                    )
-                  }
-                >
-                  {(filledOptions(q).length > 0
-                    ? filledOptions(q)
-                    : OPTION_KEYS
-                  ).map((key) => (
-                    <option key={key} value={key}>
-                      {key.toUpperCase()}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div>
-                <Label>Reason</Label>
-                <Textarea
-                  value={q.reason}
-                  onChange={(e) =>
-                    updateQuestion(index, "reason", e.target.value)
-                  }
-                  placeholder="Explain why the correct answer is correct"
-                  className="min-h-[5rem] resize-none"
-                />
-              </div>
+          {isEdit && quiz ? (
+            <div className="rounded-lg border border-brand/20 bg-brand/5 px-3 py-2.5 text-sm text-brand/80">
+              Manage questions and marks on the{" "}
+              <Link
+                href={`/batches/${batchId}/lessons/${lessonId}/quiz/${quiz.id}`}
+                className="font-medium underline underline-offset-2"
+                onClick={onClose}
+              >
+                quiz page
+              </Link>
+              .
             </div>
-          ))}
+          ) : (
+            <>
+              {questions.map((q, index) => (
+                <div
+                  key={index}
+                  className="space-y-4 rounded-xl border border-dashed border-brand/30 bg-surface-muted/50 p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <Label className="mb-0">Question {index + 1}</Label>
+                    {questions.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-danger hover:bg-danger/10 hover:text-danger"
+                        onClick={() =>
+                          setQuestions((prev) =>
+                            prev.filter((_, i) => i !== index)
+                          )
+                        }
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <Textarea
+                    value={q.question}
+                    onChange={(e) =>
+                      updateQuestion(index, "question", e.target.value)
+                    }
+                    placeholder="Enter the question"
+                    className="min-h-[5.5rem] resize-none"
+                  />
+                  <div className="space-y-2">
+                    <p className="text-xs text-brand/60">
+                      Fill 2–4 options. Leave unused ones empty.
+                    </p>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {OPTION_KEYS.map((key) => (
+                        <div key={key}>
+                          <Label>
+                            Option {key.toUpperCase()}
+                            {key === "c" || key === "d" ? (
+                              <span className="ml-1 font-normal text-brand/50">
+                                (optional)
+                              </span>
+                            ) : null}
+                          </Label>
+                          <Input
+                            value={q[`option_${key}`]}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setQuestions((prev) =>
+                                prev.map((item, i) => {
+                                  if (i !== index) return item;
+                                  const next = {
+                                    ...item,
+                                    [`option_${key}`]: value,
+                                  };
+                                  const filled = filledOptions(next);
+                                  if (
+                                    !next[
+                                      `option_${next.correct_option}`
+                                    ].trim() &&
+                                    filled.length > 0
+                                  ) {
+                                    next.correct_option = filled[0];
+                                  }
+                                  return next;
+                                })
+                              );
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Correct option</Label>
+                    <Select
+                      className="w-full"
+                      value={q.correct_option}
+                      onChange={(e) =>
+                        updateQuestion(
+                          index,
+                          "correct_option",
+                          e.target.value as QuizOption
+                        )
+                      }
+                    >
+                      {(filledOptions(q).length > 0
+                        ? filledOptions(q)
+                        : OPTION_KEYS
+                      ).map((key) => (
+                        <option key={key} value={key}>
+                          {key.toUpperCase()}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Reason</Label>
+                    <Textarea
+                      value={q.reason}
+                      onChange={(e) =>
+                        updateQuestion(index, "reason", e.target.value)
+                      }
+                      placeholder="Explain why the correct answer is correct"
+                      className="min-h-[5rem] resize-none"
+                    />
+                  </div>
+                </div>
+              ))}
 
-          <Button
-            variant="outline"
-            onClick={() => setQuestions((prev) => [...prev, emptyQuestion()])}
-          >
-            <Plus className="h-4 w-4" />
-            Add another question
-          </Button>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  setQuestions((prev) => [...prev, emptyQuestion()])
+                }
+              >
+                <Plus className="h-4 w-4" />
+                Add another question
+              </Button>
+            </>
+          )}
         </div>
 
         <div className="flex shrink-0 justify-end border-t border-brand/15 bg-surface px-6 py-4 sm:px-7">
           <Button onClick={save} disabled={loading} className="min-w-40">
-            {loading ? "Saving..." : "Save Quiz"}
+            {loading ? "Saving..." : isEdit ? "Update Quiz" : "Save Quiz"}
           </Button>
         </div>
       </DialogContent>
@@ -1179,28 +1394,33 @@ function AssignmentDialog({
   batchId,
   lessonId,
   lessonTitle,
+  assignment,
   onClose,
   onSaved,
 }: {
   batchId: string;
   lessonId: string;
   lessonTitle: string;
+  assignment?: LessonAssignment;
   onClose: () => void;
   onSaved: (
     lessonId: string,
-    assignment: {
-      id: string;
-      title: string;
-      type: AssignmentType;
-      sort_order: number;
-    }
+    assignment: LessonAssignment,
+    isNew: boolean
   ) => void;
 }) {
-  const [title, setTitle] = useState(`${lessonTitle} Assignment`);
-  const [type, setType] = useState<AssignmentType>("written");
-  const [question, setQuestion] = useState("");
-  const [description, setDescription] = useState("");
-  const [maxMarks, setMaxMarks] = useState(100);
+  const isEdit = Boolean(assignment);
+  const [title, setTitle] = useState(
+    assignment?.title ?? `${lessonTitle} Assignment`
+  );
+  const [type, setType] = useState<AssignmentType>(
+    assignment?.type ?? "written"
+  );
+  const [question, setQuestion] = useState(
+    assignment?.question || assignment?.description || ""
+  );
+  const [description, setDescription] = useState(assignment?.description ?? "");
+  const [maxMarks, setMaxMarks] = useState(assignment?.max_marks ?? 100);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -1219,15 +1439,46 @@ function AssignmentDialog({
     }
     setLoading(true);
     try {
-      const assignment = await createAssignmentAction(batchId, lessonId, {
-        title,
-        question,
-        description,
-        max_marks: maxMarks,
-        type,
-      });
-      onSaved(lessonId, assignment);
-      toast.success("Assignment created");
+      if (isEdit && assignment) {
+        const saved = await saveAssignmentAction(
+          batchId,
+          lessonId,
+          assignment.id,
+          {
+            title,
+            question,
+            description,
+            max_marks: maxMarks,
+            due_date: assignment.due_date,
+            type,
+          }
+        );
+        onSaved(
+          lessonId,
+          {
+            id: saved.id,
+            title: saved.title,
+            type: saved.type,
+            sort_order: saved.sort_order,
+            question: saved.question,
+            description: saved.description,
+            max_marks: saved.max_marks,
+            due_date: saved.due_date,
+          },
+          false
+        );
+        toast.success("Assignment updated");
+      } else {
+        const created = await createAssignmentAction(batchId, lessonId, {
+          title,
+          question,
+          description,
+          max_marks: maxMarks,
+          type,
+        });
+        onSaved(lessonId, created, true);
+        toast.success("Assignment created");
+      }
       onClose();
       router.refresh();
     } catch (e) {
@@ -1249,7 +1500,11 @@ function AssignmentDialog({
               <div className="mt-1 h-8 w-1 shrink-0 rounded-full brand-accent-bar" />
               <div>
                 <DialogTitle className="text-xl">
-                  Add Assignment to &ldquo;{lessonTitle}&rdquo;
+                  {isEdit ? (
+                    <>Edit Assignment in &ldquo;{lessonTitle}&rdquo;</>
+                  ) : (
+                    <>Add Assignment to &ldquo;{lessonTitle}&rdquo;</>
+                  )}
                 </DialogTitle>
                 <p className="mt-1 text-sm text-brand/70">
                   Set the question, submission type, and marking details
@@ -1272,8 +1527,14 @@ function AssignmentDialog({
                 value={type}
                 onChange={(e) => setType(e.target.value as AssignmentType)}
               >
-                <option value="written">Written — students type an answer</option>
-                <option value="file">File — students upload a file</option>
+                {ADMIN_ASSIGNMENT_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+                {type === "file" ? (
+                  <option value="file">File — students upload a file</option>
+                ) : null}
               </Select>
             </div>
           </div>
@@ -1310,7 +1571,11 @@ function AssignmentDialog({
 
         <div className="flex shrink-0 justify-end border-t border-brand/15 bg-surface px-6 py-4 sm:px-7">
           <Button onClick={save} disabled={loading} className="min-w-40">
-            {loading ? "Saving..." : "Save Assignment"}
+            {loading
+              ? "Saving..."
+              : isEdit
+                ? "Update Assignment"
+                : "Save Assignment"}
           </Button>
         </div>
       </DialogContent>

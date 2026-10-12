@@ -46,18 +46,30 @@ import {
 import {
   createQuiz,
   updateQuiz,
+  deleteQuiz,
   createQuizQuestion,
   updateQuizQuestion,
   deleteQuizQuestion,
 } from "@/lib/db/quizzes";
-import { createAssignment, updateAssignment } from "@/lib/db/assignments";
+import {
+  createAssignment,
+  updateAssignment,
+  deleteAssignment,
+} from "@/lib/db/assignments";
 import {
   gradeSubmission,
+  getAssignmentSubmissionById,
   getAssignmentSubmissionSignedUrl,
+  getQuizAttemptById,
 } from "@/lib/db/submissions";
+import { getProfileOptions } from "@/lib/db/profiles";
 import { issueCertificate } from "@/lib/db/certificates";
 import { getAppSetting, upsertAppSetting } from "@/lib/db/app-settings";
 import { getCurrentProfile } from "@/lib/db/profiles";
+import {
+  getSearchSuggestions,
+  type SearchSuggestScope,
+} from "@/lib/db/search-suggestions";
 import type {
   AssignmentType,
   EnrollmentStatus,
@@ -608,6 +620,8 @@ export async function createQuizAction(
     title: quiz.title,
     quiz_type: quiz.quiz_type,
     sort_order: quiz.sort_order,
+    passing_marks: quiz.passing_marks,
+    total_marks: quiz.total_marks,
   };
 }
 
@@ -638,6 +652,10 @@ export async function createAssignmentAction(
     title: assignment.title,
     type: assignment.type,
     sort_order: assignment.sort_order,
+    question: assignment.question,
+    description: assignment.description,
+    max_marks: assignment.max_marks,
+    due_date: assignment.due_date,
   };
 }
 
@@ -656,6 +674,16 @@ export async function saveQuizAction(
   revalidatePath(`/batches/${batchId}/edit`);
   revalidatePath(`/batches/${batchId}/lessons/${lessonId}/quiz/${quizId}`);
   return quiz;
+}
+
+export async function deleteQuizAction(
+  batchId: string,
+  lessonId: string,
+  quizId: string
+) {
+  await deleteQuiz(quizId);
+  revalidatePath(`/batches/${batchId}/edit`);
+  revalidatePath(`/batches/${batchId}/lessons/${lessonId}/quiz/${quizId}`);
 }
 
 export async function addQuizQuestionAction(
@@ -730,6 +758,18 @@ export async function saveAssignmentAction(
   return assignment;
 }
 
+export async function deleteAssignmentAction(
+  batchId: string,
+  lessonId: string,
+  assignmentId: string
+) {
+  await deleteAssignment(assignmentId);
+  revalidatePath(`/batches/${batchId}/edit`);
+  revalidatePath(
+    `/batches/${batchId}/lessons/${lessonId}/assignment/${assignmentId}`
+  );
+}
+
 export async function gradeSubmissionAction(
   id: string,
   obtainedMarks: number,
@@ -741,6 +781,18 @@ export async function gradeSubmissionAction(
 
 export async function getSubmissionFileUrlAction(fileUrl: string) {
   return getAssignmentSubmissionSignedUrl(fileUrl);
+}
+
+export async function getAssignmentSubmissionDetailAction(id: string) {
+  return getAssignmentSubmissionById(id);
+}
+
+export async function getQuizAttemptDetailAction(id: string) {
+  return getQuizAttemptById(id);
+}
+
+export async function getProfileOptionsAction() {
+  return getProfileOptions();
 }
 
 export async function issueCertificateAction(
@@ -778,4 +830,11 @@ export async function toggleAppStatusAction(): Promise<{
 export async function getAppStatusAction(): Promise<boolean> {
   const value = await getAppSetting("is_course_published");
   return value !== "true";
+}
+
+export async function getSearchSuggestionsAction(
+  scope: SearchSuggestScope,
+  search: string
+) {
+  return getSearchSuggestions(scope, search);
 }

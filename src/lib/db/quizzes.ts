@@ -84,6 +84,12 @@ export async function updateQuiz(
   return data;
 }
 
+export async function deleteQuiz(id: string): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("quizzes").delete().eq("id", id);
+  if (error) throw error;
+}
+
 async function nextQuizSortOrder(lessonId: string): Promise<number> {
   const supabase = await createClient();
   const { data, error } = await supabase

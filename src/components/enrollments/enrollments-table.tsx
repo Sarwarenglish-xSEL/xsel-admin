@@ -1,24 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
-import type {
-  Course,
-  CourseBatch,
-  CourseEnrollment,
-  CourseType,
-  EnrollmentStatus,
-} from "@/types/database";
-import type { ProfileOption } from "@/lib/db/profiles";
+import type { CourseEnrollment, CourseType, EnrollmentStatus } from "@/types/database";
+import type { BatchFilterOption, CourseFilterOption } from "@/lib/db/catalog";
+import { useLazyProfileOptions } from "@/components/use-lazy-profile-options";
 import { DataTable } from "@/components/data-table";
+import { ListSearch } from "@/components/list-search";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Label } from "@/components/ui/label";
 import { createEnrollmentAction, updateEnrollmentStatusAction } from "@/app/actions";
 
@@ -105,15 +102,15 @@ const columns: ColumnDef<CourseEnrollment>[] = [
 ];
 
 function EnrollDialog({
-  users,
   courses,
   batches,
 }: {
-  users: ProfileOption[];
-  courses: Course[];
-  batches: CourseBatch[];
+  courses: CourseFilterOption[];
+  batches: BatchFilterOption[];
 }) {
   const [open, setOpen] = useState(false);
+  const { users, loading: usersLoading, error: usersError } =
+    useLazyProfileOptions(open);
   const [userId, setUserId] = useState("");
   const [courseId, setCourseId] = useState("");
   const [batchId, setBatchId] = useState("");
@@ -125,15 +122,37 @@ function EnrollDialog({
     [batches, courseId]
   );
 
+  const userOptions = useMemo(
+    () =>
+      users.map((u) => ({
+        value: u.id,
+        label: u.full_name?.trim() || u.email,
+        detail: u.full_name?.trim() ? u.email : undefined,
+      })),
+    [users]
+  );
+
+  function resetForm() {
+    setUserId("");
+    setCourseId("");
+    setBatchId("");
+    setLoading(false);
+  }
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (!next) resetForm();
+  }
+
   return (
     <>
       <Button onClick={() => setOpen(true)}>
         <Plus className="h-4 w-4" /> Manual Enroll
       </Button>
-      <Dialog open={open} onOpenChange={setOpen} className="max-w-2xl">
+      <Dialog open={open} onOpenChange={handleOpenChange} className="max-w-xl">
         <DialogContent
           className="flex w-full max-h-[min(40rem,85vh)] flex-col overflow-hidden p-0"
-          onClose={() => setOpen(false)}
+          onClose={() => handleOpenChange(false)}
         >
           <div className="shrink-0 border-b border-brand/15 brand-gradient px-6 py-5 pr-12 sm:px-7">
             <DialogHeader className="mb-0">
@@ -149,19 +168,24 @@ function EnrollDialog({
             </DialogHeader>
           </div>
           <div className="brand-scrollbar min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5 sm:px-7">
-            <div>
+            <div className="space-y-2">
               <Label>User</Label>
-              <Select className="w-full" value={userId} onChange={(e) => setUserId(e.target.value)}>
-                <option value="">Select user</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.full_name ? `${u.full_name} (${u.email})` : u.email}
-                  </option>
-                ))}
-              </Select>
+              {usersError ? (
+                <p className="text-sm text-danger">{usersError}</p>
+              ) : (
+                <SearchableSelect
+                  value={userId}
+                  onChange={setUserId}
+                  options={userOptions}
+                  placeholder={usersLoading ? "Loading students..." : "Select a student"}
+                  searchPlaceholder="Type a name or email..."
+                  emptyText={usersLoading ? "Loading..." : "No students found"}
+                  disabled={usersLoading}
+                />
+              )}
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div>
+              <div className="space-y-2">
                 <Label>Course</Label>
                 <Select
                   className="w-full"
@@ -179,7 +203,7 @@ function EnrollDialog({
                   ))}
                 </Select>
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>Batch</Label>
                 <Select
                   className="w-full"
@@ -197,7 +221,6 @@ function EnrollDialog({
                   {courseBatches.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}
-                      {b.enrollment_count != null ? ` (${b.enrollment_count} enrolled)` : ""}
                     </option>
                   ))}
                 </Select>
@@ -213,7 +236,7 @@ function EnrollDialog({
                 try {
                   await createEnrollmentAction(userId, courseId, batchId);
                   toast.success("Enrollment created");
-                  setOpen(false);
+                  handleOpenChange(false);
                   router.refresh();
                 } catch (e) {
                   toast.error(e instanceof Error ? e.message : "Failed");
@@ -236,16 +259,25 @@ function EnrollmentFilters({
   batches,
   initialCourseId,
   initialBatchId,
+  initialQuery,
+  actions,
 }: {
-  courses: Course[];
-  batches: CourseBatch[];
+  courses: CourseFilterOption[];
+  batches: BatchFilterOption[];
   initialCourseId?: string;
   initialBatchId?: string;
+  initialQuery?: string;
+  actions?: ReactNode;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const [courseId, setCourseId] = useState(initialCourseId ?? "");
   const [batchId, setBatchId] = useState(initialBatchId ?? "");
+
+  useEffect(() => {
+    setCourseId(initialCourseId ?? "");
+    setBatchId(initialBatchId ?? "");
+  }, [initialCourseId, initialBatchId]);
 
   const courseBatches = useMemo(
     () => batches.filter((b) => !courseId || b.course_id === courseId),
@@ -256,19 +288,41 @@ function EnrollmentFilters({
     const params = new URLSearchParams();
     if (nextCourse) params.set("course", nextCourse);
     if (nextBatch) params.set("batch", nextBatch);
+    if (initialQuery) params.set("q", initialQuery);
     const query = params.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
   }
 
-  const hasFilters = Boolean(courseId || batchId);
+  const hasFilters = Boolean(courseId || batchId || initialQuery);
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-brand/25 bg-surface p-4 shadow-sm">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+    <div className="overflow-hidden rounded-xl border border-brand/20 bg-surface shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-brand/10 bg-brand/[0.03] px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5">
+        <ListSearch
+          initialQuery={initialQuery}
+          placeholder="Search by student, course, or batch..."
+          preserveParams={{
+            course: courseId || undefined,
+            batch: batchId || undefined,
+          }}
+          suggestScope="enrollments"
+          className="w-full max-w-none sm:max-w-md"
+        />
+        {actions ? (
+          <div className="shrink-0 self-stretch sm:self-auto [&_button]:w-full sm:[&_button]:w-auto">
+            {actions}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-end sm:gap-3 sm:px-5">
         <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="min-w-0">
-            <Label>Course</Label>
+          <div className="min-w-0 space-y-1.5">
+            <Label className="text-xs font-semibold uppercase tracking-wide text-brand/55">
+              Course
+            </Label>
             <Select
+              className="w-full"
               value={courseId}
               onChange={(e) => {
                 const next = e.target.value;
@@ -285,9 +339,12 @@ function EnrollmentFilters({
               ))}
             </Select>
           </div>
-          <div className="min-w-0">
-            <Label>Batch</Label>
+          <div className="min-w-0 space-y-1.5">
+            <Label className="text-xs font-semibold uppercase tracking-wide text-brand/55">
+              Batch
+            </Label>
             <Select
+              className="w-full"
               value={batchId}
               onChange={(e) => {
                 const next = e.target.value;
@@ -308,18 +365,19 @@ function EnrollmentFilters({
             </Select>
           </div>
         </div>
-        {hasFilters && (
+        {hasFilters ? (
           <Button
             variant="outline"
+            className="shrink-0"
             onClick={() => {
               setCourseId("");
               setBatchId("");
-              applyFilters("", "");
+              router.push(pathname);
             }}
           >
             <X className="h-4 w-4" /> Clear
           </Button>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -327,31 +385,32 @@ function EnrollmentFilters({
 
 export function EnrollmentsTable({
   enrollments,
-  users,
   courses,
   batches,
   initialCourseId,
   initialBatchId,
+  initialQuery,
 }: {
   enrollments: CourseEnrollment[];
-  users: ProfileOption[];
-  courses: Course[];
-  batches: CourseBatch[];
+  courses: CourseFilterOption[];
+  batches: BatchFilterOption[];
   initialCourseId?: string;
   initialBatchId?: string;
+  initialQuery?: string;
 }) {
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <EnrollmentFilters
-          courses={courses}
-          batches={batches}
-          initialCourseId={initialCourseId}
-          initialBatchId={initialBatchId}
-        />
-        <EnrollDialog users={users} courses={courses} batches={batches} />
-      </div>
-      <DataTable columns={columns} data={enrollments} pageSize={50} hidePagination />
+      <EnrollmentFilters
+        courses={courses}
+        batches={batches}
+        initialCourseId={initialCourseId}
+        initialBatchId={initialBatchId}
+        initialQuery={initialQuery}
+        actions={<EnrollDialog courses={courses} batches={batches} />}
+      />
+      {enrollments.length > 0 && (
+        <DataTable columns={columns} data={enrollments} pageSize={20} hidePagination />
+      )}
     </div>
   );
 }

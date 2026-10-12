@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ColumnDef } from "@tanstack/react-table";
@@ -18,7 +18,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { gradeSubmissionAction, getSubmissionFileUrlAction } from "@/app/actions";
+import {
+  getAssignmentSubmissionDetailAction,
+  gradeSubmissionAction,
+  getSubmissionFileUrlAction,
+} from "@/app/actions";
 import { DownloadAnswerButton } from "@/components/submissions/submission-answer-actions";
 
 function hasAttachment(submission: AssignmentSubmission) {
@@ -103,10 +107,44 @@ function SubmissionContent({ submission }: { submission: AssignmentSubmission })
 
 function GradeDialog({ submission }: { submission: AssignmentSubmission }) {
   const [open, setOpen] = useState(false);
+  const [detail, setDetail] = useState<AssignmentSubmission | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [marks, setMarks] = useState(submission.obtained_marks?.toString() ?? "");
   const [feedback, setFeedback] = useState(submission.feedback ?? "");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!open) {
+      setDetail(null);
+      setDetailError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setDetailLoading(true);
+    setDetailError(null);
+
+    getAssignmentSubmissionDetailAction(submission.id)
+      .then((data) => {
+        if (!cancelled) setDetail(data);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setDetailError(e instanceof Error ? e.message : "Failed to load submission");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDetailLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, submission.id]);
+
+  const view = detail ?? submission;
 
   return (
     <>
@@ -119,7 +157,13 @@ function GradeDialog({ submission }: { submission: AssignmentSubmission }) {
             <DialogTitle>Grade Submission</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <SubmissionContent submission={submission} />
+            {detailLoading && !detail ? (
+              <p className="text-sm text-gray-500">Loading submission...</p>
+            ) : detailError ? (
+              <p className="text-sm text-danger">{detailError}</p>
+            ) : (
+              <SubmissionContent submission={view} />
+            )}
             <div>
               <Label>Marks</Label>
               <Input
@@ -201,5 +245,5 @@ export function SubmissionsTable({
 }: {
   submissions: AssignmentSubmission[];
 }) {
-  return <DataTable columns={columns} data={submissions} pageSize={50} hidePagination />;
+  return <DataTable columns={columns} data={submissions} pageSize={20} hidePagination />;
 }

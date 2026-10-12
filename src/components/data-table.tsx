@@ -36,6 +36,8 @@ interface DataTableProps<TData, TValue> {
   pageSize?: number;
   /** Hide built-in pager when the parent provides server pagination. */
   hidePagination?: boolean;
+  /** Max height for the scrollable table body. Set false to disable. */
+  maxHeight?: string | false;
 }
 
 export function DataTable<TData, TValue>({
@@ -47,6 +49,7 @@ export function DataTable<TData, TValue>({
   fixedLayout = false,
   pageSize = 10,
   hidePagination = false,
+  maxHeight = "min(36rem, 70vh)",
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -82,8 +85,13 @@ export function DataTable<TData, TValue>({
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-brand/20 bg-surface shadow-sm">
-        <Table className={fixedLayout ? "table-fixed" : undefined}>
+      <div className="rounded-xl border border-brand/20 bg-surface shadow-sm">
+        <Table
+          className={fixedLayout ? "table-fixed" : undefined}
+          containerStyle={
+            maxHeight === false ? undefined : { maxHeight }
+          }
+        >
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent">

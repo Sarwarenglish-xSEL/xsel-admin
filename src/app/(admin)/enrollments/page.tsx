@@ -1,7 +1,8 @@
 import { getEnrollments } from "@/lib/db/enrollments";
-import { getProfileOptions } from "@/lib/db/profiles";
-import { getCourses } from "@/lib/db/courses";
-import { getAllBatchesOverview } from "@/lib/db/batches";
+import {
+  getBatchFilterOptions,
+  getCourseFilterOptions,
+} from "@/lib/db/catalog";
 import { parsePageParam } from "@/lib/db/pagination";
 import { EnrollmentsTable } from "@/components/enrollments/enrollments-table";
 import { ListPagination } from "@/components/list-pagination";
@@ -11,26 +12,32 @@ import { PageEmpty } from "@/components/page-states";
 export default async function EnrollmentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ course?: string; batch?: string; page?: string }>;
+  searchParams: Promise<{
+    course?: string;
+    batch?: string;
+    q?: string;
+    page?: string;
+  }>;
 }) {
   const params = await searchParams;
   const page = parsePageParam(params.page);
+  const q = params.q?.trim() || undefined;
   let enrollmentsResult;
-  let users;
   let courses;
   let batches;
   let error: string | null = null;
 
   try {
-    [enrollmentsResult, users, courses, batches] = await Promise.all([
+    [enrollmentsResult, courses, batches] = await Promise.all([
       getEnrollments({
         courseId: params.course,
         batchId: params.batch,
+        search: q,
         page,
+        pageSize: 20,
       }),
-      getProfileOptions(),
-      getCourses(),
-      getAllBatchesOverview(),
+      getCourseFilterOptions(),
+      getBatchFilterOptions(),
     ]);
   } catch (e) {
     error = e instanceof Error ? e.message : "Failed to load enrollments";
@@ -52,6 +59,7 @@ export default async function EnrollmentsPage({
       : null;
 
   const enrollments = enrollmentsResult!.data;
+  const hasFilters = Boolean(params.course || params.batch || q);
 
   return (
     <div className="space-y-6">
@@ -63,30 +71,38 @@ export default async function EnrollmentsPage({
             : "View and manage course enrollments by batch"
         }
       />
-      {enrollments.length === 0 && page === 1 ? (
-        <PageEmpty
-          title="No enrollments"
-          description="Enroll users manually from a course batch or approve purchases."
+      <div className="space-y-4">
+        <EnrollmentsTable
+          enrollments={enrollments}
+          courses={courses!}
+          batches={batches!}
+          initialCourseId={params.course}
+          initialBatchId={params.batch}
+          initialQuery={q}
         />
-      ) : (
-        <div className="space-y-4">
-          <EnrollmentsTable
-            enrollments={enrollments}
-            users={users!}
-            courses={courses!}
-            batches={batches!}
-            initialCourseId={params.course}
-            initialBatchId={params.batch}
+        {enrollments.length === 0 && page === 1 ? (
+          <PageEmpty
+            title={hasFilters ? "No enrollments found" : "No enrollments"}
+            description={
+              hasFilters
+                ? "Try a different search term or clear filters."
+                : "Enroll users manually from a course batch or approve purchases."
+            }
           />
+        ) : (
           <ListPagination
             page={enrollmentsResult!.page}
             totalPages={enrollmentsResult!.totalPages}
             total={enrollmentsResult!.total}
             pageSize={enrollmentsResult!.pageSize}
-            searchParams={{ course: params.course, batch: params.batch }}
+            searchParams={{
+              course: params.course,
+              batch: params.batch,
+              q,
+            }}
           />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

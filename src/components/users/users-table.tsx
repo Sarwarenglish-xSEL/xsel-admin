@@ -284,10 +284,8 @@ export function UsersTable({
     <DataTable
       columns={columns(canManage, currentUserId, currentUserRole)}
       data={users}
-      searchKey="email"
-      searchPlaceholder="Search by name or email..."
       fixedLayout
-      pageSize={50}
+      pageSize={20}
       hidePagination
     />
   );

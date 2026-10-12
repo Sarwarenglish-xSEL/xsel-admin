@@ -81,6 +81,12 @@ export async function updateAssignment(
   return data;
 }
 
+export async function deleteAssignment(id: string): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("assignments").delete().eq("id", id);
+  if (error) throw error;
+}
+
 async function nextAssignmentSortOrder(lessonId: string): Promise<number> {
   const supabase = await createClient();
   const { data, error } = await supabase

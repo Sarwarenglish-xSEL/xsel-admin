@@ -9,7 +9,22 @@ export type BatchStatus = "upcoming" | "active" | "completed" | "cancelled";
 export type PurchaseStatus = "pending" | "approved" | "rejected";
 export type QuizOption = "a" | "b" | "c" | "d";
 export type QuizType = "lesson" | "video";
-export type AssignmentType = "written" | "file";
+export type AssignmentType = "written" | "audio" | "file";
+
+/** Types shown in the admin create/edit UI (DB may still contain `file`). */
+export const ADMIN_ASSIGNMENT_TYPE_OPTIONS: {
+  value: Exclude<AssignmentType, "file">;
+  label: string;
+}[] = [
+  {
+    value: "written",
+    label: "Written — students type an answer",
+  },
+  {
+    value: "audio",
+    label: "Audio — students submit an audio recording",
+  },
+];
 
 export interface DeviceTransferRecord {
   device_token?: string | null;
@@ -105,8 +120,21 @@ export interface CourseLesson {
   created_at: string;
   updated_at: string;
   chapter?: CourseChapter & { course?: Course };
-  quizzes?: Pick<Quiz, "id" | "title" | "quiz_type" | "sort_order">[];
-  assignments?: Pick<Assignment, "id" | "title" | "type" | "sort_order">[];
+  quizzes?: Pick<
+    Quiz,
+    "id" | "title" | "quiz_type" | "sort_order" | "passing_marks" | "total_marks"
+  >[];
+  assignments?: Pick<
+    Assignment,
+    | "id"
+    | "title"
+    | "type"
+    | "sort_order"
+    | "question"
+    | "description"
+    | "max_marks"
+    | "due_date"
+  >[];
 }
 
 export interface CourseBatch {

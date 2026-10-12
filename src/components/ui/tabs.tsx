@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const TabsCtx = createContext<{
@@ -10,14 +10,33 @@ const TabsCtx = createContext<{
 
 export function Tabs({
   defaultValue,
+  value: controlledValue,
+  onValueChange,
   children,
   className,
 }: {
-  defaultValue: string;
+  defaultValue?: string;
+  value?: string;
+  onValueChange?: (value: string) => void;
   children: React.ReactNode;
   className?: string;
 }) {
-  const [value, setValue] = useState(defaultValue);
+  const [uncontrolledValue, setUncontrolledValue] = useState(
+    controlledValue ?? defaultValue ?? ""
+  );
+  const isControlled = controlledValue !== undefined;
+  const value = isControlled ? controlledValue : uncontrolledValue;
+
+  useEffect(() => {
+    if (isControlled) return;
+    if (defaultValue !== undefined) setUncontrolledValue(defaultValue);
+  }, [defaultValue, isControlled]);
+
+  function setValue(next: string) {
+    if (!isControlled) setUncontrolledValue(next);
+    onValueChange?.(next);
+  }
+
   return (
     <TabsCtx.Provider value={{ value, setValue }}>
       <div className={className}>{children}</div>

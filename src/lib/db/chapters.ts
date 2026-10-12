@@ -1,14 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
+import { getAdminDataClient } from "@/lib/db/admin-client";
 import type { CourseChapter, CourseLesson } from "@/types/database";
 
 export async function getChaptersWithLessons(
   batchId: string
 ): Promise<CourseChapter[]> {
-  const supabase = await createClient();
+  const supabase = await getAdminDataClient();
   const { data, error } = await supabase
     .from("course_chapters")
     .select(
-      "*, lessons:course_lessons(*, quizzes(id, title, quiz_type, sort_order), assignments(id, title, type, sort_order))"
+      "*, lessons:course_lessons(*, quizzes(id, title, quiz_type, sort_order, passing_marks, total_marks), assignments(id, title, type, sort_order, question, description, max_marks, due_date))"
     )
     .eq("batch_id", batchId)
     .order("sort_order");

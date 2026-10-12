@@ -26,8 +26,26 @@ export async function updateSession(request: NextRequest) {
     path === "/signup" ||
     path === "/login/update-password";
 
-  // No session cookie → nothing to refresh; avoids a Supabase round-trip on every login page load.
-  if (isAuthPage && !hasSupabaseAuthCookie(request)) {
+  const isAdminRoute =
+    path.startsWith("/dashboard") ||
+    path.startsWith("/batches") ||
+    path.startsWith("/courses") ||
+    path.startsWith("/users") ||
+    path.startsWith("/sessions") ||
+    path.startsWith("/purchases") ||
+    path.startsWith("/enrollments") ||
+    path.startsWith("/certificates") ||
+    path.startsWith("/submissions") ||
+    path.startsWith("/live");
+
+  // No session cookie → skip Supabase refresh (login page) or send to login (admin).
+  if (!hasSupabaseAuthCookie(request)) {
+    if (isAuthPage) return response;
+    if (isAdminRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
     return response;
   }
 

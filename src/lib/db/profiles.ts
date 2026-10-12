@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient, createStandaloneAnonClient } from "@/lib/supabase/admin";
 import { DEFAULT_USER_PASSWORD } from "@/lib/user-defaults";
@@ -15,20 +16,31 @@ import {
   toPaginatedResult,
   type PaginatedResult,
 } from "@/lib/db/pagination";
-import type { Profile } from "@/types/database";
+import type { Profile, UserRole } from "@/types/database";
 
 export { getCurrentProfile };
 
 export type ProfileOption = Pick<Profile, "id" | "email" | "full_name" | "role">;
 
-export async function getProfiles(
-  search?: string,
-  pageParams?: { page?: number; pageSize?: number }
-): Promise<PaginatedResult<Profile>> {
+export type ProfileDeviceFilter = "registered" | "none";
+
+const FILTERABLE_ROLES: UserRole[] = ["admin", "manager", "user"];
+
+export async function getProfiles(filters?: {
+  search?: string;
+  role?: UserRole;
+  device?: ProfileDeviceFilter;
+  page?: number;
+  pageSize?: number;
+}): Promise<PaginatedResult<Profile>> {
   const supabase = await getAdminDataClient();
-  const page = normalizePage(pageParams?.page);
-  const pageSize = normalizePageSize(pageParams?.pageSize);
+  const page = normalizePage(filters?.page);
+  const pageSize = normalizePageSize(filters?.pageSize);
   const { from, to } = pageRange(page, pageSize);
+  const role =
+    filters?.role && FILTERABLE_ROLES.includes(filters.role)
+      ? filters.role
+      : undefined;
 
   let query = supabase
     .from("profiles")
@@ -37,8 +49,18 @@ export async function getProfiles(
     .order("created_at", { ascending: false })
     .range(from, to);
 
-  if (search?.trim()) {
-    const term = `%${search.trim()}%`;
+  if (role) {
+    query = query.eq("role", role);
+  }
+
+  if (filters?.device === "registered") {
+    query = query.not("registered_device_token", "is", null);
+  } else if (filters?.device === "none") {
+    query = query.is("registered_device_token", null);
+  }
+
+  if (filters?.search?.trim()) {
+    const term = `%${filters.search.trim()}%`;
     query = query.or(`email.ilike.${term},full_name.ilike.${term}`);
   }
 
@@ -47,8 +69,8 @@ export async function getProfiles(
   return toPaginatedResult((data ?? []) as Profile[], count ?? 0, page, pageSize);
 }
 
-/** Lightweight list for dropdowns (manual enroll, certificates, etc.). */
-export async function getProfileOptions(): Promise<ProfileOption[]> {
+/** Lightweight list for dropdowns (manual enroll, certificates, etc.). Cached per request. */
+export const getProfileOptions = cache(async (): Promise<ProfileOption[]> => {
   const supabase = await getAdminDataClient();
   const { data, error } = await supabase
     .from("profiles")
@@ -58,7 +80,7 @@ export async function getProfileOptions(): Promise<ProfileOption[]> {
     .limit(500);
   if (error) throw error;
   return (data ?? []) as ProfileOption[];
-}
+});
 
 export async function updateUserRole(
   userId: string,
