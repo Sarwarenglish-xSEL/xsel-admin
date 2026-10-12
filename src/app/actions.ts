@@ -58,9 +58,15 @@ import {
 } from "@/lib/db/assignments";
 import {
   gradeSubmission,
+  updateAssignmentSubmission,
+  deleteAssignmentSubmission,
+  updateQuizAttempt,
+  deleteQuizAttempt,
   getAssignmentSubmissionById,
   getAssignmentSubmissionSignedUrl,
   getQuizAttemptById,
+  type AssignmentSubmissionUpdate,
+  type QuizAttemptUpdate,
 } from "@/lib/db/submissions";
 import { getProfileOptions } from "@/lib/db/profiles";
 import { issueCertificate } from "@/lib/db/certificates";
@@ -782,6 +788,33 @@ export async function gradeSubmissionAction(
   feedback: string
 ) {
   await gradeSubmission(id, obtainedMarks, feedback);
+  revalidatePath("/submissions");
+}
+
+export async function updateAssignmentSubmissionAction(
+  id: string,
+  input: AssignmentSubmissionUpdate
+) {
+  await updateAssignmentSubmission(id, input);
+  revalidatePath("/submissions");
+  revalidatePath(`/submissions/${id}/answer`);
+}
+
+export async function deleteAssignmentSubmissionAction(id: string) {
+  await deleteAssignmentSubmission(id);
+  revalidatePath("/submissions");
+}
+
+export async function updateQuizAttemptAction(
+  id: string,
+  input: QuizAttemptUpdate
+) {
+  await updateQuizAttempt(id, input);
+  revalidatePath("/submissions");
+}
+
+export async function deleteQuizAttemptAction(id: string) {
+  await deleteQuizAttempt(id);
   revalidatePath("/submissions");
 }
 
