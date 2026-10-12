@@ -64,8 +64,14 @@ import {
 } from "@/lib/db/submissions";
 import { getProfileOptions } from "@/lib/db/profiles";
 import { issueCertificate } from "@/lib/db/certificates";
-import { getAppSetting, upsertAppSetting } from "@/lib/db/app-settings";
+import {
+  HIDDEN_APP_SETTING_KEYS,
+  getAppSetting,
+  upsertAppSetting,
+  upsertAppSettings,
+} from "@/lib/db/app-settings";
 import { getCurrentProfile } from "@/lib/db/profiles";
+import { hasFullModuleAccess } from "@/lib/permissions";
 import {
   getSearchSuggestions,
   type SearchSuggestScope,
@@ -830,6 +836,29 @@ export async function toggleAppStatusAction(): Promise<{
 export async function getAppStatusAction(): Promise<boolean> {
   const value = await getAppSetting("is_course_published");
   return value !== "true";
+}
+
+export async function updateAppSettingsAction(
+  entries: { key: string; value: string }[]
+): Promise<{ ok: boolean; message?: string }> {
+  const profile = await getCurrentProfile();
+  if (!profile || !hasFullModuleAccess(profile.role)) {
+    return { ok: false, message: "Only admin or superadmin can update settings" };
+  }
+
+  const sanitized = entries.filter(
+    (entry) =>
+      entry.key.trim() &&
+      !HIDDEN_APP_SETTING_KEYS.has(entry.key.trim().toLowerCase())
+  );
+
+  if (sanitized.length === 0) {
+    return { ok: false, message: "No settings to update" };
+  }
+
+  await upsertAppSettings(sanitized);
+  revalidatePath("/settings");
+  return { ok: true };
 }
 
 export async function getSearchSuggestionsAction(

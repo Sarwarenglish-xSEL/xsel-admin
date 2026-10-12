@@ -43,7 +43,6 @@ export function SessionsFilters({
           initialQuery={initialQuery}
           placeholder="Search by name or email..."
           preserveParams={{ status: status === "all" ? undefined : status }}
-          suggestScope="sessions"
           className="w-full max-w-none sm:max-w-md"
         />
       </div>

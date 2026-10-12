@@ -1,6 +1,10 @@
 "use client";
 
-import { ADMIN_MODULES, ADMIN_MODULE_LABELS, type AdminModule } from "@/lib/permissions";
+import {
+  ADMIN_MODULE_LABELS,
+  MANAGER_MODULES,
+  type AdminModule,
+} from "@/lib/permissions";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +32,7 @@ export function ManagerModulePicker({
         Choose which admin pages this manager can access.
       </p>
       <div className="grid gap-1.5 rounded-lg border border-brand/20 bg-brand/[0.03] p-2 sm:grid-cols-2">
-        {ADMIN_MODULES.map((module) => {
+        {MANAGER_MODULES.map((module) => {
           const checked = value.includes(module);
           return (
             <label

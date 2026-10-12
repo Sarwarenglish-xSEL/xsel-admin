@@ -151,8 +151,8 @@ function GradeDialog({ submission }: { submission: AssignmentSubmission }) {
       <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
         Grade
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent onClose={() => setOpen(false)} className="max-w-lg">
+      <Dialog open={open} onOpenChange={setOpen} className="max-w-2xl">
+        <DialogContent onClose={() => setOpen(false)} className="w-full">
           <DialogHeader>
             <DialogTitle>Grade Submission</DialogTitle>
           </DialogHeader>

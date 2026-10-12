@@ -36,7 +36,8 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/enrollments") ||
     path.startsWith("/certificates") ||
     path.startsWith("/submissions") ||
-    path.startsWith("/live");
+    path.startsWith("/live") ||
+    path.startsWith("/settings");
 
   // No session cookie → skip Supabase refresh (login page) or send to login (admin).
   if (!hasSupabaseAuthCookie(request)) {

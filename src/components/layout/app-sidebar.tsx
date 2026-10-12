@@ -16,6 +16,7 @@ import {
   MonitorSmartphone,
   Radio,
   Receipt,
+  Settings,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,7 @@ const navItems = [
   { href: "/submissions", label: "Submissions", icon: ClipboardList },
   { href: "/certificates", label: "Certificates", icon: Award },
   { href: "/live", label: "Live Sessions", icon: Radio },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 function getInitials(profile: Profile) {

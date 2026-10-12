@@ -56,7 +56,6 @@ export function UsersFilters({
             role: role || undefined,
             device: device || undefined,
           }}
-          suggestScope="users"
           className="w-full max-w-none sm:max-w-md"
         />
       </div>

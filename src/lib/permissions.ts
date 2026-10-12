@@ -12,9 +12,15 @@ export const ADMIN_MODULES = [
   "submissions",
   "certificates",
   "live",
+  "settings",
 ] as const;
 
 export type AdminModule = (typeof ADMIN_MODULES)[number];
+
+/** Modules managers may be granted (settings stay admin/superadmin only). */
+export const MANAGER_MODULES = ADMIN_MODULES.filter(
+  (module) => module !== "settings"
+);
 
 export const ADMIN_MODULE_LABELS: Record<AdminModule, string> = {
   dashboard: "Dashboard",
@@ -27,6 +33,7 @@ export const ADMIN_MODULE_LABELS: Record<AdminModule, string> = {
   submissions: "Submissions",
   certificates: "Certificates",
   live: "Live Sessions",
+  settings: "Settings",
 };
 
 const PORTAL_ROLES: UserRole[] = ["superadmin", "admin", "manager"];
@@ -66,7 +73,7 @@ export function getAccessibleModules(profile: Profile): AdminModule[] {
     return [];
   }
   const allowed = profile.allowed_modules ?? [];
-  return ADMIN_MODULES.filter((module) => allowed.includes(module));
+  return MANAGER_MODULES.filter((module) => allowed.includes(module));
 }
 
 export function canAccessModule(profile: Profile, mod: AdminModule): boolean {

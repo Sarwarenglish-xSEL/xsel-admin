@@ -11,6 +11,14 @@ export type QuizOption = "a" | "b" | "c" | "d";
 export type QuizType = "lesson" | "video";
 export type AssignmentType = "written" | "audio" | "file";
 
+export interface AppSetting {
+  key: string;
+  value: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 /** Types shown in the admin create/edit UI (DB may still contain `file`). */
 export const ADMIN_ASSIGNMENT_TYPE_OPTIONS: {
   value: Exclude<AssignmentType, "file">;

@@ -1,4 +1,8 @@
 import { createServiceClient } from "@/lib/supabase/admin";
+import type { AppSetting } from "@/types/database";
+
+/** Managed on Dashboard app-status toggle — hide from Settings UI. */
+export const HIDDEN_APP_SETTING_KEYS = new Set(["is_course_published"]);
 
 function requireServiceClient() {
   const supabase = createServiceClient();
@@ -17,6 +21,10 @@ function normalizeKey(key: string): string {
 function normalizeValue(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
+}
+
+function isHiddenSettingKey(key: string): boolean {
+  return HIDDEN_APP_SETTING_KEYS.has(key.trim().toLowerCase());
 }
 
 export async function getAppSetting(key: string): Promise<string | null> {
@@ -47,6 +55,19 @@ export async function getAppSettings(
   return result;
 }
 
+export async function listAppSettings(): Promise<AppSetting[]> {
+  const supabase = requireServiceClient();
+  const { data, error } = await supabase
+    .from("app_settings")
+    .select("key, value, description, created_at, updated_at")
+    .order("key", { ascending: true });
+  if (error) throw error;
+
+  return ((data ?? []) as AppSetting[]).filter(
+    (row) => row.key && !isHiddenSettingKey(row.key)
+  );
+}
+
 export async function upsertAppSetting(
   key: string,
   value: string
@@ -56,4 +77,12 @@ export async function upsertAppSetting(
     .from("app_settings")
     .upsert({ key, value }, { onConflict: "key" });
   if (error) throw error;
+}
+
+export async function upsertAppSettings(
+  entries: { key: string; value: string }[]
+): Promise<void> {
+  for (const entry of entries) {
+    await upsertAppSetting(entry.key, entry.value);
+  }
 }

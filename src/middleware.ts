@@ -24,5 +24,6 @@ export const config = {
     "/certificates/:path*",
     "/submissions/:path*",
     "/live/:path*",
+    "/settings/:path*",
   ],
 };

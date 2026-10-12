@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { updateUserAction } from "@/app/actions";
 import {
   assignableRoles,
-  ADMIN_MODULES,
+  MANAGER_MODULES,
   type AdminModule,
 } from "@/lib/permissions";
 import { ManagerModulePicker } from "@/components/users/manager-module-picker";
@@ -44,7 +44,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
 
 function normalizeModules(modules: string[] | null | undefined): AdminModule[] {
   if (!modules?.length) return ["dashboard"];
-  return ADMIN_MODULES.filter((module) => modules.includes(module));
+  return MANAGER_MODULES.filter((module) => modules.includes(module));
 }
 
 function clampTransfers(value: number | null | undefined) {
