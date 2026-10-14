@@ -1,6 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { getAdminDataClient } from "@/lib/db/admin-client";
+import {
+  removeStorageObject,
+  removeStorageObjects,
+} from "@/lib/db/storage-cleanup";
 import type {
   Course,
   CourseCategory,
@@ -10,6 +14,10 @@ import type {
   LearningOutcome,
 } from "@/types/database";
 import { DEFAULT_LEARNING_OUTCOMES } from "@/lib/course-defaults";
+
+const COURSE_THUMBNAILS_BUCKET = "course-thumbnails";
+const ASSIGNMENT_SUBMISSIONS_BUCKET = "assignment-submissions";
+const LESSON_ATTACHMENTS_BUCKET = "lesson-attachments";
 
 export interface CourseFilters {
   course_type?: CourseType;
@@ -99,6 +107,18 @@ export async function updateCourse(
   input: Partial<CourseInput>
 ): Promise<Course> {
   const supabase = await createClient();
+
+  let previousThumbnailUrl: string | null = null;
+  if ("thumbnail_url" in input) {
+    const { data: existing, error: fetchError } = await supabase
+      .from("courses")
+      .select("thumbnail_url")
+      .eq("id", id)
+      .maybeSingle();
+    if (fetchError) throw fetchError;
+    previousThumbnailUrl = existing?.thumbnail_url ?? null;
+  }
+
   const { data, error } = await supabase
     .from("courses")
     .update(input)
@@ -106,6 +126,14 @@ export async function updateCourse(
     .select()
     .single();
   if (error) throw error;
+
+  if (
+    previousThumbnailUrl &&
+    previousThumbnailUrl !== (input.thumbnail_url ?? null)
+  ) {
+    await removeStorageObject(COURSE_THUMBNAILS_BUCKET, previousThumbnailUrl);
+  }
+
   return data;
 }
 
@@ -119,7 +147,65 @@ export async function archiveCourse(id: string): Promise<void> {
 }
 
 export async function deleteCourse(id: string): Promise<void> {
-  const supabase = await createClient();
+  const supabase = await getAdminDataClient();
+  const { data, error: fetchError } = await supabase
+    .from("courses")
+    .select("id, thumbnail_url")
+    .eq("id", id)
+    .maybeSingle();
+  if (fetchError) throw fetchError;
+  if (!data) throw new Error("Course not found");
+
+  // Collect cascaded file URLs before the course row (and children) are removed.
+  const { data: chapters, error: chaptersError } = await supabase
+    .from("course_chapters")
+    .select("id")
+    .eq("course_id", id);
+  if (chaptersError) throw chaptersError;
+
+  const chapterIds = (chapters ?? []).map((ch) => ch.id as string);
+  let submissionUrls: Array<string | null> = [];
+  let attachmentUrls: Array<string | null> = [];
+
+  if (chapterIds.length > 0) {
+    const { data: lessons, error: lessonsError } = await supabase
+      .from("course_lessons")
+      .select("id")
+      .in("chapter_id", chapterIds);
+    if (lessonsError) throw lessonsError;
+
+    const lessonIds = (lessons ?? []).map((lesson) => lesson.id as string);
+    if (lessonIds.length > 0) {
+      const [{ data: attachments }, { data: assignments }] = await Promise.all([
+        supabase
+          .from("lesson_attachments")
+          .select("file_url")
+          .in("lesson_id", lessonIds),
+        supabase.from("assignments").select("id").in("lesson_id", lessonIds),
+      ]);
+
+      attachmentUrls = (attachments ?? []).map(
+        (row) => row.file_url as string | null
+      );
+
+      const assignmentIds = (assignments ?? []).map((row) => row.id as string);
+      if (assignmentIds.length > 0) {
+        const { data: submissions, error: submissionsError } = await supabase
+          .from("assignment_submissions")
+          .select("file_url")
+          .in("assignment_id", assignmentIds);
+        if (submissionsError) throw submissionsError;
+        submissionUrls = (submissions ?? []).map(
+          (row) => row.file_url as string | null
+        );
+      }
+    }
+  }
+
+  await removeStorageObject(COURSE_THUMBNAILS_BUCKET, data.thumbnail_url);
+  await removeStorageObjects(ASSIGNMENT_SUBMISSIONS_BUCKET, submissionUrls);
+  await removeStorageObjects(LESSON_ATTACHMENTS_BUCKET, attachmentUrls);
+
   const { error } = await supabase.from("courses").delete().eq("id", id);
   if (error) throw error;
 }

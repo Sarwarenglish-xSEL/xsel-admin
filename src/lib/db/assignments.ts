@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { removeAssignmentSubmissionFiles } from "@/lib/db/submissions";
 import type { Assignment, AssignmentType } from "@/types/database";
 
 export type AssignmentInput = {
@@ -82,6 +83,7 @@ export async function updateAssignment(
 }
 
 export async function deleteAssignment(id: string): Promise<void> {
+  await removeAssignmentSubmissionFiles(id);
   const supabase = await createClient();
   const { error } = await supabase.from("assignments").delete().eq("id", id);
   if (error) throw error;

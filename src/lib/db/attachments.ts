@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
+import { removeStorageObject } from "@/lib/db/storage-cleanup";
 import type { LessonAttachment, LessonAttachmentFileType } from "@/types/database";
+
+const LESSON_ATTACHMENTS_BUCKET = "lesson-attachments";
 
 export type LessonAttachmentInput = {
   title?: string;
@@ -57,6 +60,18 @@ export async function updateAttachment(
   input: Partial<LessonAttachmentInput>
 ): Promise<LessonAttachment> {
   const supabase = await createClient();
+
+  let previousFileUrl: string | null = null;
+  if (input.file_url) {
+    const { data: existing, error: fetchError } = await supabase
+      .from("lesson_attachments")
+      .select("file_url")
+      .eq("id", id)
+      .maybeSingle();
+    if (fetchError) throw fetchError;
+    previousFileUrl = existing?.file_url ?? null;
+  }
+
   const { data, error } = await supabase
     .from("lesson_attachments")
     .update(input)
@@ -64,11 +79,30 @@ export async function updateAttachment(
     .select()
     .single();
   if (error) throw error;
+
+  if (
+    previousFileUrl &&
+    input.file_url &&
+    previousFileUrl !== input.file_url
+  ) {
+    await removeStorageObject(LESSON_ATTACHMENTS_BUCKET, previousFileUrl);
+  }
+
   return data;
 }
 
 export async function deleteAttachment(id: string): Promise<void> {
   const supabase = await createClient();
+  const { data, error: fetchError } = await supabase
+    .from("lesson_attachments")
+    .select("id, file_url")
+    .eq("id", id)
+    .maybeSingle();
+  if (fetchError) throw fetchError;
+  if (!data) throw new Error("Attachment not found");
+
+  await removeStorageObject(LESSON_ATTACHMENTS_BUCKET, data.file_url);
+
   const { error } = await supabase
     .from("lesson_attachments")
     .delete()

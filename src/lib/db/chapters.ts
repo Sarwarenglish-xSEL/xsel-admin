@@ -1,6 +1,42 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAdminDataClient } from "@/lib/db/admin-client";
+import { removeStorageObjects } from "@/lib/db/storage-cleanup";
 import type { CourseChapter, CourseLesson } from "@/types/database";
+
+const ASSIGNMENT_SUBMISSIONS_BUCKET = "assignment-submissions";
+const LESSON_ATTACHMENTS_BUCKET = "lesson-attachments";
+
+async function cleanupLessonStorageFiles(lessonIds: string[]) {
+  if (lessonIds.length === 0) return;
+  const supabase = await getAdminDataClient();
+
+  const [{ data: attachments }, { data: assignments }] = await Promise.all([
+    supabase
+      .from("lesson_attachments")
+      .select("file_url")
+      .in("lesson_id", lessonIds),
+    supabase.from("assignments").select("id").in("lesson_id", lessonIds),
+  ]);
+
+  await removeStorageObjects(
+    LESSON_ATTACHMENTS_BUCKET,
+    (attachments ?? []).map((row) => row.file_url as string | null)
+  );
+
+  const assignmentIds = (assignments ?? []).map((row) => row.id as string);
+  if (assignmentIds.length === 0) return;
+
+  const { data: submissions, error } = await supabase
+    .from("assignment_submissions")
+    .select("file_url")
+    .in("assignment_id", assignmentIds);
+  if (error) throw error;
+
+  await removeStorageObjects(
+    ASSIGNMENT_SUBMISSIONS_BUCKET,
+    (submissions ?? []).map((row) => row.file_url as string | null)
+  );
+}
 
 export async function getChaptersWithLessons(
   batchId: string
@@ -79,7 +115,17 @@ export async function updateChapter(
 }
 
 export async function deleteChapter(id: string) {
-  const supabase = await createClient();
+  const supabase = await getAdminDataClient();
+  const { data: lessons, error: lessonsError } = await supabase
+    .from("course_lessons")
+    .select("id")
+    .eq("chapter_id", id);
+  if (lessonsError) throw lessonsError;
+
+  await cleanupLessonStorageFiles(
+    (lessons ?? []).map((lesson) => lesson.id as string)
+  );
+
   const { error } = await supabase.from("course_chapters").delete().eq("id", id);
   if (error) throw error;
 }
@@ -135,6 +181,7 @@ export async function updateLesson(id: string, input: Partial<LessonInput>) {
 }
 
 export async function deleteLesson(id: string) {
+  await cleanupLessonStorageFiles([id]);
   const supabase = await createClient();
   const { error } = await supabase.from("course_lessons").delete().eq("id", id);
   if (error) throw error;

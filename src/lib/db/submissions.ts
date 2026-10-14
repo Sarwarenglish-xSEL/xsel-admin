@@ -1,6 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAdminDataClient } from "@/lib/db/admin-client";
 import {
+  removeStorageObject,
+  removeStorageObjects,
+} from "@/lib/db/storage-cleanup";
+import {
   normalizePage,
   normalizePageSize,
   pageRange,
@@ -258,21 +262,6 @@ export async function updateAssignmentSubmission(
   if (error) throw error;
 }
 
-async function removeSubmissionFile(fileUrl: string | null | undefined) {
-  if (!fileUrl?.trim()) return;
-  if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) return;
-
-  const supabase = await getAdminDataClient();
-  const path = fileUrl.replace(/^\//, "");
-  const { error } = await supabase.storage
-    .from(ASSIGNMENT_SUBMISSIONS_BUCKET)
-    .remove([path]);
-  if (error) {
-    // Soft-fail storage cleanup so the DB row can still be deleted.
-    console.error("Failed to remove submission file:", error.message);
-  }
-}
-
 export async function deleteAssignmentSubmission(id: string): Promise<void> {
   const supabase = await getAdminDataClient();
   const { data, error: fetchError } = await supabase
@@ -283,13 +272,29 @@ export async function deleteAssignmentSubmission(id: string): Promise<void> {
   if (fetchError) throw fetchError;
   if (!data) throw new Error("Submission not found");
 
-  await removeSubmissionFile(data.file_url);
+  await removeStorageObject(ASSIGNMENT_SUBMISSIONS_BUCKET, data.file_url);
 
   const { error } = await supabase
     .from("assignment_submissions")
     .delete()
     .eq("id", id);
   if (error) throw error;
+}
+
+/** Remove all submission files for an assignment before cascading DB deletes. */
+export async function removeAssignmentSubmissionFiles(
+  assignmentId: string
+): Promise<void> {
+  const supabase = await getAdminDataClient();
+  const { data, error } = await supabase
+    .from("assignment_submissions")
+    .select("file_url")
+    .eq("assignment_id", assignmentId);
+  if (error) throw error;
+  await removeStorageObjects(
+    ASSIGNMENT_SUBMISSIONS_BUCKET,
+    (data ?? []).map((row) => row.file_url as string | null)
+  );
 }
 
 export type QuizAttemptUpdate = {
