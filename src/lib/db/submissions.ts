@@ -222,15 +222,98 @@ export async function getQuizAttemptById(
   return data as unknown as QuizAttempt | null;
 }
 
+export type AssignmentSubmissionUpdate = {
+  obtained_marks?: number | null;
+  feedback?: string | null;
+  text_answer?: string | null;
+};
+
 export async function gradeSubmission(
   id: string,
   obtainedMarks: number,
   feedback: string
 ): Promise<void> {
+  await updateAssignmentSubmission(id, {
+    obtained_marks: obtainedMarks,
+    feedback,
+  });
+}
+
+export async function updateAssignmentSubmission(
+  id: string,
+  input: AssignmentSubmissionUpdate
+): Promise<void> {
   const supabase = await getAdminDataClient();
+  const payload: Record<string, unknown> = {};
+  if ("obtained_marks" in input) payload.obtained_marks = input.obtained_marks;
+  if ("feedback" in input) payload.feedback = input.feedback;
+  if ("text_answer" in input) payload.text_answer = input.text_answer;
+
+  if (Object.keys(payload).length === 0) return;
+
   const { error } = await supabase
     .from("assignment_submissions")
-    .update({ obtained_marks: obtainedMarks, feedback })
+    .update(payload)
     .eq("id", id);
+  if (error) throw error;
+}
+
+async function removeSubmissionFile(fileUrl: string | null | undefined) {
+  if (!fileUrl?.trim()) return;
+  if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) return;
+
+  const supabase = await getAdminDataClient();
+  const path = fileUrl.replace(/^\//, "");
+  const { error } = await supabase.storage
+    .from(ASSIGNMENT_SUBMISSIONS_BUCKET)
+    .remove([path]);
+  if (error) {
+    // Soft-fail storage cleanup so the DB row can still be deleted.
+    console.error("Failed to remove submission file:", error.message);
+  }
+}
+
+export async function deleteAssignmentSubmission(id: string): Promise<void> {
+  const supabase = await getAdminDataClient();
+  const { data, error: fetchError } = await supabase
+    .from("assignment_submissions")
+    .select("id, file_url")
+    .eq("id", id)
+    .maybeSingle();
+  if (fetchError) throw fetchError;
+  if (!data) throw new Error("Submission not found");
+
+  await removeSubmissionFile(data.file_url);
+
+  const { error } = await supabase
+    .from("assignment_submissions")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export type QuizAttemptUpdate = {
+  obtained_marks: number;
+  is_passed: boolean;
+};
+
+export async function updateQuizAttempt(
+  id: string,
+  input: QuizAttemptUpdate
+): Promise<void> {
+  const supabase = await getAdminDataClient();
+  const { error } = await supabase
+    .from("quiz_attempts")
+    .update({
+      obtained_marks: input.obtained_marks,
+      is_passed: input.is_passed,
+    })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteQuizAttempt(id: string): Promise<void> {
+  const supabase = await getAdminDataClient();
+  const { error } = await supabase.from("quiz_attempts").delete().eq("id", id);
   if (error) throw error;
 }
