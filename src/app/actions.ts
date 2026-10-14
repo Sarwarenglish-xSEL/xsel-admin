@@ -57,6 +57,11 @@ import {
   deleteAssignment,
 } from "@/lib/db/assignments";
 import {
+  createAttachment,
+  updateAttachment,
+  deleteAttachment,
+} from "@/lib/db/attachments";
+import {
   gradeSubmission,
   getAssignmentSubmissionById,
   getAssignmentSubmissionSignedUrl,
@@ -79,6 +84,7 @@ import {
 import type {
   AssignmentType,
   EnrollmentStatus,
+  LessonAttachmentFileType,
   Profile,
   QuizOption,
   QuizType,
@@ -774,6 +780,62 @@ export async function deleteAssignmentAction(
   revalidatePath(
     `/batches/${batchId}/lessons/${lessonId}/assignment/${assignmentId}`
   );
+}
+
+export async function createAttachmentAction(
+  batchId: string,
+  lessonId: string,
+  input: {
+    title?: string;
+    file_name: string;
+    file_url: string;
+    file_type: LessonAttachmentFileType;
+    mime_type: string;
+    file_size_bytes?: number | null;
+    instructions?: string;
+  }
+) {
+  const attachment = await createAttachment(lessonId, input);
+  revalidatePath(`/batches/${batchId}/edit`);
+  return {
+    id: attachment.id,
+    title: attachment.title,
+    file_name: attachment.file_name,
+    file_url: attachment.file_url,
+    file_type: attachment.file_type,
+    mime_type: attachment.mime_type,
+    file_size_bytes: attachment.file_size_bytes,
+    sort_order: attachment.sort_order,
+    instructions: attachment.instructions,
+  };
+}
+
+export async function saveAttachmentAction(
+  batchId: string,
+  lessonId: string,
+  attachmentId: string,
+  input: {
+    title?: string;
+    file_name?: string;
+    file_url?: string;
+    file_type?: LessonAttachmentFileType;
+    mime_type?: string;
+    file_size_bytes?: number | null;
+    instructions?: string;
+  }
+) {
+  const attachment = await updateAttachment(attachmentId, input);
+  revalidatePath(`/batches/${batchId}/edit`);
+  return attachment;
+}
+
+export async function deleteAttachmentAction(
+  batchId: string,
+  lessonId: string,
+  attachmentId: string
+) {
+  await deleteAttachment(attachmentId);
+  revalidatePath(`/batches/${batchId}/edit`);
 }
 
 export async function gradeSubmissionAction(

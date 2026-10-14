@@ -9,7 +9,7 @@ export async function getChaptersWithLessons(
   const { data, error } = await supabase
     .from("course_chapters")
     .select(
-      "*, lessons:course_lessons(*, quizzes(id, title, quiz_type, sort_order, passing_marks, total_marks), assignments(id, title, type, sort_order, question, description, max_marks, due_date))"
+      "*, lessons:course_lessons(*, quizzes(id, title, quiz_type, sort_order, passing_marks, total_marks), assignments(id, title, type, sort_order, question, description, max_marks, due_date), attachments:lesson_attachments(id, title, file_name, file_url, file_type, mime_type, file_size_bytes, sort_order, instructions))"
     )
     .eq("batch_id", batchId)
     .order("sort_order");
@@ -23,11 +23,13 @@ export async function getChaptersWithLessons(
           lesson: CourseLesson & {
             quizzes?: CourseLesson["quizzes"];
             assignments?: CourseLesson["assignments"];
+            attachments?: CourseLesson["attachments"];
           }
         ) => ({
           ...lesson,
           quizzes: sortByOrder(asArray(lesson.quizzes)),
           assignments: sortByOrder(asArray(lesson.assignments)),
+          attachments: sortByOrder(asArray(lesson.attachments)),
         })
       )
       .sort(

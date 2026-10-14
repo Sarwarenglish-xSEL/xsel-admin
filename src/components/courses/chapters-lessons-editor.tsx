@@ -8,20 +8,26 @@ import {
   ChevronDown,
   ChevronUp,
   ClipboardList,
+  ExternalLink,
   FileQuestion,
   Layers,
+  Paperclip,
   Pencil,
   Plus,
   Radio,
   Trash2,
+  Upload,
   Video,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   ADMIN_ASSIGNMENT_TYPE_OPTIONS,
+  LESSON_ATTACHMENT_ACCEPT,
+  LESSON_ATTACHMENT_FILE_TYPES,
   type AssignmentType,
   type CourseChapter,
   type CourseLesson,
+  type LessonAttachmentFileType,
   type LessonType,
   type QuizOption,
   type QuizType,
@@ -37,14 +43,19 @@ import {
   reorderLessonsAction,
   createQuizAction,
   createAssignmentAction,
+  createAttachmentAction,
   saveQuizAction,
   saveAssignmentAction,
+  saveAttachmentAction,
   deleteQuizAction,
   deleteAssignmentAction,
+  deleteAttachmentAction,
 } from "@/app/actions";
+import { uploadFile } from "@/lib/db/storage";
 
 type LessonQuiz = NonNullable<CourseLesson["quizzes"]>[number];
 type LessonAssignment = NonNullable<CourseLesson["assignments"]>[number];
+type LessonAttachmentItem = NonNullable<CourseLesson["attachments"]>[number];
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +65,23 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+
+function attachmentFileTypeFromName(
+  fileName: string
+): LessonAttachmentFileType | null {
+  const ext = fileName.split(".").pop()?.toLowerCase();
+  if (!ext) return null;
+  return LESSON_ATTACHMENT_FILE_TYPES.includes(ext as LessonAttachmentFileType)
+    ? (ext as LessonAttachmentFileType)
+    : null;
+}
+
+function formatFileSize(bytes: number | null | undefined): string {
+  if (bytes == null || bytes < 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 function LessonTypeIcon({ type }: { type: LessonType }) {
   const className = "h-3.5 w-3.5";
@@ -88,6 +116,11 @@ export function ChaptersLessonsEditor({
     lessonId: string;
     lessonTitle: string;
     assignment?: LessonAssignment;
+  } | null>(null);
+  const [attachmentDialog, setAttachmentDialog] = useState<{
+    lessonId: string;
+    lessonTitle: string;
+    attachment?: LessonAttachmentItem;
   } | null>(null);
   const router = useRouter();
 
@@ -206,7 +239,7 @@ export function ChaptersLessonsEditor({
             <p className="text-sm font-semibold text-gray-900">No chapters yet</p>
             <p className="mt-1 max-w-sm text-sm text-gray-500">
               Start building this batch by adding your first chapter, then nest
-              lessons, quizzes, and assignments under it.
+              lessons, quizzes, assignments, and attachments under it.
             </p>
           </CardContent>
         </Card>
@@ -297,13 +330,14 @@ export function ChaptersLessonsEditor({
                       No lessons in this chapter
                     </p>
                     <p className="mt-1 text-xs text-gray-500">
-                      Add a lesson to attach quizzes and assignments.
+                      Add a lesson to attach quizzes, assignments, and files.
                     </p>
                   </div>
                 ) : (
                   lessons.map((lesson, lessonIndex) => {
                     const quizzes = lesson.quizzes ?? [];
                     const assignments = lesson.assignments ?? [];
+                    const attachments = lesson.attachments ?? [];
                     const hasVideoQuiz = quizzes.some(
                       (q) => q.quiz_type === "video"
                     );
@@ -350,6 +384,12 @@ export function ChaptersLessonsEditor({
                                     <Badge variant="warning">
                                       {assignments.length} assignment
                                       {assignments.length === 1 ? "" : "s"}
+                                    </Badge>
+                                  )}
+                                  {attachments.length > 0 && (
+                                    <Badge variant="outline">
+                                      {attachments.length} attachment
+                                      {attachments.length === 1 ? "" : "s"}
                                     </Badge>
                                   )}
                                 </div>
@@ -430,7 +470,7 @@ export function ChaptersLessonsEditor({
                           </div>
                         </div>
 
-                        <div className="grid gap-3 border-t border-gray-100 bg-gray-50/80 p-3 sm:grid-cols-2">
+                        <div className="grid gap-3 border-t border-gray-100 bg-gray-50/80 p-3 sm:grid-cols-2 lg:grid-cols-3">
                           <div className="rounded-lg border border-gray-200/80 bg-surface p-3">
                             <div className="mb-2.5 flex items-center justify-between gap-2">
                               <div className="flex items-center gap-1.5">
@@ -677,6 +717,141 @@ export function ChaptersLessonsEditor({
                               </div>
                             )}
                           </div>
+
+                          <div className="rounded-lg border border-gray-200/80 bg-surface p-3">
+                            <div className="mb-2.5 flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5">
+                                <Paperclip className="h-3.5 w-3.5 text-brand" />
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                  Attachments
+                                </p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-brand hover:bg-brand/10 hover:text-brand-dark"
+                                onClick={() =>
+                                  setAttachmentDialog({
+                                    lessonId: lesson.id,
+                                    lessonTitle: lesson.title,
+                                  })
+                                }
+                              >
+                                <Plus className="h-3 w-3" />
+                                Add
+                              </Button>
+                            </div>
+                            {attachments.length === 0 ? (
+                              <p className="rounded-md bg-gray-50 px-2.5 py-2 text-xs text-gray-400">
+                                No attachments yet
+                              </p>
+                            ) : (
+                              <div className="flex flex-col gap-1.5">
+                                {attachments.map((attachment) => (
+                                  <div
+                                    key={attachment.id}
+                                    className={cn(
+                                      "flex items-start gap-1 rounded-md border border-gray-200 px-2 py-1.5",
+                                      "text-sm text-gray-700"
+                                    )}
+                                  >
+                                    <a
+                                      href={attachment.file_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="group flex min-w-0 flex-1 items-start gap-2 rounded-md px-0.5 py-0.5 transition-colors hover:text-brand"
+                                    >
+                                      <Paperclip className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-400 group-hover:text-brand" />
+                                      <span className="min-w-0 flex-1">
+                                        <span className="flex items-center gap-1.5">
+                                          <span className="truncate font-medium">
+                                            {attachment.title ||
+                                              attachment.file_name}
+                                          </span>
+                                          <ExternalLink className="h-3 w-3 shrink-0 text-gray-300 group-hover:text-brand" />
+                                        </span>
+                                        {attachment.instructions?.trim() ? (
+                                          <span className="mt-0.5 block line-clamp-2 text-xs font-normal text-gray-400">
+                                            {attachment.instructions}
+                                          </span>
+                                        ) : null}
+                                      </span>
+                                    </a>
+                                    <Badge
+                                      variant="outline"
+                                      className="mt-0.5 shrink-0 uppercase"
+                                    >
+                                      {attachment.file_type}
+                                    </Badge>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      title="Edit attachment"
+                                      className="mt-0.5 h-7 w-7 shrink-0"
+                                      onClick={() =>
+                                        setAttachmentDialog({
+                                          lessonId: lesson.id,
+                                          lessonTitle: lesson.title,
+                                          attachment,
+                                        })
+                                      }
+                                    >
+                                      <Pencil className="h-3.5 w-3.5" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      title="Delete attachment"
+                                      className="mt-0.5 h-7 w-7 shrink-0 text-danger hover:bg-danger/10 hover:text-danger"
+                                      onClick={async () => {
+                                        if (
+                                          !confirm("Delete this attachment?")
+                                        )
+                                          return;
+                                        try {
+                                          await deleteAttachmentAction(
+                                            batchId,
+                                            lesson.id,
+                                            attachment.id
+                                          );
+                                          setChapters((prev) =>
+                                            prev.map((ch) => ({
+                                              ...ch,
+                                              lessons: (ch.lessons ?? []).map(
+                                                (l) =>
+                                                  l.id === lesson.id
+                                                    ? {
+                                                        ...l,
+                                                        attachments: (
+                                                          l.attachments ?? []
+                                                        ).filter(
+                                                          (a) =>
+                                                            a.id !==
+                                                            attachment.id
+                                                        ),
+                                                      }
+                                                    : l
+                                              ),
+                                            }))
+                                          );
+                                          toast.success("Attachment deleted");
+                                          router.refresh();
+                                        } catch (e) {
+                                          toast.error(
+                                            e instanceof Error
+                                              ? e.message
+                                              : "Failed"
+                                          );
+                                        }
+                                      }}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -714,7 +889,12 @@ export function ChaptersLessonsEditor({
                   lessons: isNew
                     ? [
                         ...lessons,
-                        { ...savedLesson, quizzes: [], assignments: [] },
+                        {
+                          ...savedLesson,
+                          quizzes: [],
+                          assignments: [],
+                          attachments: [],
+                        },
                       ]
                     : lessons.map((l) =>
                         l.id === savedLesson.id ? { ...l, ...savedLesson } : l
@@ -777,6 +957,37 @@ export function ChaptersLessonsEditor({
                         ? [...assignments, assignment]
                         : assignments.map((a) =>
                             a.id === assignment.id ? assignment : a
+                          )
+                    ).sort((a, b) => a.sort_order - b.sort_order),
+                  };
+                }),
+              }))
+            );
+          }}
+        />
+      )}
+
+      {attachmentDialog && (
+        <AttachmentDialog
+          batchId={batchId}
+          lessonId={attachmentDialog.lessonId}
+          lessonTitle={attachmentDialog.lessonTitle}
+          attachment={attachmentDialog.attachment}
+          onClose={() => setAttachmentDialog(null)}
+          onSaved={(lessonId, attachment, isNew) => {
+            setChapters((prev) =>
+              prev.map((ch) => ({
+                ...ch,
+                lessons: (ch.lessons ?? []).map((l) => {
+                  if (l.id !== lessonId) return l;
+                  const attachments = l.attachments ?? [];
+                  return {
+                    ...l,
+                    attachments: (
+                      isNew
+                        ? [...attachments, attachment]
+                        : attachments.map((a) =>
+                            a.id === attachment.id ? attachment : a
                           )
                     ).sort((a, b) => a.sort_order - b.sort_order),
                   };
@@ -1576,6 +1787,263 @@ function AssignmentDialog({
               : isEdit
                 ? "Update Assignment"
                 : "Save Assignment"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AttachmentDialog({
+  batchId,
+  lessonId,
+  lessonTitle,
+  attachment,
+  onClose,
+  onSaved,
+}: {
+  batchId: string;
+  lessonId: string;
+  lessonTitle: string;
+  attachment?: LessonAttachmentItem;
+  onClose: () => void;
+  onSaved: (
+    lessonId: string,
+    attachment: LessonAttachmentItem,
+    isNew: boolean
+  ) => void;
+}) {
+  const isEdit = Boolean(attachment);
+  const [title, setTitle] = useState(attachment?.title ?? "");
+  const [instructions, setInstructions] = useState(
+    attachment?.instructions ?? ""
+  );
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  async function save() {
+    if (isEdit && attachment) {
+      if (!title.trim()) {
+        toast.error("Title is required");
+        return;
+      }
+      setLoading(true);
+      try {
+        let payload: {
+          title: string;
+          instructions: string;
+          file_name?: string;
+          file_url?: string;
+          file_type?: LessonAttachmentFileType;
+          mime_type?: string;
+          file_size_bytes?: number | null;
+        } = {
+          title: title.trim(),
+          instructions: instructions.trim(),
+        };
+
+        if (file) {
+          const fileType = attachmentFileTypeFromName(file.name);
+          if (!fileType) {
+            toast.error(
+              "Allowed file types: PDF, PNG, JPEG, JPG, DOC, DOCX, TXT"
+            );
+            setLoading(false);
+            return;
+          }
+          const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+          const path = `${lessonId}/${Date.now()}-${safeName}`;
+          const fileUrl = await uploadFile("lesson-attachments", path, file);
+          payload = {
+            ...payload,
+            file_name: file.name,
+            file_url: fileUrl,
+            file_type: fileType,
+            mime_type: file.type || `application/${fileType}`,
+            file_size_bytes: file.size,
+          };
+        }
+
+        const saved = await saveAttachmentAction(
+          batchId,
+          lessonId,
+          attachment.id,
+          payload
+        );
+        onSaved(
+          lessonId,
+          {
+            id: saved.id,
+            title: saved.title,
+            file_name: saved.file_name,
+            file_url: saved.file_url,
+            file_type: saved.file_type,
+            mime_type: saved.mime_type,
+            file_size_bytes: saved.file_size_bytes,
+            sort_order: saved.sort_order,
+            instructions: saved.instructions,
+          },
+          false
+        );
+        toast.success("Attachment updated");
+        onClose();
+        router.refresh();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Failed");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    if (!file) {
+      toast.error("Please select a file");
+      return;
+    }
+    const fileType = attachmentFileTypeFromName(file.name);
+    if (!fileType) {
+      toast.error("Allowed file types: PDF, PNG, JPEG, JPG, DOC, DOCX, TXT");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+      const path = `${lessonId}/${Date.now()}-${safeName}`;
+      const fileUrl = await uploadFile("lesson-attachments", path, file);
+      const created = await createAttachmentAction(batchId, lessonId, {
+        title: title.trim() || file.name,
+        file_name: file.name,
+        file_url: fileUrl,
+        file_type: fileType,
+        mime_type: file.type || `application/${fileType}`,
+        file_size_bytes: file.size,
+        instructions: instructions.trim(),
+      });
+      onSaved(lessonId, created, true);
+      toast.success("Attachment added");
+      onClose();
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={() => onClose()} className="max-w-lg">
+      <DialogContent
+        className="flex w-full max-h-[min(36rem,85vh)] flex-col overflow-hidden p-0"
+        onClose={onClose}
+      >
+        <div className="shrink-0 border-b border-brand/15 brand-gradient px-6 py-5 pr-12 sm:px-7">
+          <DialogHeader className="mb-0">
+            <div className="flex items-start gap-3">
+              <div className="mt-1 h-8 w-1 shrink-0 rounded-full brand-accent-bar" />
+              <div>
+                <DialogTitle className="text-xl">
+                  {isEdit ? (
+                    <>Edit Attachment in &ldquo;{lessonTitle}&rdquo;</>
+                  ) : (
+                    <>Add Attachment to &ldquo;{lessonTitle}&rdquo;</>
+                  )}
+                </DialogTitle>
+                <p className="mt-1 text-sm text-brand/70">
+                  Upload a file and optional instructions for students
+                </p>
+              </div>
+            </div>
+          </DialogHeader>
+        </div>
+
+        <div className="brand-scrollbar min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5 sm:px-7">
+          <div>
+            <Label>Title</Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={file?.name || attachment?.file_name || "e.g. Nouns worksheet"}
+            />
+          </div>
+
+          <div>
+            <Label>Instructions</Label>
+            <Textarea
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+              placeholder="Optional guidance for students about this file"
+              className="min-h-[5.5rem] resize-none"
+            />
+          </div>
+
+          <div>
+            <Label>File</Label>
+            <input
+              id="lesson-attachment-file"
+              type="file"
+              accept={LESSON_ATTACHMENT_ACCEPT}
+              className="sr-only"
+              disabled={loading}
+              onChange={(e) => {
+                const next = e.target.files?.[0] ?? null;
+                if (!next) return;
+                const fileType = attachmentFileTypeFromName(next.name);
+                if (!fileType) {
+                  toast.error(
+                    "Allowed file types: PDF, PNG, JPEG, JPG, DOC, DOCX, TXT"
+                  );
+                  e.target.value = "";
+                  return;
+                }
+                setFile(next);
+                if (!title.trim()) {
+                  setTitle(next.name.replace(/\.[^.]+$/, ""));
+                }
+              }}
+            />
+            <label
+              htmlFor="lesson-attachment-file"
+              className={cn(
+                "flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-brand/30 bg-surface-muted/40 px-4 py-3.5 transition-colors hover:border-brand/50 hover:bg-brand/5",
+                loading && "pointer-events-none opacity-60"
+              )}
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand/15 text-brand">
+                <Upload className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 text-left">
+                <span className="block font-sans text-sm font-medium text-brand-dark">
+                  {file
+                    ? file.name
+                    : isEdit
+                      ? "Replace file (optional)"
+                      : "Choose file"}
+                </span>
+                <span className="mt-0.5 block font-sans text-xs text-brand/60">
+                  {file
+                    ? formatFileSize(file.size)
+                    : isEdit && attachment
+                      ? `${attachment.file_name}${
+                          attachment.file_size_bytes != null
+                            ? ` · ${formatFileSize(attachment.file_size_bytes)}`
+                            : ""
+                        }`
+                      : "PDF, PNG, JPEG, JPG, DOC, DOCX, TXT"}
+                </span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 justify-end border-t border-brand/15 bg-surface px-6 py-4 sm:px-7">
+          <Button onClick={save} disabled={loading} className="min-w-40">
+            {loading
+              ? "Saving..."
+              : isEdit
+                ? "Update Attachment"
+                : "Save Attachment"}
           </Button>
         </div>
       </DialogContent>

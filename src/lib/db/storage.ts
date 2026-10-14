@@ -13,7 +13,7 @@ export async function uploadFile(
   });
   if (error) throw error;
 
-  if (bucket === "course-thumbnails") {
+  if (bucket === "course-thumbnails" || bucket === "lesson-attachments") {
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
     return data.publicUrl;
   }

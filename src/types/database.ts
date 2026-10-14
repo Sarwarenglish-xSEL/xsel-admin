@@ -10,6 +10,27 @@ export type PurchaseStatus = "pending" | "approved" | "rejected";
 export type QuizOption = "a" | "b" | "c" | "d";
 export type QuizType = "lesson" | "video";
 export type AssignmentType = "written" | "audio" | "file";
+export type LessonAttachmentFileType =
+  | "pdf"
+  | "png"
+  | "jpeg"
+  | "jpg"
+  | "doc"
+  | "docx"
+  | "txt";
+
+export const LESSON_ATTACHMENT_FILE_TYPES: LessonAttachmentFileType[] = [
+  "pdf",
+  "png",
+  "jpeg",
+  "jpg",
+  "doc",
+  "docx",
+  "txt",
+];
+
+export const LESSON_ATTACHMENT_ACCEPT =
+  ".pdf,.png,.jpeg,.jpg,.doc,.docx,.txt,application/pdf,image/png,image/jpeg,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain";
 
 export interface AppSetting {
   key: string;
@@ -143,6 +164,18 @@ export interface CourseLesson {
     | "max_marks"
     | "due_date"
   >[];
+  attachments?: Pick<
+    LessonAttachment,
+    | "id"
+    | "title"
+    | "file_name"
+    | "file_url"
+    | "file_type"
+    | "mime_type"
+    | "file_size_bytes"
+    | "sort_order"
+    | "instructions"
+  >[];
 }
 
 export interface CourseBatch {
@@ -228,6 +261,21 @@ export interface Assignment {
   max_marks: number;
   due_date: string | null;
   sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LessonAttachment {
+  id: string;
+  lesson_id: string;
+  title: string;
+  file_name: string;
+  file_url: string;
+  file_type: LessonAttachmentFileType;
+  mime_type: string;
+  file_size_bytes: number | null;
+  sort_order: number;
+  instructions: string;
   created_at: string;
   updated_at: string;
 }
