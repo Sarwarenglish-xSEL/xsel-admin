@@ -25,24 +25,38 @@ function formatCourseType(type?: CourseType) {
   return "—";
 }
 
+function normalizeStatus(status: string): EnrollmentStatus {
+  return status === "blocked" || status === "revoked" ? "blocked" : "active";
+}
+
 function StatusSelect({ enrollment }: { enrollment: CourseEnrollment }) {
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [status, setStatus] = useState<EnrollmentStatus>(() =>
+    normalizeStatus(enrollment.status)
+  );
+  const [loading, setLoading] = useState(false);
+
+  // Keep the dropdown in sync with server props after refresh / remount.
+  useEffect(() => {
+    setStatus(normalizeStatus(enrollment.status));
+  }, [enrollment.id, enrollment.status]);
+
   return (
     <Select
       className="w-32"
-      defaultValue={enrollment.status === "blocked" ? "blocked" : "active"}
+      value={status}
       disabled={loading}
       onChange={async (e) => {
+        const next = e.target.value as EnrollmentStatus;
+        const previous = status;
+        setStatus(next);
         setLoading(true);
         try {
-          await updateEnrollmentStatusAction(
-            enrollment.id,
-            e.target.value as EnrollmentStatus
-          );
+          await updateEnrollmentStatusAction(enrollment.id, next);
           toast.success("Status updated");
           router.refresh();
         } catch (err) {
+          setStatus(previous);
           toast.error(err instanceof Error ? err.message : "Failed");
         } finally {
           setLoading(false);
@@ -305,7 +319,6 @@ function EnrollmentFilters({
             course: courseId || undefined,
             batch: batchId || undefined,
           }}
-          suggestScope="enrollments"
           className="w-full max-w-none sm:max-w-md"
         />
         {actions ? (
@@ -398,6 +411,15 @@ export function EnrollmentsTable({
   initialBatchId?: string;
   initialQuery?: string;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Soft navigation can restore a stale RSC payload. Refresh on mount so
+  // status (and other fields) always match the database.
+  useEffect(() => {
+    router.refresh();
+  }, [router, pathname, initialCourseId, initialBatchId, initialQuery]);
+
   return (
     <div className="space-y-4">
       <EnrollmentFilters

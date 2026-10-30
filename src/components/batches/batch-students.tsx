@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { Plus, Users } from "lucide-react";
 import { toast } from "sonner";
-import type { CourseEnrollment } from "@/types/database";
+import type { CourseEnrollment, EnrollmentStatus } from "@/types/database";
 import { createEnrollmentAction, updateEnrollmentStatusAction } from "@/app/actions";
 import { useLazyProfileOptions } from "@/components/use-lazy-profile-options";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,54 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+function normalizeStatus(status: string): EnrollmentStatus {
+  return status === "blocked" || status === "revoked" ? "blocked" : "active";
+}
+
+function EnrollmentStatusSelect({ enrollment }: { enrollment: CourseEnrollment }) {
+  const router = useRouter();
+  const [status, setStatus] = useState<EnrollmentStatus>(() =>
+    normalizeStatus(enrollment.status)
+  );
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setStatus(normalizeStatus(enrollment.status));
+  }, [enrollment.id, enrollment.status]);
+
+  return (
+    <div className="flex items-center gap-2">
+      <Badge variant={status === "active" ? "success" : "outline"}>
+        {status}
+      </Badge>
+      <Select
+        className="w-28"
+        value={status}
+        disabled={loading}
+        onChange={async (e) => {
+          const next = e.target.value as EnrollmentStatus;
+          const previous = status;
+          setStatus(next);
+          setLoading(true);
+          try {
+            await updateEnrollmentStatusAction(enrollment.id, next);
+            toast.success("Status updated");
+            router.refresh();
+          } catch (err) {
+            setStatus(previous);
+            toast.error(err instanceof Error ? err.message : "Failed");
+          } finally {
+            setLoading(false);
+          }
+        }}
+      >
+        <option value="active">Active</option>
+        <option value="blocked">Blocked</option>
+      </Select>
+    </div>
+  );
+}
 
 function EnrollStudentDialog({
   courseId,
@@ -124,7 +172,13 @@ export function BatchStudents({
   enrollments: CourseEnrollment[];
 }) {
   const router = useRouter();
-  const activeCount = enrollments.filter((e) => e.status === "active").length;
+  const activeCount = enrollments.filter(
+    (e) => normalizeStatus(e.status) === "active"
+  ).length;
+
+  useEffect(() => {
+    router.refresh();
+  }, [router, batchId]);
 
   return (
     <Card className="overflow-hidden border-brand/20 shadow-sm">
@@ -181,38 +235,7 @@ export function BatchStudents({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={
-                            enrollment.status === "active" ? "success" : "outline"
-                          }
-                        >
-                          {enrollment.status === "blocked" ? "blocked" : "active"}
-                        </Badge>
-                        <Select
-                          className="w-28"
-                          defaultValue={
-                            enrollment.status === "blocked" ? "blocked" : "active"
-                          }
-                          onChange={async (e) => {
-                            try {
-                              await updateEnrollmentStatusAction(
-                                enrollment.id,
-                                e.target.value as "active" | "blocked"
-                              );
-                              toast.success("Status updated");
-                              router.refresh();
-                            } catch (err) {
-                              toast.error(
-                                err instanceof Error ? err.message : "Failed"
-                              );
-                            }
-                          }}
-                        >
-                          <option value="active">Active</option>
-                          <option value="blocked">Blocked</option>
-                        </Select>
-                      </div>
+                      <EnrollmentStatusSelect enrollment={enrollment} />
                     </TableCell>
                     <TableCell className="text-gray-600">
                       {format(new Date(enrollment.created_at), "MMM d, yyyy")}

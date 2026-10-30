@@ -9,6 +9,8 @@ import { ListPagination } from "@/components/list-pagination";
 import { PageHeader } from "@/components/layout/page-header";
 import { PageEmpty } from "@/components/page-states";
 
+export const dynamic = "force-dynamic";
+
 export default async function EnrollmentsPage({
   searchParams,
 }: {

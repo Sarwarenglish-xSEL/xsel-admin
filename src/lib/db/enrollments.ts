@@ -162,17 +162,22 @@ export async function updateEnrollmentStatus(
   id: string,
   status: EnrollmentStatus
 ): Promise<void> {
-  const supabase = await createClient();
+  // Use admin data client so status writes are not silently no-op'd by RLS.
+  const supabase = await getAdminDataClient();
   const candidates = enrollmentStatusDbValues(status);
   let lastError: { code?: string; message: string } | null = null;
 
   for (const dbStatus of candidates) {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("course_enrollments")
       .update({ status: dbStatus })
-      .eq("id", id);
+      .eq("id", id)
+      .select("id");
 
-    if (!error) return;
+    if (!error) {
+      if (data && data.length > 0) return;
+      throw new Error("Enrollment not found or could not be updated");
+    }
 
     if (error.code === "22P02") {
       lastError = error;

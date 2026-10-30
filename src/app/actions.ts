@@ -574,8 +574,10 @@ export async function updateEnrollmentStatusAction(
   status: EnrollmentStatus
 ) {
   await updateEnrollmentStatus(id, status);
-  revalidatePath("/enrollments");
-  revalidatePath("/batches");
+  // Invalidate page + nested layouts so soft navigation cannot restore
+  // a stale enrollments / batches payload after status changes.
+  revalidatePath("/enrollments", "layout");
+  revalidatePath("/batches", "layout");
 }
 
 export async function createBatchAction(input: BatchInput) {
