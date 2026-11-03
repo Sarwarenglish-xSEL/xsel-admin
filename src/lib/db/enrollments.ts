@@ -205,3 +205,18 @@ export async function updateEnrollmentStatus(
 
   if (lastError) throw lastError;
 }
+
+export async function deleteEnrollment(id: string): Promise<void> {
+  // Use admin data client so deletes are not silently no-op'd by RLS.
+  const supabase = await getAdminDataClient();
+  const { data, error } = await supabase
+    .from("course_enrollments")
+    .delete()
+    .eq("id", id)
+    .select("id");
+
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error("Enrollment not found or could not be removed");
+  }
+}

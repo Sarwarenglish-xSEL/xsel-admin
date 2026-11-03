@@ -11,13 +11,17 @@ import type { BatchFilterOption, CourseFilterOption } from "@/lib/db/catalog";
 import { useLazyProfileOptions } from "@/components/use-lazy-profile-options";
 import { DataTable } from "@/components/data-table";
 import { ListSearch } from "@/components/list-search";
+import { UnenrollButton } from "@/components/enrollments/unenroll-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Label } from "@/components/ui/label";
-import { createEnrollmentAction, updateEnrollmentStatusAction } from "@/app/actions";
+import {
+  createEnrollmentAction,
+  updateEnrollmentStatusAction,
+} from "@/app/actions";
 
 function formatCourseType(type?: CourseType) {
   if (type === "live") return "Live";
@@ -112,6 +116,13 @@ const columns: ColumnDef<CourseEnrollment>[] = [
     accessorKey: "created_at",
     header: "Enrolled",
     cell: ({ row }) => format(new Date(row.original.created_at), "MMM d, yyyy"),
+  },
+  {
+    id: "actions",
+    header: "",
+    cell: ({ row }) => (
+      <UnenrollButton enrollment={row.original} showCourse />
+    ),
   },
 ];
 

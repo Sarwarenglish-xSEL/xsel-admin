@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Eye, MoreHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { AssignmentSubmission } from "@/types/database";
 import { DataTable } from "@/components/data-table";
@@ -125,7 +125,7 @@ function EditSubmissionDialog({
     <Dialog open={open} onOpenChange={onOpenChange} className="max-w-2xl">
       <DialogContent onClose={() => onOpenChange(false)} className="w-full">
         <DialogHeader>
-          <DialogTitle>Edit Submission</DialogTitle>
+          <DialogTitle>View Submission</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           {detailLoading && !detail ? (
@@ -266,7 +266,7 @@ function SubmissionActions({ submission }: { submission: AssignmentSubmission })
         }
       >
         <DropdownMenuItem onClick={() => setEditOpen(true)}>
-          <Pencil className="h-4 w-4" /> Edit
+          <Eye className="h-4 w-4" /> View
         </DropdownMenuItem>
         <DropdownMenuItem
           className="text-danger hover:bg-danger/5"

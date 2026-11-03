@@ -6,8 +6,12 @@ import { format } from "date-fns";
 import { Plus, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { CourseEnrollment, EnrollmentStatus } from "@/types/database";
-import { createEnrollmentAction, updateEnrollmentStatusAction } from "@/app/actions";
+import {
+  createEnrollmentAction,
+  updateEnrollmentStatusAction,
+} from "@/app/actions";
 import { useLazyProfileOptions } from "@/components/use-lazy-profile-options";
+import { UnenrollButton } from "@/components/enrollments/unenroll-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -216,6 +220,7 @@ export function BatchStudents({
                   <TableHead>Student</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Enrolled</TableHead>
+                  <TableHead className="w-32" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -247,6 +252,9 @@ export function BatchStudents({
                     </TableCell>
                     <TableCell className="text-gray-600">
                       {format(new Date(enrollment.created_at), "MMM d, yyyy")}
+                    </TableCell>
+                    <TableCell>
+                      <UnenrollButton enrollment={enrollment} />
                     </TableCell>
                   </TableRow>
                 ))}

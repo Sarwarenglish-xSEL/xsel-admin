@@ -34,6 +34,7 @@ import { getPublishedCourseById } from "@/lib/db/courses";
 import { RECEIPT_ACCEPT, RECEIPT_MAX_BYTES } from "@/lib/payment-config";
 import {
   createEnrollment,
+  deleteEnrollment,
   updateEnrollmentStatus,
 } from "@/lib/db/enrollments";
 import {
@@ -585,6 +586,21 @@ export async function updateEnrollmentStatusAction(
   // a stale enrollments / batches payload after status changes.
   revalidatePath("/enrollments", "layout");
   revalidatePath("/batches", "layout");
+}
+
+export async function deleteEnrollmentAction(
+  id: string
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  try {
+    await deleteEnrollment(id);
+    revalidatePath("/enrollments", "layout");
+    revalidatePath("/batches", "layout");
+    return { ok: true };
+  } catch (e) {
+    const message =
+      e instanceof Error ? e.message : "Failed to unenroll student.";
+    return { ok: false, message };
+  }
 }
 
 export async function createBatchAction(input: BatchInput) {
