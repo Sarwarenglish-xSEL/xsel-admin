@@ -13,7 +13,11 @@ import {
 import { toast } from "sonner";
 import type { Profile } from "@/types/database";
 import { deleteUserAction } from "@/app/actions";
-import { formatAppVersion, summarizeOs } from "@/lib/device-utils";
+import {
+  formatAppVersion,
+  formatDeviceModel,
+  formatDeviceOs,
+} from "@/lib/sessions/presence";
 import { DataTable } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -98,24 +102,29 @@ function UserActions({
 }
 
 function DeviceCell({ user }: { user: Profile }) {
-  const model = user.registered_device_model?.trim();
-  const osRaw = user.registered_os?.trim();
-  const platform = summarizeOs(osRaw);
+  const current = user.current_device;
+  const fullDevice =
+    current?.device_model?.trim() || user.registered_device_model?.trim() || null;
+  const fullOs = current?.os?.trim() || user.registered_os?.trim() || null;
 
-  if (!model && !platform) {
+  if (!fullDevice && !fullOs) {
     return <span className="text-sm text-gray-400">No device</span>;
   }
 
+  const device = formatDeviceModel(fullDevice);
+  const os = formatDeviceOs(fullOs);
+  const title = [fullDevice, fullOs].filter(Boolean).join("\n");
+
   return (
-    <div className="min-w-0 max-w-full">
-      <p className="truncate text-sm font-medium text-brand-dark" title={model ?? undefined}>
-        {model || "Unknown device"}
-      </p>
-      {platform ? (
-        <p className="truncate text-xs text-gray-500" title={osRaw ?? undefined}>
-          {platform}
-        </p>
-      ) : null}
+    <div
+      className="flex min-w-0 max-w-full items-start gap-2"
+      title={title.length > device.length + os.length ? title : undefined}
+    >
+      <MonitorSmartphone className="mt-0.5 h-4 w-4 shrink-0 text-brand/45" />
+      <div className="min-w-0 max-w-full">
+        <p className="truncate text-sm font-medium text-brand-dark">{device}</p>
+        <p className="truncate text-xs text-gray-500">{os}</p>
+      </div>
     </div>
   );
 }
@@ -219,9 +228,12 @@ const columns = (
       cellClassName: "whitespace-nowrap",
     },
     cell: ({ row }) => {
-      const version = formatAppVersion(row.original.registered_app_version);
+      const version = formatAppVersion(
+        row.original.current_device?.app_version ||
+          row.original.registered_app_version
+      );
       return version ? (
-        <span className="font-mono text-xs text-gray-700">{version}</span>
+        <span className="font-mono text-xs text-gray-700">v{version}</span>
       ) : (
         <span className="text-sm text-gray-400">—</span>
       );

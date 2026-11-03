@@ -248,7 +248,15 @@ function EnrollDialog({
               onClick={async () => {
                 setLoading(true);
                 try {
-                  await createEnrollmentAction(userId, courseId, batchId);
+                  const result = await createEnrollmentAction(
+                    userId,
+                    courseId,
+                    batchId
+                  );
+                  if (!result.ok) {
+                    toast.error(result.message);
+                    return;
+                  }
                   toast.success("Enrollment created");
                   handleOpenChange(false);
                   router.refresh();

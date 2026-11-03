@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useFormStatus } from "react-dom";
 import {
   Award,
   BookOpen,
@@ -12,6 +13,7 @@ import {
   GraduationCap,
   Layers,
   LayoutDashboard,
+  Loader2,
   LogOut,
   MonitorSmartphone,
   Radio,
@@ -70,6 +72,25 @@ const ROLE_BADGE_CLASS: Record<Profile["role"], string> = {
   user: "border-brand/20 bg-surface text-brand",
 };
 
+function LogoutButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="flex w-full items-center gap-2.5 rounded-lg bg-danger/10 px-3 py-2.5 text-left font-sans text-sm font-semibold text-danger transition-colors hover:bg-danger/15 disabled:cursor-wait disabled:opacity-70"
+    >
+      {pending ? (
+        <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+      ) : (
+        <LogOut className="h-4 w-4 shrink-0" />
+      )}
+      {pending ? "Logging out…" : "Logout"}
+    </button>
+  );
+}
+
 function SidebarUserMenu({ profile }: { profile: Profile }) {
   const hasName = Boolean(profile.full_name?.trim());
   const displayName = profile.full_name?.trim() || profile.email;
@@ -117,13 +138,7 @@ function SidebarUserMenu({ profile }: { profile: Profile }) {
 
       <div className="p-1.5">
         <form action={signOutAction}>
-          <button
-            type="submit"
-            className="flex w-full items-center gap-2.5 rounded-lg bg-danger/10 px-3 py-2.5 text-left font-sans text-sm font-semibold text-danger transition-colors hover:bg-danger/15"
-          >
-            <LogOut className="h-4 w-4 shrink-0" />
-            Logout
-          </button>
+          <LogoutButton />
         </form>
       </div>
     </DropdownMenu>

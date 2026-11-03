@@ -132,6 +132,17 @@ export async function createEnrollment(
     throw new Error("Batch does not belong to the selected course");
   }
 
+  const { data: existing, error: existingError } = await supabase
+    .from("course_enrollments")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("batch_id", batchId)
+    .maybeSingle();
+  if (existingError) throw new Error(existingError.message);
+  if (existing) {
+    throw new Error("User is already enrolled");
+  }
+
   if (batch.max_seats != null) {
     const { count, error: countError } = await supabase
       .from("course_enrollments")
@@ -154,7 +165,12 @@ export async function createEnrollment(
     })
     .select()
     .single();
-  if (error) throw error;
+  if (error) {
+    if (error.code === "23505") {
+      throw new Error("User is already enrolled");
+    }
+    throw new Error(error.message || "Failed to create enrollment");
+  }
   return mapEnrollmentRow(data as CourseEnrollment);
 }
 

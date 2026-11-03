@@ -7,7 +7,11 @@ import {
   type PaginatedResult,
 } from "@/lib/db/pagination";
 import { getSessionOnlineCutoffIso } from "@/lib/sessions/presence";
-import type { Profile, UserSession } from "@/types/database";
+import type {
+  Profile,
+  ProfileCurrentDevice,
+  UserSession,
+} from "@/types/database";
 
 export type SessionStatusFilter = "all" | "online" | "offline" | "recent";
 
@@ -115,6 +119,38 @@ async function attachProfiles(
   }));
 
   return toPaginatedResult(data, count, page, pageSize);
+}
+
+/** Latest session device info per user (for Users table). */
+export async function getLatestSessionsForUsers(
+  userIds: string[]
+): Promise<Map<string, ProfileCurrentDevice>> {
+  const map = new Map<string, ProfileCurrentDevice>();
+  const ids = [...new Set(userIds.filter(Boolean))];
+  if (ids.length === 0) return map;
+
+  const supabase = await getAdminDataClient();
+  const { data, error } = await supabase
+    .from("user_sessions")
+    .select("user_id, device_model, os, app_version, last_seen_at, is_online")
+    .in("user_id", ids)
+    .order("last_seen_at", { ascending: false });
+
+  if (error) throw error;
+
+  for (const row of data ?? []) {
+    const userId = row.user_id as string;
+    if (map.has(userId)) continue;
+    map.set(userId, {
+      device_model: (row.device_model as string | null) ?? null,
+      os: (row.os as string | null) ?? null,
+      app_version: (row.app_version as string | null) ?? null,
+      last_seen_at: (row.last_seen_at as string | null) ?? null,
+      is_online: Boolean(row.is_online),
+    });
+  }
+
+  return map;
 }
 
 export async function getUserSessionStats() {

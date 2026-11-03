@@ -1,4 +1,5 @@
 import { getProfiles, getCurrentProfile } from "@/lib/db/profiles";
+import { getLatestSessionsForUsers } from "@/lib/db/sessions";
 import { parsePageParam } from "@/lib/db/pagination";
 import { canManageUsers } from "@/lib/permissions";
 import { PageHeader } from "@/components/layout/page-header";
@@ -8,7 +9,7 @@ import { UsersFilters } from "@/components/users/users-filters";
 import { ListPagination } from "@/components/list-pagination";
 import { PageEmpty } from "@/components/page-states";
 import type { ProfileDeviceFilter } from "@/lib/db/profiles";
-import type { UserRole } from "@/types/database";
+import type { Profile, UserRole } from "@/types/database";
 
 function parseRole(value?: string): UserRole | undefined {
   if (value === "admin" || value === "manager" || value === "user") {
@@ -66,7 +67,17 @@ export default async function UsersPage({
   }
 
   const canManage = canManageUsers(currentProfile!.role);
-  const users = usersResult!.data;
+  let users: Profile[] = usersResult!.data;
+  try {
+    const sessionsByUser = await getLatestSessionsForUsers(users.map((u) => u.id));
+    users = users.map((user) => ({
+      ...user,
+      current_device: sessionsByUser.get(user.id) ?? null,
+    }));
+  } catch {
+    // Keep users list usable even if session lookup fails.
+    users = users.map((user) => ({ ...user, current_device: null }));
+  }
   const hasFilters = Boolean(q || role || device);
 
   return (

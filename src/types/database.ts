@@ -69,6 +69,14 @@ export interface DeviceTransferRecord {
   [key: string]: unknown;
 }
 
+export interface ProfileCurrentDevice {
+  device_model: string | null;
+  os: string | null;
+  app_version: string | null;
+  last_seen_at: string | null;
+  is_online: boolean;
+}
+
 export interface Profile {
   id: string;
   email: string;
@@ -84,6 +92,8 @@ export interface Profile {
   registered_app_version: string | null;
   device_transfer_count: number;
   device_transfer_history: DeviceTransferRecord[];
+  /** Latest session device (populated on Users list). */
+  current_device?: ProfileCurrentDevice | null;
 }
 
 export interface UserSession {

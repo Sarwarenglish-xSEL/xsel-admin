@@ -10,7 +10,9 @@ import {
   ClipboardList,
   ExternalLink,
   FileQuestion,
+  GripVertical,
   Layers,
+  Loader2,
   Paperclip,
   Pencil,
   Plus,
@@ -122,6 +124,14 @@ export function ChaptersLessonsEditor({
     lessonTitle: string;
     attachment?: LessonAttachmentItem;
   } | null>(null);
+  const [dragLesson, setDragLesson] = useState<{
+    chapterId: string;
+    index: number;
+  } | null>(null);
+  const [dragOverLessonId, setDragOverLessonId] = useState<string | null>(null);
+  const [reorderingChapterId, setReorderingChapterId] = useState<string | null>(
+    null
+  );
   const router = useRouter();
 
   useEffect(() => {
@@ -165,24 +175,48 @@ export function ChaptersLessonsEditor({
     }
   }
 
-  async function moveLesson(
-    chapter: CourseChapter,
-    lessonIndex: number,
-    direction: "up" | "down"
+  async function handleLessonDrop(
+    chapterId: string,
+    fromIndex: number,
+    toIndex: number
   ) {
-    const lessons = chapter.lessons ?? [];
-    const newIndex = direction === "up" ? lessonIndex - 1 : lessonIndex + 1;
-    if (newIndex < 0 || newIndex >= lessons.length) return;
-    const items = lessons.map((l, i) => ({
-      id: l.id,
-      sort_order:
-        i === lessonIndex ? newIndex : i === newIndex ? lessonIndex : i,
+    if (fromIndex === toIndex) return;
+    const chapter = chapters.find((c) => c.id === chapterId);
+    const lessons = chapter?.lessons ?? [];
+    if (
+      fromIndex < 0 ||
+      toIndex < 0 ||
+      fromIndex >= lessons.length ||
+      toIndex >= lessons.length
+    ) {
+      return;
+    }
+
+    const nextLessons = [...lessons];
+    const [moved] = nextLessons.splice(fromIndex, 1);
+    nextLessons.splice(toIndex, 0, moved);
+    const reordered = nextLessons.map((lesson, index) => ({
+      ...lesson,
+      sort_order: index,
     }));
+    const items = reordered.map((lesson) => ({
+      id: lesson.id,
+      sort_order: lesson.sort_order,
+    }));
+
+    setChapters((prev) =>
+      prev.map((ch) =>
+        ch.id === chapterId ? { ...ch, lessons: reordered } : ch
+      )
+    );
+    setReorderingChapterId(chapterId);
     try {
       await reorderLessonsAction(batchId, items);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to reorder");
       router.refresh();
-    } catch {
-      toast.error("Failed to reorder");
+    } finally {
+      setReorderingChapterId(null);
     }
   }
 
@@ -323,7 +357,15 @@ export function ChaptersLessonsEditor({
                 </div>
               </div>
 
-              <div className="space-y-3 bg-surface-muted/40 p-4">
+              <div className="relative space-y-3 bg-surface-muted/40 p-4">
+                {reorderingChapterId === chapter.id && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center rounded-b-xl bg-surface/70 backdrop-blur-[1px]">
+                    <div className="flex items-center gap-2 rounded-full border border-brand/20 bg-surface px-3 py-1.5 text-sm text-brand-dark shadow-sm">
+                      <Loader2 className="h-4 w-4 animate-spin text-brand" />
+                      Saving order…
+                    </div>
+                  </div>
+                )}
                 {lessons.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-gray-300 bg-surface/60 px-4 py-8 text-center">
                     <p className="text-sm font-medium text-gray-700">
@@ -341,11 +383,51 @@ export function ChaptersLessonsEditor({
                     const hasVideoQuiz = quizzes.some(
                       (q) => q.quiz_type === "video"
                     );
+                    const isDragging =
+                      dragLesson?.chapterId === chapter.id &&
+                      dragLesson.index === lessonIndex;
+                    const isDragOver =
+                      dragOverLessonId === lesson.id &&
+                      dragLesson?.chapterId === chapter.id &&
+                      dragLesson.index !== lessonIndex;
 
                     return (
                       <div
                         key={lesson.id}
-                        className="overflow-hidden rounded-xl border border-gray-200 bg-surface shadow-sm"
+                        onDragOver={(e) => {
+                          if (dragLesson?.chapterId !== chapter.id) return;
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = "move";
+                          if (dragOverLessonId !== lesson.id) {
+                            setDragOverLessonId(lesson.id);
+                          }
+                        }}
+                        onDragLeave={() => {
+                          if (dragOverLessonId === lesson.id) {
+                            setDragOverLessonId(null);
+                          }
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (
+                            !dragLesson ||
+                            dragLesson.chapterId !== chapter.id
+                          ) {
+                            return;
+                          }
+                          void handleLessonDrop(
+                            chapter.id,
+                            dragLesson.index,
+                            lessonIndex
+                          );
+                          setDragLesson(null);
+                          setDragOverLessonId(null);
+                        }}
+                        className={cn(
+                          "overflow-hidden rounded-xl border border-gray-200 bg-surface shadow-sm transition-all",
+                          isDragging && "opacity-40",
+                          isDragOver && "border-brand ring-2 ring-brand/30"
+                        )}
                       >
                         <div className="flex flex-col gap-3 border-b border-brand/15 brand-gradient px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                           <div className="min-w-0 space-y-2">
@@ -414,30 +496,6 @@ export function ChaptersLessonsEditor({
                             <Button
                               variant="ghost"
                               size="icon"
-                              title="Move lesson up"
-                              className="h-8 w-8"
-                              disabled={lessonIndex === 0}
-                              onClick={() =>
-                                moveLesson(chapter, lessonIndex, "up")
-                              }
-                            >
-                              <ChevronUp className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title="Move lesson down"
-                              className="h-8 w-8"
-                              disabled={lessonIndex === lessons.length - 1}
-                              onClick={() =>
-                                moveLesson(chapter, lessonIndex, "down")
-                              }
-                            >
-                              <ChevronDown className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
                               title="Delete lesson"
                               className="h-8 w-8 text-danger hover:bg-danger/10 hover:text-danger"
                               onClick={async () => {
@@ -467,6 +525,31 @@ export function ChaptersLessonsEditor({
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              title="Drag to reorder"
+                              aria-label="Drag to reorder lesson"
+                              draggable={reorderingChapterId !== chapter.id}
+                              onDragStart={(e) => {
+                                e.dataTransfer.effectAllowed = "move";
+                                e.dataTransfer.setData(
+                                  "text/plain",
+                                  lesson.id
+                                );
+                                setDragLesson({
+                                  chapterId: chapter.id,
+                                  index: lessonIndex,
+                                });
+                              }}
+                              onDragEnd={() => {
+                                setDragLesson(null);
+                                setDragOverLessonId(null);
+                              }}
+                              className="flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded-lg border border-brand/15 bg-surface/80 text-brand/70 transition-colors hover:bg-brand/10 hover:text-brand active:cursor-grabbing"
+                            >
+                              <GripVertical className="h-4 w-4" />
+                            </div>
                           </div>
                         </div>
 

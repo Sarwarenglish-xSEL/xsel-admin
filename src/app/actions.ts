@@ -562,11 +562,18 @@ export async function createEnrollmentAction(
   userId: string,
   courseId: string,
   batchId: string
-) {
-  await createEnrollment(userId, courseId, batchId);
-  revalidatePath("/enrollments");
-  revalidatePath("/batches");
-  revalidatePath(`/batches/${batchId}/edit`);
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  try {
+    await createEnrollment(userId, courseId, batchId);
+    revalidatePath("/enrollments");
+    revalidatePath("/batches");
+    revalidatePath(`/batches/${batchId}/edit`);
+    return { ok: true };
+  } catch (e) {
+    const message =
+      e instanceof Error ? e.message : "Failed to create enrollment.";
+    return { ok: false, message };
+  }
 }
 
 export async function updateEnrollmentStatusAction(

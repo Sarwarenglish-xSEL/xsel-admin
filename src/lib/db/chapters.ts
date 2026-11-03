@@ -230,11 +230,14 @@ export async function reorderLessons(
   items: { id: string; sort_order: number }[]
 ) {
   const supabase = await createClient();
-  for (const item of items) {
-    const { error } = await supabase
-      .from("course_lessons")
-      .update({ sort_order: item.sort_order })
-      .eq("id", item.id);
-    if (error) throw error;
-  }
+  const results = await Promise.all(
+    items.map((item) =>
+      supabase
+        .from("course_lessons")
+        .update({ sort_order: item.sort_order })
+        .eq("id", item.id)
+    )
+  );
+  const firstError = results.find((r) => r.error)?.error;
+  if (firstError) throw firstError;
 }
