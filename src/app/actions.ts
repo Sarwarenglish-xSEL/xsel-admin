@@ -65,6 +65,7 @@ import {
 import {
   gradeSubmission,
   updateAssignmentSubmission,
+  uploadSubmissionFeedbackAudio,
   deleteAssignmentSubmission,
   updateQuizAttempt,
   deleteQuizAttempt,
@@ -883,6 +884,32 @@ export async function updateAssignmentSubmissionAction(
   input: AssignmentSubmissionUpdate
 ) {
   await updateAssignmentSubmission(id, input);
+  revalidatePath("/submissions");
+  revalidatePath(`/submissions/${id}/answer`);
+}
+
+export async function uploadSubmissionFeedbackAudioAction(formData: FormData) {
+  const submissionId = String(formData.get("submissionId") ?? "").trim();
+  const file = formData.get("file");
+
+  if (!submissionId) {
+    throw new Error("Submission id is required.");
+  }
+  if (!(file instanceof File) || file.size === 0) {
+    throw new Error("Please select an audio file for feedback.");
+  }
+
+  const path = await uploadSubmissionFeedbackAudio(submissionId, file);
+  await updateAssignmentSubmission(submissionId, {
+    feedback_audio_url: path,
+  });
+  revalidatePath("/submissions");
+  revalidatePath(`/submissions/${submissionId}/answer`);
+  return path;
+}
+
+export async function clearSubmissionFeedbackAudioAction(id: string) {
+  await updateAssignmentSubmission(id, { feedback_audio_url: null });
   revalidatePath("/submissions");
   revalidatePath(`/submissions/${id}/answer`);
 }

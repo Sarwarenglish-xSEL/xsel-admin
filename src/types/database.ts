@@ -298,6 +298,7 @@ export interface AssignmentSubmission {
   text_answer: string | null;
   obtained_marks: number | null;
   feedback: string | null;
+  feedback_audio_url: string | null;
   submitted_at: string;
   user?: Profile;
   assignment?: Assignment & { lesson?: CourseLesson };

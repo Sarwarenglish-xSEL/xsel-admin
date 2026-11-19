@@ -1,8 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/admin";
 import { getAdminDataClient } from "@/lib/db/admin-client";
 import {
   removeStorageObject,
   removeStorageObjects,
+  storagePathFromUrl,
 } from "@/lib/db/storage-cleanup";
 import {
   normalizePage,
@@ -15,12 +17,25 @@ import type { AssignmentSubmission, QuizAttempt } from "@/types/database";
 
 const ASSIGNMENT_SUBMISSIONS_BUCKET = "assignment-submissions";
 
+const FEEDBACK_AUDIO_MIME_TYPES = new Set([
+  "audio/mp4",
+  "audio/m4a",
+  "audio/x-m4a",
+  "audio/aac",
+  "audio/mpeg",
+  "audio/wav",
+  "audio/x-wav",
+  "audio/3gpp",
+  "audio/webm",
+  "audio/ogg",
+]);
+
 const ASSIGNMENT_LIST_SELECT =
-  "id, assignment_id, user_id, text_answer, file_url, obtained_marks, feedback, submitted_at, user:profiles(id, email, full_name), assignment:assignments(id, title, max_marks, lesson:course_lessons(title, chapter:course_chapters(course:courses(title))))";
+  "id, assignment_id, user_id, text_answer, file_url, obtained_marks, feedback, feedback_audio_url, submitted_at, user:profiles(id, email, full_name), assignment:assignments(id, title, type, max_marks, lesson:course_lessons(title, chapter:course_chapters(course:courses(title))))";
 
 /** List view — omits large text_answer bodies; fetch full row when grading. */
 const ASSIGNMENT_LIST_SELECT_LIGHT =
-  "id, assignment_id, user_id, file_url, obtained_marks, feedback, submitted_at, user:profiles(id, email, full_name), assignment:assignments(id, title, max_marks, lesson:course_lessons(title, chapter:course_chapters(course:courses(title))))";
+  "id, assignment_id, user_id, file_url, obtained_marks, feedback, feedback_audio_url, submitted_at, user:profiles(id, email, full_name), assignment:assignments(id, title, type, max_marks, lesson:course_lessons(title, chapter:course_chapters(course:courses(title))))";
 
 const QUIZ_ATTEMPT_LIST_SELECT =
   "id, quiz_id, user_id, obtained_marks, is_passed, submitted_at, user:profiles(id, email, full_name), quiz:quizzes(id, title, total_marks, passing_marks, lesson:course_lessons(title, chapter:course_chapters(course:courses(title))))";
@@ -229,8 +244,25 @@ export async function getQuizAttemptById(
 export type AssignmentSubmissionUpdate = {
   obtained_marks?: number | null;
   feedback?: string | null;
+  feedback_audio_url?: string | null;
   text_answer?: string | null;
 };
+
+function sanitizeFileName(fileName: string): string {
+  return fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+}
+
+function isAudioStoragePath(path: string | null | undefined): boolean {
+  if (!path) return false;
+  return /\.(m4a|mp3|wav|aac|3gp|caf|ogg|webm|mp4)$/i.test(path);
+}
+
+function isAllowedFeedbackAudio(file: File): boolean {
+  const baseType = (file.type || "").split(";")[0].trim().toLowerCase();
+  return (
+    FEEDBACK_AUDIO_MIME_TYPES.has(baseType) || isAudioStoragePath(file.name)
+  );
+}
 
 export async function gradeSubmission(
   id: string,
@@ -251,9 +283,34 @@ export async function updateAssignmentSubmission(
   const payload: Record<string, unknown> = {};
   if ("obtained_marks" in input) payload.obtained_marks = input.obtained_marks;
   if ("feedback" in input) payload.feedback = input.feedback;
+  if ("feedback_audio_url" in input) {
+    payload.feedback_audio_url = input.feedback_audio_url;
+  }
   if ("text_answer" in input) payload.text_answer = input.text_answer;
 
   if (Object.keys(payload).length === 0) return;
+
+  if ("feedback_audio_url" in input) {
+    const { data: existing, error: fetchError } = await supabase
+      .from("assignment_submissions")
+      .select("feedback_audio_url")
+      .eq("id", id)
+      .maybeSingle();
+    if (fetchError) throw fetchError;
+
+    const previous = existing?.feedback_audio_url as string | null | undefined;
+    const next = input.feedback_audio_url ?? null;
+    const previousPath = previous
+      ? storagePathFromUrl(previous, ASSIGNMENT_SUBMISSIONS_BUCKET)
+      : null;
+    const nextPath = next
+      ? storagePathFromUrl(next, ASSIGNMENT_SUBMISSIONS_BUCKET)
+      : null;
+
+    if (previousPath && previousPath !== nextPath) {
+      await removeStorageObject(ASSIGNMENT_SUBMISSIONS_BUCKET, previous);
+    }
+  }
 
   const { error } = await supabase
     .from("assignment_submissions")
@@ -262,17 +319,80 @@ export async function updateAssignmentSubmission(
   if (error) throw error;
 }
 
+/**
+ * Upload staff voice feedback under the learner folder so mobile RLS
+ * (users read own {user_id}/...) can play it with a signed URL.
+ */
+export async function uploadSubmissionFeedbackAudio(
+  submissionId: string,
+  file: File
+): Promise<string> {
+  if (!isAllowedFeedbackAudio(file)) {
+    throw new Error("Please upload an audio file (m4a, mp3, wav, aac, webm, ogg).");
+  }
+
+  if (file.size > 25 * 1024 * 1024) {
+    throw new Error("Feedback audio must be 25 MB or smaller.");
+  }
+
+  const supabase = await getAdminDataClient();
+  const { data: submission, error: fetchError } = await supabase
+    .from("assignment_submissions")
+    .select("id, user_id, assignment_id, feedback_audio_url")
+    .eq("id", submissionId)
+    .maybeSingle();
+  if (fetchError) throw fetchError;
+  if (!submission) throw new Error("Submission not found");
+
+  const service = createServiceClient();
+  if (!service) {
+    throw new Error(
+      "Feedback audio upload requires SUPABASE_SERVICE_ROLE_KEY in server config."
+    );
+  }
+
+  const baseType = (file.type || "").split(";")[0].trim().toLowerCase();
+  const ext =
+    file.name.split(".").pop()?.toLowerCase() ||
+    (baseType.includes("mpeg")
+      ? "mp3"
+      : baseType.includes("ogg")
+        ? "ogg"
+        : baseType.includes("webm")
+          ? "webm"
+          : "m4a");
+  const path = `${submission.user_id}/${submission.assignment_id}/feedback/${Date.now()}_${sanitizeFileName(
+    file.name || `feedback.${ext}`
+  )}`;
+
+  const { error: uploadError } = await service.storage
+    .from(ASSIGNMENT_SUBMISSIONS_BUCKET)
+    .upload(path, file, {
+      contentType: baseType || "audio/webm",
+      upsert: false,
+    });
+  if (uploadError) throw uploadError;
+
+  return path;
+}
+
 export async function deleteAssignmentSubmission(id: string): Promise<void> {
   const supabase = await getAdminDataClient();
   const { data, error: fetchError } = await supabase
     .from("assignment_submissions")
-    .select("id, file_url")
+    .select("id, file_url, feedback_audio_url")
     .eq("id", id)
     .maybeSingle();
   if (fetchError) throw fetchError;
   if (!data) throw new Error("Submission not found");
 
-  await removeStorageObject(ASSIGNMENT_SUBMISSIONS_BUCKET, data.file_url);
+  await Promise.all([
+    removeStorageObject(ASSIGNMENT_SUBMISSIONS_BUCKET, data.file_url),
+    removeStorageObject(
+      ASSIGNMENT_SUBMISSIONS_BUCKET,
+      data.feedback_audio_url as string | null
+    ),
+  ]);
 
   const { error } = await supabase
     .from("assignment_submissions")
@@ -288,13 +408,13 @@ export async function removeAssignmentSubmissionFiles(
   const supabase = await getAdminDataClient();
   const { data, error } = await supabase
     .from("assignment_submissions")
-    .select("file_url")
+    .select("file_url, feedback_audio_url")
     .eq("assignment_id", assignmentId);
   if (error) throw error;
-  await removeStorageObjects(
-    ASSIGNMENT_SUBMISSIONS_BUCKET,
-    (data ?? []).map((row) => row.file_url as string | null)
-  );
+  await removeStorageObjects(ASSIGNMENT_SUBMISSIONS_BUCKET, [
+    ...(data ?? []).map((row) => row.file_url as string | null),
+    ...(data ?? []).map((row) => row.feedback_audio_url as string | null),
+  ]);
 }
 
 export type QuizAttemptUpdate = {
