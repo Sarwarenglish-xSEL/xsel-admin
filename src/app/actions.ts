@@ -75,6 +75,7 @@ import {
   type AssignmentSubmissionUpdate,
   type QuizAttemptUpdate,
 } from "@/lib/db/submissions";
+import { feedbackAudioErrorMessage } from "@/lib/feedback-audio";
 import { getProfileOptions } from "@/lib/db/profiles";
 import { issueCertificate } from "@/lib/db/certificates";
 import {
@@ -888,24 +889,33 @@ export async function updateAssignmentSubmissionAction(
   revalidatePath(`/submissions/${id}/answer`);
 }
 
-export async function uploadSubmissionFeedbackAudioAction(formData: FormData) {
-  const submissionId = String(formData.get("submissionId") ?? "").trim();
-  const file = formData.get("file");
+export async function uploadSubmissionFeedbackAudioAction(
+  formData: FormData
+): Promise<{ ok: true; path: string } | { ok: false; message: string }> {
+  try {
+    const submissionId = String(formData.get("submissionId") ?? "").trim();
+    const file = formData.get("file");
 
-  if (!submissionId) {
-    throw new Error("Submission id is required.");
-  }
-  if (!(file instanceof File) || file.size === 0) {
-    throw new Error("Please select an audio file for feedback.");
-  }
+    if (!submissionId) {
+      return { ok: false, message: "Submission id is required." };
+    }
+    if (!(file instanceof File) || file.size === 0) {
+      return {
+        ok: false,
+        message: "Please select an audio file for feedback.",
+      };
+    }
 
-  const path = await uploadSubmissionFeedbackAudio(submissionId, file);
-  await updateAssignmentSubmission(submissionId, {
-    feedback_audio_url: path,
-  });
-  revalidatePath("/submissions");
-  revalidatePath(`/submissions/${submissionId}/answer`);
-  return path;
+    const path = await uploadSubmissionFeedbackAudio(submissionId, file);
+    await updateAssignmentSubmission(submissionId, {
+      feedback_audio_url: path,
+    });
+    revalidatePath("/submissions");
+    revalidatePath(`/submissions/${submissionId}/answer`);
+    return { ok: true, path };
+  } catch (e) {
+    return { ok: false, message: feedbackAudioErrorMessage(e) };
+  }
 }
 
 export async function clearSubmissionFeedbackAudioAction(id: string) {

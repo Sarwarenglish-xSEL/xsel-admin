@@ -13,22 +13,31 @@ import {
   toPaginatedResult,
   type PaginatedResult,
 } from "@/lib/db/pagination";
+import {
+  FEEDBACK_AUDIO_MAX_BYTES,
+  FEEDBACK_AUDIO_MAX_LABEL,
+  feedbackAudioErrorMessage,
+  formatFileSizeMb,
+  validateFeedbackAudioFile,
+} from "@/lib/feedback-audio";
 import type { AssignmentSubmission, QuizAttempt } from "@/types/database";
 
 const ASSIGNMENT_SUBMISSIONS_BUCKET = "assignment-submissions";
 
-const FEEDBACK_AUDIO_MIME_TYPES = new Set([
-  "audio/mp4",
-  "audio/m4a",
-  "audio/x-m4a",
-  "audio/aac",
-  "audio/mpeg",
-  "audio/wav",
-  "audio/x-wav",
-  "audio/3gpp",
-  "audio/webm",
-  "audio/ogg",
-]);
+/** Normalize browser MIME quirks for Supabase storage allowed_mime_types. */
+function feedbackAudioContentType(file: File): string {
+  const baseType = (file.type || "").split(";")[0].trim().toLowerCase();
+  const name = file.name.toLowerCase();
+
+  if (baseType === "audio/mp3" || name.endsWith(".mp3")) return "audio/mpeg";
+  if (baseType === "audio/x-m4a" || name.endsWith(".m4a")) return "audio/mp4";
+  if (baseType === "audio/x-wav" || name.endsWith(".wav")) return "audio/wav";
+  if (baseType) return baseType;
+  if (name.endsWith(".webm")) return "audio/webm";
+  if (name.endsWith(".ogg")) return "audio/ogg";
+  if (name.endsWith(".aac")) return "audio/aac";
+  return "audio/mpeg";
+}
 
 const ASSIGNMENT_LIST_SELECT =
   "id, assignment_id, user_id, text_answer, file_url, obtained_marks, feedback, feedback_audio_url, submitted_at, user:profiles(id, email, full_name), assignment:assignments(id, title, type, max_marks, lesson:course_lessons(title, chapter:course_chapters(course:courses(title))))";
@@ -252,18 +261,6 @@ function sanitizeFileName(fileName: string): string {
   return fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
 }
 
-function isAudioStoragePath(path: string | null | undefined): boolean {
-  if (!path) return false;
-  return /\.(m4a|mp3|wav|aac|3gp|caf|ogg|webm|mp4)$/i.test(path);
-}
-
-function isAllowedFeedbackAudio(file: File): boolean {
-  const baseType = (file.type || "").split(";")[0].trim().toLowerCase();
-  return (
-    FEEDBACK_AUDIO_MIME_TYPES.has(baseType) || isAudioStoragePath(file.name)
-  );
-}
-
 export async function gradeSubmission(
   id: string,
   obtainedMarks: number,
@@ -327,13 +324,8 @@ export async function uploadSubmissionFeedbackAudio(
   submissionId: string,
   file: File
 ): Promise<string> {
-  if (!isAllowedFeedbackAudio(file)) {
-    throw new Error("Please upload an audio file (m4a, mp3, wav, aac, webm, ogg).");
-  }
-
-  if (file.size > 25 * 1024 * 1024) {
-    throw new Error("Feedback audio must be 25 MB or smaller.");
-  }
+  const validationError = validateFeedbackAudioFile(file);
+  if (validationError) throw new Error(validationError);
 
   const supabase = await getAdminDataClient();
   const { data: submission, error: fetchError } = await supabase
@@ -341,24 +333,24 @@ export async function uploadSubmissionFeedbackAudio(
     .select("id, user_id, assignment_id, feedback_audio_url")
     .eq("id", submissionId)
     .maybeSingle();
-  if (fetchError) throw fetchError;
-  if (!submission) throw new Error("Submission not found");
+  if (fetchError) throw new Error(fetchError.message || "Failed to load submission.");
+  if (!submission) throw new Error("Submission not found.");
 
   const service = createServiceClient();
   if (!service) {
     throw new Error(
-      "Feedback audio upload requires SUPABASE_SERVICE_ROLE_KEY in server config."
+      "Audio upload failed: SUPABASE_SERVICE_ROLE_KEY is missing in server config."
     );
   }
 
-  const baseType = (file.type || "").split(";")[0].trim().toLowerCase();
+  const contentType = feedbackAudioContentType(file);
   const ext =
     file.name.split(".").pop()?.toLowerCase() ||
-    (baseType.includes("mpeg")
+    (contentType.includes("mpeg")
       ? "mp3"
-      : baseType.includes("ogg")
+      : contentType.includes("ogg")
         ? "ogg"
-        : baseType.includes("webm")
+        : contentType.includes("webm")
           ? "webm"
           : "m4a");
   const path = `${submission.user_id}/${submission.assignment_id}/feedback/${Date.now()}_${sanitizeFileName(
@@ -368,10 +360,19 @@ export async function uploadSubmissionFeedbackAudio(
   const { error: uploadError } = await service.storage
     .from(ASSIGNMENT_SUBMISSIONS_BUCKET)
     .upload(path, file, {
-      contentType: baseType || "audio/webm",
+      contentType,
       upsert: false,
     });
-  if (uploadError) throw uploadError;
+
+  if (uploadError) {
+    const detail = feedbackAudioErrorMessage(uploadError);
+    if (file.size > FEEDBACK_AUDIO_MAX_BYTES) {
+      throw new Error(
+        `Audio file is too large (${formatFileSizeMb(file.size)}). Maximum allowed is ${FEEDBACK_AUDIO_MAX_LABEL}.`
+      );
+    }
+    throw new Error(detail);
+  }
 
   return path;
 }

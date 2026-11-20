@@ -30,9 +30,13 @@ import {
 } from "@/app/actions";
 import { DownloadAnswerButton } from "@/components/submissions/submission-answer-actions";
 import { FeedbackAudioRecorder } from "@/components/submissions/feedback-audio-recorder";
-
-const FEEDBACK_AUDIO_ACCEPT =
-  "audio/mp4,audio/m4a,audio/x-m4a,audio/aac,audio/mpeg,audio/wav,audio/x-wav,audio/3gpp,audio/webm,audio/ogg,.m4a,.mp3,.wav,.aac,.ogg,.webm";
+import {
+  FEEDBACK_AUDIO_ACCEPT,
+  FEEDBACK_AUDIO_MAX_LABEL,
+  feedbackAudioErrorMessage,
+  formatFileSizeMb,
+  validateFeedbackAudioFile,
+} from "@/lib/feedback-audio";
 
 function hasAttachment(submission: AssignmentSubmission) {
   return Boolean(submission.file_url?.trim());
@@ -388,12 +392,14 @@ function EditSubmissionDialog({
                       disabled={loading || detailLoading}
                       onChange={(e) => {
                         const file = e.target.files?.[0] ?? null;
-                        if (file && file.size > 25 * 1024 * 1024) {
-                          toast.error("Audio file must be 25 MB or smaller");
-                          e.target.value = "";
+                        if (!file) {
+                          clearUploadSelection();
                           return;
                         }
-                        if (!file) {
+                        const validationError = validateFeedbackAudioFile(file);
+                        if (validationError) {
+                          toast.error(validationError);
+                          e.target.value = "";
                           clearUploadSelection();
                           return;
                         }
@@ -404,12 +410,14 @@ function EditSubmissionDialog({
                       }}
                     />
                     <p className="mt-1.5 text-xs text-gray-500">
-                      Allowed: m4a, mp3, wav, aac, webm, ogg — Max size 25 MB
+                      Allowed: m4a, mp3, wav, aac, webm, ogg — Max size{" "}
+                      {FEEDBACK_AUDIO_MAX_LABEL}
                     </p>
                     {feedbackAudioFile && feedbackAudioSource === "upload" ? (
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         <p className="text-xs text-gray-600">
-                          Selected: {feedbackAudioFile.name}
+                          Selected: {feedbackAudioFile.name} (
+                          {formatFileSizeMb(feedbackAudioFile.size)})
                         </p>
                         <Button
                           type="button"
@@ -458,10 +466,20 @@ function EditSubmissionDialog({
 
                 if (isAudioAssignment) {
                   if (feedbackAudioFile) {
+                    const precheck = validateFeedbackAudioFile(feedbackAudioFile);
+                    if (precheck) {
+                      toast.error(precheck);
+                      return;
+                    }
                     const formData = new FormData();
                     formData.set("submissionId", submission.id);
                     formData.set("file", feedbackAudioFile);
-                    await uploadSubmissionFeedbackAudioAction(formData);
+                    const uploadResult =
+                      await uploadSubmissionFeedbackAudioAction(formData);
+                    if (!uploadResult.ok) {
+                      toast.error(uploadResult.message);
+                      return;
+                    }
                   } else if (removeFeedbackAudio && feedbackAudioUrl) {
                     await clearSubmissionFeedbackAudioAction(submission.id);
                   }
@@ -475,7 +493,13 @@ function EditSubmissionDialog({
                 onOpenChange(false);
                 router.refresh();
               } catch (e) {
-                toast.error(e instanceof Error ? e.message : "Failed");
+                toast.error(
+                  feedbackAudioFile
+                    ? feedbackAudioErrorMessage(e)
+                    : e instanceof Error
+                      ? e.message
+                      : "Failed to save submission"
+                );
               } finally {
                 setLoading(false);
               }

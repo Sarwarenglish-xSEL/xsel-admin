@@ -3,9 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@supabase/supabase-js", "@supabase/ssr"],
   experimental: {
-    // Default is 1MB — payment receipts allow up to 5MB (plus multipart overhead).
+    // Feedback audio UI allows 25MB; FormData overhead needs headroom above that.
     serverActions: {
-      bodySizeLimit: "6mb",
+      bodySizeLimit: "30mb",
     },
     optimizePackageImports: [
       "lucide-react",
