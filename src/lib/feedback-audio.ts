@@ -55,31 +55,45 @@ export function validateFeedbackAudioFile(file: {
   return null;
 }
 
-/** Map opaque Next / Storage failures to admin-readable messages. */
-export function feedbackAudioErrorMessage(error: unknown): string {
-  const raw =
-    typeof error === "string"
-      ? error
-      : error instanceof Error
-        ? error.message
-        : error &&
-            typeof error === "object" &&
-            "message" in error &&
-            typeof (error as { message: unknown }).message === "string"
-          ? (error as { message: string }).message
-          : "";
+function errorText(error: unknown): string {
+  if (typeof error === "string") return error;
+  if (error instanceof Error) return error.message;
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof (error as { message: unknown }).message === "string"
+  ) {
+    return (error as { message: string }).message;
+  }
+  return "";
+}
 
+/** Map opaque Next / Storage failures to admin-readable messages. */
+export function feedbackAudioErrorMessage(
+  error: unknown,
+  fileSizeBytes?: number
+): string {
+  const raw = errorText(error);
   const lower = raw.toLowerCase();
+  const sizeLabel =
+    fileSizeBytes != null ? formatFileSizeMb(fileSizeBytes) : null;
+  const overLimit =
+    fileSizeBytes != null && fileSizeBytes > FEEDBACK_AUDIO_MAX_BYTES;
 
   if (
-    lower.includes("unexpected response") ||
     lower.includes("body exceeded") ||
     lower.includes("body size") ||
     lower.includes("payload too large") ||
     lower.includes("entity too large") ||
-    lower.includes("413")
+    lower.includes("413") ||
+    overLimit
   ) {
-    return `Audio upload failed: file is too large for the server (max ${FEEDBACK_AUDIO_MAX_LABEL}). Use a shorter recording or compress the file.`;
+    return `Audio file is too large${sizeLabel ? ` (${sizeLabel})` : ""}. Maximum allowed is ${FEEDBACK_AUDIO_MAX_LABEL}.`;
+  }
+
+  if (lower.includes("unexpected response")) {
+    return `Audio upload failed${sizeLabel ? ` (${sizeLabel})` : ""}: unexpected server response. Please try again. If it keeps failing, restart the admin app and retry.`;
   }
 
   if (
@@ -100,4 +114,22 @@ export function feedbackAudioErrorMessage(error: unknown): string {
   }
 
   return raw.trim() || "Failed to upload feedback audio.";
+}
+
+/** Normalize browser MIME quirks for Supabase storage allowed_mime_types. */
+export function feedbackAudioContentType(file: {
+  name: string;
+  type?: string | null;
+}): string {
+  const baseType = (file.type || "").split(";")[0].trim().toLowerCase();
+  const name = file.name.toLowerCase();
+
+  if (baseType === "audio/mp3" || name.endsWith(".mp3")) return "audio/mpeg";
+  if (baseType === "audio/x-m4a" || name.endsWith(".m4a")) return "audio/mp4";
+  if (baseType === "audio/x-wav" || name.endsWith(".wav")) return "audio/wav";
+  if (baseType) return baseType;
+  if (name.endsWith(".webm")) return "audio/webm";
+  if (name.endsWith(".ogg")) return "audio/ogg";
+  if (name.endsWith(".aac")) return "audio/aac";
+  return "audio/mpeg";
 }

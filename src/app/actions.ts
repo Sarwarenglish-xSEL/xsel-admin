@@ -65,7 +65,8 @@ import {
 import {
   gradeSubmission,
   updateAssignmentSubmission,
-  uploadSubmissionFeedbackAudio,
+  prepareSubmissionFeedbackAudioUpload,
+  finalizeSubmissionFeedbackAudioUpload,
   deleteAssignmentSubmission,
   updateQuizAttempt,
   deleteQuizAttempt,
@@ -73,6 +74,7 @@ import {
   getAssignmentSubmissionSignedUrl,
   getQuizAttemptById,
   type AssignmentSubmissionUpdate,
+  type FeedbackAudioUploadTarget,
   type QuizAttemptUpdate,
 } from "@/lib/db/submissions";
 import { feedbackAudioErrorMessage } from "@/lib/feedback-audio";
@@ -889,30 +891,53 @@ export async function updateAssignmentSubmissionAction(
   revalidatePath(`/submissions/${id}/answer`);
 }
 
-export async function uploadSubmissionFeedbackAudioAction(
-  formData: FormData
-): Promise<{ ok: true; path: string } | { ok: false; message: string }> {
+export async function prepareSubmissionFeedbackAudioUploadAction(input: {
+  submissionId: string;
+  fileName: string;
+  fileType?: string | null;
+  fileSize: number;
+}): Promise<
+  | { ok: true; upload: FeedbackAudioUploadTarget }
+  | { ok: false; message: string }
+> {
   try {
-    const submissionId = String(formData.get("submissionId") ?? "").trim();
-    const file = formData.get("file");
-
+    const submissionId = String(input.submissionId ?? "").trim();
     if (!submissionId) {
       return { ok: false, message: "Submission id is required." };
     }
-    if (!(file instanceof File) || file.size === 0) {
-      return {
-        ok: false,
-        message: "Please select an audio file for feedback.",
-      };
+
+    const upload = await prepareSubmissionFeedbackAudioUpload(submissionId, {
+      name: input.fileName,
+      type: input.fileType,
+      size: input.fileSize,
+    });
+    return { ok: true, upload };
+  } catch (e) {
+    return {
+      ok: false,
+      message: feedbackAudioErrorMessage(e, input.fileSize),
+    };
+  }
+}
+
+export async function finalizeSubmissionFeedbackAudioUploadAction(input: {
+  submissionId: string;
+  path: string;
+}): Promise<{ ok: true } | { ok: false; message: string }> {
+  try {
+    const submissionId = String(input.submissionId ?? "").trim();
+    const path = String(input.path ?? "").trim();
+    if (!submissionId) {
+      return { ok: false, message: "Submission id is required." };
+    }
+    if (!path) {
+      return { ok: false, message: "Feedback audio path is required." };
     }
 
-    const path = await uploadSubmissionFeedbackAudio(submissionId, file);
-    await updateAssignmentSubmission(submissionId, {
-      feedback_audio_url: path,
-    });
+    await finalizeSubmissionFeedbackAudioUpload(submissionId, path);
     revalidatePath("/submissions");
     revalidatePath(`/submissions/${submissionId}/answer`);
-    return { ok: true, path };
+    return { ok: true };
   } catch (e) {
     return { ok: false, message: feedbackAudioErrorMessage(e) };
   }

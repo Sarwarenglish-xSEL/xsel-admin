@@ -14,30 +14,20 @@ import {
   type PaginatedResult,
 } from "@/lib/db/pagination";
 import {
-  FEEDBACK_AUDIO_MAX_BYTES,
-  FEEDBACK_AUDIO_MAX_LABEL,
+  feedbackAudioContentType,
   feedbackAudioErrorMessage,
-  formatFileSizeMb,
   validateFeedbackAudioFile,
 } from "@/lib/feedback-audio";
 import type { AssignmentSubmission, QuizAttempt } from "@/types/database";
 
 const ASSIGNMENT_SUBMISSIONS_BUCKET = "assignment-submissions";
 
-/** Normalize browser MIME quirks for Supabase storage allowed_mime_types. */
-function feedbackAudioContentType(file: File): string {
-  const baseType = (file.type || "").split(";")[0].trim().toLowerCase();
-  const name = file.name.toLowerCase();
-
-  if (baseType === "audio/mp3" || name.endsWith(".mp3")) return "audio/mpeg";
-  if (baseType === "audio/x-m4a" || name.endsWith(".m4a")) return "audio/mp4";
-  if (baseType === "audio/x-wav" || name.endsWith(".wav")) return "audio/wav";
-  if (baseType) return baseType;
-  if (name.endsWith(".webm")) return "audio/webm";
-  if (name.endsWith(".ogg")) return "audio/ogg";
-  if (name.endsWith(".aac")) return "audio/aac";
-  return "audio/mpeg";
-}
+export type FeedbackAudioUploadTarget = {
+  path: string;
+  signedUrl: string;
+  token: string;
+  contentType: string;
+};
 
 const ASSIGNMENT_LIST_SELECT =
   "id, assignment_id, user_id, text_answer, file_url, obtained_marks, feedback, feedback_audio_url, submitted_at, user:profiles(id, email, full_name), assignment:assignments(id, title, type, max_marks, lesson:course_lessons(title, chapter:course_chapters(course:courses(title))))";
@@ -317,14 +307,15 @@ export async function updateAssignmentSubmission(
 }
 
 /**
- * Upload staff voice feedback under the learner folder so mobile RLS
- * (users read own {user_id}/...) can play it with a signed URL.
+ * Prepare a signed storage upload for staff voice feedback.
+ * File bytes upload from the browser (avoids Next Server Action body limits).
+ * Path is under the learner folder so mobile RLS can play it with a signed URL.
  */
-export async function uploadSubmissionFeedbackAudio(
+export async function prepareSubmissionFeedbackAudioUpload(
   submissionId: string,
-  file: File
-): Promise<string> {
-  const validationError = validateFeedbackAudioFile(file);
+  fileMeta: { name: string; type?: string | null; size: number }
+): Promise<FeedbackAudioUploadTarget> {
+  const validationError = validateFeedbackAudioFile(fileMeta);
   if (validationError) throw new Error(validationError);
 
   const supabase = await getAdminDataClient();
@@ -333,7 +324,9 @@ export async function uploadSubmissionFeedbackAudio(
     .select("id, user_id, assignment_id, feedback_audio_url")
     .eq("id", submissionId)
     .maybeSingle();
-  if (fetchError) throw new Error(fetchError.message || "Failed to load submission.");
+  if (fetchError) {
+    throw new Error(fetchError.message || "Failed to load submission.");
+  }
   if (!submission) throw new Error("Submission not found.");
 
   const service = createServiceClient();
@@ -343,9 +336,9 @@ export async function uploadSubmissionFeedbackAudio(
     );
   }
 
-  const contentType = feedbackAudioContentType(file);
+  const contentType = feedbackAudioContentType(fileMeta);
   const ext =
-    file.name.split(".").pop()?.toLowerCase() ||
+    fileMeta.name.split(".").pop()?.toLowerCase() ||
     (contentType.includes("mpeg")
       ? "mp3"
       : contentType.includes("ogg")
@@ -354,27 +347,77 @@ export async function uploadSubmissionFeedbackAudio(
           ? "webm"
           : "m4a");
   const path = `${submission.user_id}/${submission.assignment_id}/feedback/${Date.now()}_${sanitizeFileName(
-    file.name || `feedback.${ext}`
+    fileMeta.name || `feedback.${ext}`
   )}`;
 
+  const { data, error } = await service.storage
+    .from(ASSIGNMENT_SUBMISSIONS_BUCKET)
+    .createSignedUploadUrl(path);
+
+  if (error || !data?.signedUrl || !data?.token) {
+    throw new Error(
+      feedbackAudioErrorMessage(
+        error ?? "Could not create a signed upload URL.",
+        fileMeta.size
+      )
+    );
+  }
+
+  return {
+    path: data.path || path,
+    signedUrl: data.signedUrl,
+    token: data.token,
+    contentType,
+  };
+}
+
+export async function finalizeSubmissionFeedbackAudioUpload(
+  submissionId: string,
+  path: string
+): Promise<void> {
+  const trimmed = path.trim();
+  if (!trimmed) throw new Error("Feedback audio path is required.");
+  await updateAssignmentSubmission(submissionId, {
+    feedback_audio_url: trimmed,
+  });
+}
+
+/**
+ * Legacy server-side upload path (kept for compatibility). Prefer signed upload.
+ */
+export async function uploadSubmissionFeedbackAudio(
+  submissionId: string,
+  file: File
+): Promise<string> {
+  const validationError = validateFeedbackAudioFile(file);
+  if (validationError) throw new Error(validationError);
+
+  const target = await prepareSubmissionFeedbackAudioUpload(submissionId, {
+    name: file.name,
+    type: file.type,
+    size: file.size,
+  });
+
+  const service = createServiceClient();
+  if (!service) {
+    throw new Error(
+      "Audio upload failed: SUPABASE_SERVICE_ROLE_KEY is missing in server config."
+    );
+  }
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
   const { error: uploadError } = await service.storage
     .from(ASSIGNMENT_SUBMISSIONS_BUCKET)
-    .upload(path, file, {
-      contentType,
+    .uploadToSignedUrl(target.path, target.token, bytes, {
+      contentType: target.contentType,
       upsert: false,
     });
 
   if (uploadError) {
-    const detail = feedbackAudioErrorMessage(uploadError);
-    if (file.size > FEEDBACK_AUDIO_MAX_BYTES) {
-      throw new Error(
-        `Audio file is too large (${formatFileSizeMb(file.size)}). Maximum allowed is ${FEEDBACK_AUDIO_MAX_LABEL}.`
-      );
-    }
-    throw new Error(detail);
+    throw new Error(feedbackAudioErrorMessage(uploadError, file.size));
   }
 
-  return path;
+  return target.path;
 }
 
 export async function deleteAssignmentSubmission(id: string): Promise<void> {

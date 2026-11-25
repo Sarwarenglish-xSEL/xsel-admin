@@ -23,10 +23,11 @@ import { Label } from "@/components/ui/label";
 import {
   clearSubmissionFeedbackAudioAction,
   deleteAssignmentSubmissionAction,
+  finalizeSubmissionFeedbackAudioUploadAction,
   getAssignmentSubmissionDetailAction,
   getSubmissionFileUrlAction,
+  prepareSubmissionFeedbackAudioUploadAction,
   updateAssignmentSubmissionAction,
-  uploadSubmissionFeedbackAudioAction,
 } from "@/app/actions";
 import { DownloadAnswerButton } from "@/components/submissions/submission-answer-actions";
 import { FeedbackAudioRecorder } from "@/components/submissions/feedback-audio-recorder";
@@ -466,18 +467,51 @@ function EditSubmissionDialog({
 
                 if (isAudioAssignment) {
                   if (feedbackAudioFile) {
-                    const precheck = validateFeedbackAudioFile(feedbackAudioFile);
+                    const precheck =
+                      validateFeedbackAudioFile(feedbackAudioFile);
                     if (precheck) {
                       toast.error(precheck);
                       return;
                     }
-                    const formData = new FormData();
-                    formData.set("submissionId", submission.id);
-                    formData.set("file", feedbackAudioFile);
-                    const uploadResult =
-                      await uploadSubmissionFeedbackAudioAction(formData);
-                    if (!uploadResult.ok) {
-                      toast.error(uploadResult.message);
+
+                    const prepared =
+                      await prepareSubmissionFeedbackAudioUploadAction({
+                        submissionId: submission.id,
+                        fileName: feedbackAudioFile.name,
+                        fileType: feedbackAudioFile.type,
+                        fileSize: feedbackAudioFile.size,
+                      });
+                    if (!prepared.ok) {
+                      toast.error(prepared.message);
+                      return;
+                    }
+
+                    const putRes = await fetch(prepared.upload.signedUrl, {
+                      method: "PUT",
+                      headers: {
+                        "Content-Type": prepared.upload.contentType,
+                      },
+                      body: feedbackAudioFile,
+                    });
+                    if (!putRes.ok) {
+                      const detail = await putRes.text().catch(() => "");
+                      toast.error(
+                        feedbackAudioErrorMessage(
+                          detail ||
+                            `Storage upload failed (${putRes.status}).`,
+                          feedbackAudioFile.size
+                        )
+                      );
+                      return;
+                    }
+
+                    const finalized =
+                      await finalizeSubmissionFeedbackAudioUploadAction({
+                        submissionId: submission.id,
+                        path: prepared.upload.path,
+                      });
+                    if (!finalized.ok) {
+                      toast.error(finalized.message);
                       return;
                     }
                   } else if (removeFeedbackAudio && feedbackAudioUrl) {
@@ -495,7 +529,7 @@ function EditSubmissionDialog({
               } catch (e) {
                 toast.error(
                   feedbackAudioFile
-                    ? feedbackAudioErrorMessage(e)
+                    ? feedbackAudioErrorMessage(e, feedbackAudioFile.size)
                     : e instanceof Error
                       ? e.message
                       : "Failed to save submission"

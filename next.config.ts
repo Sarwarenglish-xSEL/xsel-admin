@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@supabase/supabase-js", "@supabase/ssr"],
   experimental: {
-    // Feedback audio UI allows 25MB; FormData overhead needs headroom above that.
+    // Next 15.5 still validates this under experimental (top-level is rejected).
     serverActions: {
       bodySizeLimit: "30mb",
     },
